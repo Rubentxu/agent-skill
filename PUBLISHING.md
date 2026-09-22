@@ -24,11 +24,12 @@ git push -u origin feat/nueva-skill
 
 Abre una PR hacia `main`, verifica las comprobaciones del nuevo SHA y fusiona sin `--force`. Evita sobrescribir cambios remotos.
 
-## Instalar solo la skill de calidad
+## Instalar una skill de calidad
 
 ```bash
 npx skills add Rubentxu/agent-skill --list
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode
+npx skills add Rubentxu/agent-skill --skill cognicode-quality-investigator --agent opencode
 ```
 
 Publicar en GitHub no garantiza que skills.sh indexe inmediatamente la skill. Comprueba por separado el descubrimiento del CLI y, más tarde, el catálogo.
