@@ -7,10 +7,14 @@
 | Servidor/fuente | Versión | Tools reales/schema capturados | Workspace/basis | Estado | Límites |
 |---|---|---|---|---|---|
 | cognicode-mcp | | | | NOT_RUN | |
-| explorer-mcp | | | | NOT_RUN | |
+| cognicode CLI | | Comandos + argv + contrato observado | | NOT_RUN | |
+| Paridad CLI↔MCP por operación | | Oráculo del mismo corpus | | NOT_RUN | |
+| Explorer (fuera de alcance) | N/A | No requerido ni ejecutado | N/A | NOT_APPLICABLE | No certifica esta skill |
 | Git/build/test/CI | | | | NOT_RUN | |
 
 **Grafo:** estrategia, fecha/manifest/config, archivos esperados/analizados/omitidos, aristas resueltas/no resueltas, lenguajes y soporte, caché, salidas truncadas, falsos negativos conocidos. **No llamar «cobertura de tests» a cobertura de grafo.**
+
+**Estado de certificación:** diferenciar `MCP_VERIFIED` y `CLI_VERIFIED` del `PARITY_VERIFIED` (solo para las operaciones realmente comparadas). Indicar recibo UAT de la skill o `NOT_RUN`. El CI estructural de esta colección no constituye UAT de CogniCode.
 
 ## 2. Matriz de doce dimensiones
 

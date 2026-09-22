@@ -2,7 +2,7 @@
 
 ## Foto técnica observada en el código público (22-09-2026)
 
-**Lo que puede usar un consumidor externo hoy, sujeto a `tools/list`**: el análisis de símbolos y llamadas de `cognicode-mcp`, y, si se instala/configura, las herramientas de exploración, calidad ya ingestada, ciclos y comunidades de `explorer-mcp`. El inventario PRF confirma dos procesos diferenciados (20 + 55 tools) para la versión 0.97.3 en el entorno de su propia UAT. Esto **no** certifica el binario concreto del auditor ni su BD.
+**Alcance vigente de esta skill:** `cognicode-mcp` y `cognicode` CLI. El inventario PRF verificó 20 tools MCP core en v0.97.3 y comprobó las familias CLI existentes; la paridad semántica entre interfaces sigue pendiente de prueba por operación. `explorer-mcp` y `explorer-api` no forman parte de su gate: requieren adaptación independiente y no se utilizan como fallback.
 
 **Piezas del core que sería valioso conectar tras confirmar disponibilidad y certificación**:
 
@@ -31,7 +31,7 @@ Fuentes:
 
 ### S0 — Skill independiente, sin cambios en CogniCode (primera entrega)
 
-MCP read-only+Git+fuente+tests/CI ya existentes. Cada operación documenta su estado. Las once herramientas que falten no se simulan. Demostración: un corpus sintético con 1 ciclo intencional de *calls*, 1 import prohibido verificado por build, 1 export externo sin llamadas locales, 1 fallo de parser, 1 fichero modificado manteniendo mtime/tamaño, y un test de CI de un SHA antiguo. Esperado: el auditor distingue cada caso y no falsea PASS.
+MCP core read-only + CLI `cognicode` cuando se demuestre la operación, Git+fuente+tests/CI ya existentes. Cada operación documenta su estado y la paridad pendiente. Herramientas exclusivas de Explorer no se simulan ni bloquean S0. Demostración: un corpus sintético con 1 ciclo intencional de *calls*, 1 import prohibido verificado por build, 1 export externo sin llamadas locales, 1 fallo de parser, 1 fichero modificado manteniendo mtime/tamaño, y un test de CI de un SHA antiguo. Esperado: el auditor distingue cada caso y no falsea PASS.
 
 ### S1 — Productores externos reproducibles, sin acoplarlos al core
 
@@ -66,3 +66,6 @@ El README vigente de PRF restringe su programa a estabilizar CLI/MCP; la evoluci
 
 - https://github.com/Rubentxu/CogniCode/blob/5b96db4343d82c02e6a1c2bf855fe13c0e13ec9f/docs/prf/README.md
 - https://github.com/Rubentxu/CogniCode/blob/5b96db4343d82c02e6a1c2bf855fe13c0e13ec9f/docs/prf/POST-PRF-EVOLUTION.md
+## Adaptación de Explorer, fuera de alcance
+
+Un evolutivo futuro podría exponer comunidades, MoldQL y findings mediante un port read-only con semántica, basis, permisos y tests old-client/new-client. Abrirlo solo con consumidor real y UAT propia; jamás exigir Explorer para certificar `cognicode-mcp` o la alternativa CLI de esta skill. Mantener identidades de fuente y separar aristas de llamadas, imports y datos runtime.

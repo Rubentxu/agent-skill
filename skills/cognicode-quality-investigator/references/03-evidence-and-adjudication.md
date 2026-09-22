@@ -14,6 +14,8 @@ basis:
   graph_strategy: full
   language_support: [<languages actually supported>]
   tool_catalog: {server: cognicode-mcp, version: <version>, schema_digest: <sha256>}
+  cli: {binary: cognicode, version: <version-or-NOT_RUN>, argv: <exact-or-NOT_RUN>}
+  interface_parity: <PARITY_VERIFIED/PARITY_NOT_VERIFIED/NOT_RUN>
   scope: {files_included: <N-or-unknown>, files_expected: <N-or-unknown>, exclusions: []}
   limitations: [<skipped/unresolved/truncated/cache-stale>]
 claim:
@@ -85,4 +87,4 @@ Mantén esta estructura en el **informe de la skill**. No implica que `Finding`,
 
 Para cada candidato, calcula el coste de verificación: inspección de 2 símbolos (barata), test focal (moderado), tests integrales o benchmark (costoso). Prioriza por riesgo del cambio y probabilidad de relación real, no únicamente por número de alertas. Conserva candidatos rechazados con motivo breve y deduplica por `(rule, symbol_identity, source_basis, causal_mechanism)`; evitar contar el mismo problema detectado por varios análisis como incidencias distintas.
 
-No ejecutar herramientas de escritura ni ingerir código privado en cloud por defecto. Si se usan `find_quality_issues`/`quality_gate`, indicar explícitamente quién produjo esas issues, cuándo se ingestaron, para qué workspace y si hay evidencias actuales de respaldo; `ingest_quality_issues` requiere permiso explícito.
+No ejecutar herramientas de escritura ni ingerir código privado en cloud por defecto. La superficie Explorer y el QualityStore heredado quedan fuera de esta versión. No consultar ni ingerir issues mediante Explorer para completar la auditoría. Si se comparan MCP y CLI, documentar entradas/semántica y divergencias conforme a `references/05-cli-mcp-parity-and-certification.md`.
