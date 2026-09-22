@@ -9,7 +9,7 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | Skill | Propósito | Estado |
 | --- | --- | --- |
 | [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Disponible |
-| [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Auditoría de doce dimensiones con cognicode-mcp y alternativa CLI por operación, sin depender de Explorer. | Disponible; UAT de la skill y paridad CLI/MCP pendientes |
+| [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Adaptación de la skill de calidad: mismas doce dimensiones y evidencias, con CogniCode para descubrir símbolos, relaciones e impacto. | Disponible |
 
 Consulta los README de [la skill genérica](skills/code-quality-evidence-review/README.md) y [la alternativa CogniCode](skills/cognicode-quality-investigator/README.md) para ver cobertura, usos y precauciones. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
 
@@ -51,7 +51,7 @@ agent-skill/
     └── cognicode-quality-investigator/
         ├── SKILL.md                   # Procedimiento CogniCode; independiente
         ├── README.md
-        ├── references/                # Recetas, límites, evidencia y evolución
+        ├── references/                # Consultas CogniCode y criterios de calidad
         ├── assets/                    # Plantilla de informe
         ├── examples/                  # Caso sintético
         └── tests/                     # Evaluaciones manuales de activación
