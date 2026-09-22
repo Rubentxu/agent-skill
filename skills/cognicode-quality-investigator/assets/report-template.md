@@ -1,67 +1,57 @@
-# Informe CogniCode Quality Investigator — <repo> @ <SHA>
+# Auditoría de calidad asistida por CogniCode — <repositorio> @ <SHA>
 
-**Alcance:** <global/focal/PR/release>. **Fecha:** <fecha>. **Base diff:** <SHA/null>. **Dirty:** <sí/no/desconocido>. **Permisos:** <read-only/etc.>. **Fuentes realmente ejecutadas:** <lista concreta o NINGUNA>.
+**Alcance/base:** <PR/global/focal, SHA y diff> · **Estado del árbol:** <limpio/sucio> · **Fuentes usadas:** <CogniCode MCP/CLI, código, tests, CI, etc.>
 
-## 1. Inventario y límites
+## Resumen
 
-| Servidor/fuente | Versión | Tools reales/schema capturados | Workspace/basis | Estado | Límites |
-|---|---|---|---|---|---|
-| cognicode-mcp | | | | NOT_RUN | |
-| cognicode CLI | | Comandos + argv + contrato observado | | NOT_RUN | |
-| Paridad CLI↔MCP por operación | | Oráculo del mismo corpus | | NOT_RUN | |
-| Explorer (fuera de alcance) | N/A | No requerido ni ejecutado | N/A | NOT_APPLICABLE | No certifica esta skill |
-| Git/build/test/CI | | | | NOT_RUN | |
+<Qué se ha comprobado y con qué límites. Candidatos ≠ hallazgos.>
 
-**Grafo:** estrategia, fecha/manifest/config, archivos esperados/analizados/omitidos, aristas resueltas/no resueltas, lenguajes y soporte, caché, salidas truncadas, falsos negativos conocidos. **No llamar «cobertura de tests» a cobertura de grafo.**
+## Matriz de calidad
 
-**Estado de certificación:** diferenciar `MCP_VERIFIED` y `CLI_VERIFIED` del `PARITY_VERIFIED` (solo para las operaciones realmente comparadas). Indicar recibo UAT de la skill o `NOT_RUN`. El CI estructural de esta colección no constituye UAT de CogniCode.
-
-## 2. Matriz de doce dimensiones
-
-| ID | Dimensión | Fuente CogniCode/consulta real | Contraste independiente | Estado | Exclusiones/lagunas |
-|---|---|---|---|---|---|
-| D01 | Arquitectura y límites | | | | |
-| D02 | SOLID y tipado funcional | | | | |
-| D03 | Connascence estática | | | | |
-| D04 | Duplicidad/acoplamiento/cohesión/complejidad | | | | |
-| D05 | Deuda técnica | | | | |
-| D06 | Tests y cobertura | | | | |
-| D07 | CI/CD | | | | |
-| D08 | Seguridad | | | | |
-| D09 | Rendimiento | | | | |
-| D10 | Dependencias/licencias | | | | |
-| D11 | Documentación y mantenibilidad | | | | |
-| D12 | Observabilidad | | | | |
-
-## 3. Hallazgos con evidencia (solo confirmados; no rellenar por cuota)
-
-### H-01 — <título>
-
-**Severidad:** <BLOQUEANTE/ALTA/MEDIA/BAJA/INFORMATIVA + motivo contextual>.
-
-**Ubicación:** `<ruta>:<inicio>-<fin>` y símbolos, commit exacto o job/run.
-
-**Evidencia:** IDs de ledger, regla demostrable, comandos/consultas ejecutadas, extracto y resultado, base del grafo, confirmación independiente y evidencia en contra inspeccionada. Estado de análisis (`CONFIRMADO/PARCIAL/...`) y límites.
-
-**Impacto:** mecanismo causal, consumidor afectado, observado frente a potencial y condiciones necesarias.
-
-**Recomendación:** acción focal, oráculo reproducible de cierre, tests afectados, momento de integración y rollback si procede.
-
-## 4. Hipótesis, contradicciones, deuda histórica y cobertura faltante
-
-<No mezclar con hallazgos confirmados. Registrar extractores correlacionados, homónimos, reflexión, archivos omitidos, cambios de base y resultados negados.>
-
-## 5. Ledger de evidencia
-
-| E-ID | SHA/basis | Fuente/versión/schema | Tipo (SOURCE/GRAPH/EXECUTION/HISTORY/DOCUMENTED/HYPOTHESIS) | Entrada y ámbito | Salida/ubicación/digest | Estado | Límite |
-|---|---|---|---|---|---|---|---|
-
-## 6. Tests/CI/performance
-
-| Gate/benchmark | SHA/comando/run | Entorno/dataset | Resultado realmente observado | Pendiente |
+| Dimensión | Pregunta y alcance | Evidencia CogniCode o manual | Contraste | Estado / pendiente |
 |---|---|---|---|---|
+| D01 Arquitectura | | | | |
+| D02 SOLID / tipos | | | | |
+| D03 Connascence | | | | |
+| D04 Duplicación / acoplamiento / cohesión | | | | |
+| D05 Deuda | | | | |
+| D06 Pruebas / cobertura | | | | |
+| D07 CI/CD | | | | |
+| D08 Seguridad | | | | |
+| D09 Rendimiento | | | | |
+| D10 Dependencias / licencias | | | | |
+| D11 Documentación | | | | |
+| D12 Observabilidad | | | | |
 
-## 7. Plan incremental
+Usar `CONFIRMADO / PARCIAL / NO VERIFICADO / NO APLICA` por **afirmación y alcance**, nunca interpretar `CONFIRMADO` como «toda la dimensión sin problemas».
 
-| H/E | Acción mínima | Verificación focal | Gate de integración/release | Dependencia/permiso |
-|---|---|---|---|---|
+## Hallazgos confirmados
+
+### H-01 — <título concreto>
+
+**Severidad:** <BLOQUEANTE/ALTA/MEDIA/BAJA/INFORMATIVA y razón>.
+
+**Ubicación:** <ruta:líneas, símbolo, SHA>.
+
+**Evidencia:** <consulta/comando realmente ejecutado, código y contrato, resultado, corroboración y limitaciones>.
+
+**Impacto:** <causa y afectación observada o potencial>.
+
+**Recomendación:** <acción mínima y test de cierre reproducible>.
+
+<Repetir solo para hallazgos demostrados. Si ninguno, indicarlo sin inventar H-01.>
+
+## Candidatos y verificaciones pendientes
+
+<Hipótesis, deuda histórica, fuentes contradictorias, archivos no analizados, pruebas no ejecutadas.>
+
+## Pruebas y CI
+
+| Comprobación | SHA / comando / run | Resultado observado | Pendiente o limitación |
+|---|---|---|---|
+| Tests focales | | | |
+| Gates integración / release | | | |
+
+## Próximos pasos
+
+<Acciones concretas vinculadas a H-xx o a evidencias insuficientes, con criterio de cierre.>
