@@ -8,9 +8,10 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 
 | Skill | Propósito | Estado |
 | --- | --- | --- |
-| [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Inicial |
+| [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Disponible |
+| [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Auditoría de doce dimensiones con cognicode-mcp y alternativa CLI por operación, sin depender de Explorer. | Disponible; UAT de la skill y paridad CLI/MCP pendientes |
 
-Consulta el [README de la skill](skills/code-quality-evidence-review/README.md) para ver cobertura, usos y precauciones. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
+Consulta los README de [la skill genérica](skills/code-quality-evidence-review/README.md) y [la alternativa CogniCode](skills/cognicode-quality-investigator/README.md) para ver cobertura, usos y precauciones. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
 
 ## Instalación
 
@@ -21,7 +22,10 @@ npx skills add Rubentxu/agent-skill --list
 # Instalar solo la skill de calidad en OpenCode, en el proyecto actual
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode
 
-# O instalarla globalmente en OpenCode
+# Instalar únicamente la alternativa basada en CogniCode
+npx skills add Rubentxu/agent-skill --skill cognicode-quality-investigator --agent opencode
+
+# O instalar la skill genérica globalmente en OpenCode
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode --global
 ```
 
@@ -36,7 +40,7 @@ agent-skill/
 ├── .github/workflows/validate.yml    # Validación de la colección
 ├── scripts/validate_skills.py         # Validador de manifiestos y rutas
 └── skills/
-    └── code-quality-evidence-review/
+    ├── code-quality-evidence-review/
         ├── SKILL.md                   # Punto de entrada de la skill
         ├── README.md                  # Manual independiente
         ├── references/                # Playbooks y anexos bajo demanda
@@ -44,6 +48,13 @@ agent-skill/
         ├── examples/                  # Ejemplos sintéticos
         ├── scripts/                   # Utilidades opcionales
         └── tests/                     # Pruebas y evaluaciones
+    └── cognicode-quality-investigator/
+        ├── SKILL.md                   # Procedimiento CogniCode; independiente
+        ├── README.md
+        ├── references/                # Recetas, límites, evidencia y evolución
+        ├── assets/                    # Plantilla de informe
+        ├── examples/                  # Caso sintético
+        └── tests/                     # Evaluaciones manuales de activación
 ```
 
 Una nueva skill se añade exclusivamente como `skills/<slug>/`, con `SKILL.md` y front matter `name` (igual al slug) y `description` no vacíos. No muevas referencias a una carpeta compartida salvo que exista una razón de producto justificada: las skills deben poder distribuirse de forma independiente. Utiliza referencias **relativas al directorio de la propia skill**.
