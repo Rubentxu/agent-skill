@@ -1,0 +1,25 @@
+name: Validate agent skills
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate skill manifests and local references
+        run: python3 scripts/validate_skills.py
+      - name: Run collection validator tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run skill utility tests
+        run: python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py' -v

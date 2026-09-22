@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local agents and dependencies
+node_modules/
+.opencode/
+.claude/
+.codex/
+
+# Build / OS / IDE
+.DS_Store
+.idea/
+.vscode/
+dist/
+build/
+*.egg-info/
+
+# Local evidence, reports and credentials
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+reports/local/
