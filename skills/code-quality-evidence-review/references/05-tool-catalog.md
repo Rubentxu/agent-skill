@@ -106,6 +106,10 @@
 | [lychee](https://github.com/lycheeverse/lychee) | Chequeo de links rotos en documentos y repos. | Red, rate limits y enlaces internos privados provocan falsos positivos. |
 | [markdownlint](https://github.com/DavidAnson/markdownlint) / [Vale](https://vale.sh/) | Consistencia de Markdown y estilo documental. | Formato limpio no significa ADR o comandos actualizados. |
 
+## Instalación de las herramientas del catálogo
+
+Para cada CLI o plugin seleccionado, consulta [`08-installation-managers.md`](08-installation-managers.md): compara disponibilidad en **asdf-vm**, **mise** y **Homebrew**, diferencia runtime de CLI/librería/servicio, verifica la fórmula o backend, fija versión cuando sea posible y **nunca instales sin autorización**. La matriz de ese anexo es orientativa, no un mandato para instalar todas las herramientas.
+
 ## Recetas de elección por objetivo (80/20)
 
 - **Flechas y límites:** manifests/build + una regla ejecutable del lenguaje + comprobar la arista real; no pagar CodeQL solo por contar imports.

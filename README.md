@@ -48,10 +48,15 @@ agent-skill/
 
 Una nueva skill se añade exclusivamente como `skills/<slug>/`, con `SKILL.md` y front matter `name` (igual al slug) y `description` no vacíos. No muevas referencias a una carpeta compartida salvo que exista una razón de producto justificada: las skills deben poder distribuirse de forma independiente. Utiliza referencias **relativas al directorio de la propia skill**.
 
+## Publicación
+
+Consulta [PUBLISHING.md](PUBLISHING.md) para publicar actualizaciones en el repositorio público existente. La publicación en skills.sh depende de que la skill sea descubierta por el instalador; no se considera completada por la mera creación del repositorio.
+
 ## Verificaciones locales
 
 ```bash
 python3 scripts/validate_skills.py
+python3 -m unittest discover -s tests -p 'test_*.py'
 python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py'
 ```
 
