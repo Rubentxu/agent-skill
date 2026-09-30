@@ -17,7 +17,7 @@ npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
 - `review`: audita una pipeline existente.
 - `run`: usa PipelineK como gate local durante desarrollo.
 - `observe`: proyecta el NDJSON de eventos para agentes sin perder la evidencia completa.
-- `secretless`: combina PipelineK con Agent Secretless Vault (ASV) para signer/proxy/session sin entregar el secreto al agente.
+- `credentials`: usa providers/bindings/proyecciones de PipelineK y selecciona la postura de menor exposición disponible.
 - `migrate`: mueve política CI desde Jenkins/Actions/GitLab.
 - `diagnose`: resuelve DSL, toolchains, shims, credenciales, eventos y fallos.
 
@@ -27,22 +27,18 @@ La skill incluye recetas actuales para mise y asdf en `references/04-version-res
 
 ## Credenciales
 
-Hay dos niveles distintos:
+PipelineK distingue entre proyecciones:
 
 ```text
-PipelineK withCredentials
-  -> secreto entra de forma controlada en el child
-  -> lifecycle + redacción + wipe
-
-PipelineK dentro de ASV
-  -> child ve socket/surrogate/capability
-  -> secreto real permanece en broker
+non-exportable   -> socket/signer/workload identity
+short-lived      -> token temporal
+scoped secret    -> env/file con lifecycle + redacción + wipe
 ```
 
 Consulta:
 
 - `references/07-security.md` para bindings/store/redacción de PipelineK.
-- `references/09-agent-secretless.md` para strong-secretless, KeePassXC como fuente operator-side y mecanismos Linux.
+- `references/09-credential-providers.md` para providers por plugins, SSH-agent, KeePassXC/Secret Service y proyecciones.
 - `references/10-event-filters.md` para filtrar `RunFinished`, `StepFailed`, control-flow y lifecycle de credenciales sin imprimir valores.
 
 ## Ejemplos incluidos
@@ -55,7 +51,6 @@ Consulta:
 - `python-uv-ci.pipeline.kts` — uv + ruff/pytest.
 - `go-ci.pipeline.kts` — vet/test/build.
 - `jenkins-familiar.pipeline.kts` — composición de `withEnv`, `timeout`, `retry`, `parallel`, `stash/unstash` y `archiveArtifacts`.
-- `secretless-git.pipeline.kts` — operación Git normal que puede ejecutarse dentro de una sesión ASV sin conocer la clave privada.
 
 Los templates son **starters condicionados**: sólo se adoptan si el repositorio contiene la herramienta/script correspondiente y la instalación de PipelineK valida la DSL.
 
@@ -71,18 +66,6 @@ PipelineK local CI
 fix ↺                close
 ```
 
-Cuando hay autenticación fuerte:
+Cuando hay autenticación, PipelineK debe preferir una proyección no exportable cuando exista y degradar explícitamente a env/file sólo cuando sea necesario.
 
-```text
-coding agent
-   ↓
-ASV session
-   ↓
-PipelineK
-   ↓
-normal tool command
-   ↓
-broker signer/proxy
-```
-
-El objetivo es que PipelineK sea el equivalente local agent-first de una pipeline Jenkins: familiar en DSL, pero con contratos tipados, replay durable, hechos observables para automatización y una vía explícita para ejecutar trabajo autenticado sin convertir secretos en prompt/env del agente.
+El objetivo es que PipelineK sea el equivalente local agent-first de una pipeline Jenkins: familiar en DSL, pero con contratos tipados, replay durable, hechos observables para automatización y providers de credenciales extensibles por plugins.
