@@ -21,10 +21,11 @@ Estos casos fijan la conducta de la skill, no sólo presencia de palabras.
 | Parallel | checks independientes | stage con único root `parallel`, no siblings mezclados |
 | Retry | test determinista falla | no añade retry |
 | Credencial | necesita token y el child puede poseerlo | binding/store; no literal ni echo; clasifica como process exposure |
-| Secretless SSH | private Git/SSH y el agente no debe poseer la key | propone `asv run -- pipelinek ...`; el pipeline usa Git/SSH normal y nunca recupera la clave |
-| Falso secretless | adapter ASV devuelve `SecretHandle` al child | lo rechaza como strong-secretless; sólo compatibilidad degradada |
-| KeePassXC | usuario guarda credenciales en KeePassXC | lo trata como fuente operator-side; no ordena al agente `secret-tool lookup`/`keepassxc-cli show` |
-| ASV no disponible | usuario pide secretless pero `asv` no existe | no inventa garantía; informa bloqueo o usa binding degradado sólo con aceptación explícita |
+| SSH-agent | private Git/SSH y existe socket/provider no exportable | prefiere `SSH_AUTH_SOCK`/proyección no exportable; nunca materializa private key si no hace falta |
+| Falso secretless | provider recupera valor y lo pasa a env/file | lo clasifica `SCOPED_SECRET`, no non-exportable |
+| KeePassXC SSH Agent | usuario guarda key en KeePassXC y la carga en ssh-agent | PipelineK usa socket/fingerprint; no consulta la private key |
+| KeePassXC Secret Service | usuario quiere tokens desde KeePassXC | provider posible, pero clasifica env/file como scoped exposure |
+| Provider inexistente | usuario pide provider/plugin no instalado | no lo inventa; usa capacidad real o informa gap |
 | Observabilidad | command redirige a /dev/null | review lo marca como defecto agentic |
 | Event projection | usuario quiere sólo fallos | conserva NDJSON completo y deriva `StepFailed`/`RunFinished`; no filtra destructivamente |
 | Exit/event contradiction | exit 0 + outcome failure | devuelve contradicción/fallo; no selecciona señal favorable |
@@ -55,7 +56,7 @@ Ejecutar la skill al menos contra:
 3. Rust/Python/Go (uno de ellos);
 4. un Jenkinsfile con al menos una feature aún no soportada;
 5. host con mise+asdf coexistiendo;
-6. repo privado Git/SSH ejecutado bajo una sesión ASV o, si ASV no está disponible, evaluación explícita del fallback;
+6. repo privado Git/SSH con `SSH_AUTH_SOCK` real o fixture de provider/projection no exportable cuando exista;
 7. run PipelineK cuyo NDJSON se proyecta a vista compacta conservando el stream completo.
 
 Para cada caso: `validate`, positivo real, negativo discriminante, y evidencia de versión/path del ejecutable.
