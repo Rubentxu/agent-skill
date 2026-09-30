@@ -10,7 +10,7 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | --- | --- | --- |
 | [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Disponible |
 | [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Adaptación de la skill de calidad: mismas doce dimensiones y evidencias, con CogniCode para descubrir símbolos, relaciones e impacto. | Disponible |
-| [`pipelinek-local-ci`](skills/pipelinek-local-ci/SKILL.md) | Diseña, migra y opera `pipeline.kts` como CI/CD local agent-first, con validación de DSL, eventos, gates y migración desde GitHub Actions/Jenkins/GitLab CI. | Disponible |
+| [`pipelinek-local-ci`](skills/pipelinek-local-ci/SKILL.md) | Bootstrap con mise/asdf, diseña/revisa/migra `pipeline.kts` y opera PipelineK como CI/CD local agent-first con DSL Jenkins-familiar, eventos y gates. | Disponible |
 
 Consulta los README de [la skill genérica](skills/code-quality-evidence-review/README.md) y [la alternativa CogniCode](skills/cognicode-quality-investigator/README.md) para ver cobertura, usos y precauciones. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
 
@@ -62,8 +62,8 @@ agent-skill/
     └── pipelinek-local-ci/
         ├── SKILL.md                   # CI local agent-first con PipelineK
         ├── README.md
-        ├── references/                # Authoring, migración, agent loop y troubleshooting
-        ├── examples/                  # Pipeline mínimo adaptable
+        ├── references/                # Bootstrap, decision tree, Jenkins mapping, authoring y diagnóstico
+        ├── examples/                  # Starters reales Gradle/Maven/Node/Rust/Python/Go/Jenkins-familiar
         └── tests/                     # Evaluaciones manuales de activación
 ```
 
