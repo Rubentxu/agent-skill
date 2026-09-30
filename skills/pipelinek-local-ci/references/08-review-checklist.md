@@ -14,7 +14,9 @@ El modo `review` no modifica por defecto. Produce evidencia por categoría y só
 | Failure semantics | rojo permanece rojo | `|| true`, retry sobre fallo determinista |
 | Observability | stdout/stderr/eventos utilizables | quiet, `/dev/null`, file-only logs |
 | Durability | state fuera del repo y ownership entendido | DB compartida entre proyectos, resume concurrente accidental |
-| Credentials | bindings/store y redacción | secretos en argv/log/artifact |
+| Credentials | binding/store o ASV con postura explícita | secretos en argv/log/artifact; llamar secretless a env/file |
+| Secretless boundary | signer/proxy/session mantiene bytes fuera del child cuando se exige | agent consulta Secret Service/KeePass/ASV para obtener valor |
+| Event projections | NDJSON completo preservado + vistas compactas | filtro destruye evidencia o oculta exit/outcome |
 | Artifacts | stash/archive con consumidor claro | duplicación, allowEmpty que oculta fallo |
 | Fast/slow lanes | checks focales vs integración/release delimitados | full suite tras cada edición o CI remoto duplicado |
 | Migration | política única | Jenkins/Actions y PipelineK divergen |
@@ -26,8 +28,9 @@ El modo `review` no modifica por defecto. Produce evidencia por categoría y só
 3. Lee pipeline y comandos referenciados.
 4. Comprueba que los wrappers/scripts/targets existen.
 5. Revisa cada categoría y marca `PASS`, `WARN` o `FAIL` con evidencia concreta.
-6. Si es seguro y está pedido, ejecuta la pipeline y contrasta outcome/eventos.
-7. Prioriza tres cambios por impacto en corrección, feedback agentic y mantenibilidad.
+6. Si hay autenticación, clasifica la postura: strong-secretless / short-lived / isolated / process exposure.
+7. Si es seguro y está pedido, ejecuta la pipeline y contrasta outcome/eventos; conserva el NDJSON completo antes de filtrar.
+8. Prioriza tres cambios por impacto en corrección, feedback agentic y mantenibilidad.
 
 ## Salida
 
@@ -45,6 +48,8 @@ Failure semantics: ...
 Observability: ...
 Durability: ...
 Credentials: ...
+Secretless boundary: ...
+Event projections: ...
 Artifacts: ...
 Fast/slow lanes: ...
 Migration: ...
