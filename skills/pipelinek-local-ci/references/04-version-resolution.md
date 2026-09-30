@@ -119,4 +119,10 @@ Busca pins: `mise.toml`, `.mise.toml`, `.tool-versions`. Ejecuta el gate mediant
 
 No declares bootstrap terminado hasta ejecutar `version` y `doctor` con el mismo mecanismo que usará el agente.
 
-Fuentes operativas: mise GitHub backend y asdf moderno (`install`, `latest`, `set`, shims).
+Fuentes operativas:
+
+- mise GitHub backend: https://mise.jdx.dev/dev-tools/backends/github.html
+- mise backends/verification: https://mise.jdx.dev/dev-tools/backends/
+- asdf versions (`install`, `latest`, `set`, `current`, shims): https://asdf-vm.com/manage/versions.html
+- plugin PipelineK para asdf: https://github.com/Rubentxu/asdf-pipelinek
+- releases PipelineK: https://github.com/Rubentxu/pipeline-kotlin/releases
