@@ -1,33 +1,81 @@
 ---
 name: pipelinek-local-ci
-description: "Diseña, crea, migra, valida y opera pipelines PipelineK como CI/CD local para agentes de codificación. Úsala cuando se pida crear o corregir pipeline.kts, sustituir GitHub Actions/Jenkins/GitLab CI por un gate local, ejecutar CI antes de cerrar cambios, interpretar eventos/fallos de PipelineK o integrar PipelineK en un agent harness. Verifica la CLI y la DSL reales instaladas; no inventa Steps ni instala/cambia gestores de versiones por defecto."
+description: "Adopta PipelineK como CI/CD local agent-first: instala y fija PipelineK con mise/asdf, crea y revisa pipeline.kts reales, migra Jenkins/GitHub Actions/GitLab CI, ejecuta gates locales, diagnostica fallos con eventos tipados y aplica patrones Jenkins-familiar sólo cuando la versión instalada los soporta. Úsala para bootstrap, scaffold, review, run, migrate o diagnose de PipelineK."
+metadata:
+  version: "2.0.0"
 ---
 
-# PipelineK local CI para agentes
+# PipelineK local CI — agent-first
 
-Usa PipelineK como **gate local ejecutable**, no como sustituto textual de YAML/Groovy.
+PipelineK debe convertirse en la **autoridad local ejecutable** de CI del repositorio. No traduzcas YAML/Groovy mecánicamente y no inventes DSL.
 
-## Flujo
+> Esta skill es un router. Carga sólo la referencia necesaria para el modo actual.
 
-1. **Descubre autoridad y entorno.** Lee instrucciones del repo, build files, wrappers, tests y CI existente. Resuelve el binario real con `command -v pipelinek`, `readlink -f`, `pipelinek version` y `pipelinek doctor`. Si hay mise/asdf/symlinks contradictorios, consulta [resolución de instalación](references/04-version-resolution.md) antes de ejecutar gates. No instales ni cambies la versión activa sin autorización.
+## Modos
 
-2. **Decide si crear, migrar o ejecutar.**
-   - Sin `pipeline.kts`: diseña uno desde la intención real del proyecto.
-   - Con pipeline existente: preserva su contrato y corrige sólo con evidencia.
-   - Migración desde CI alojado: extrae build/tests/gates/artefactos/secretos; no traduzcas sintaxis 1:1. Consulta [migración](references/03-migration-hosted-ci.md).
+| Modo | Cuándo | Referencias |
+|---|---|---|
+| `bootstrap` | PipelineK no está instalado, hay conflicto mise/asdf o hay que fijar versión | `04-version-resolution.md` |
+| `scaffold` | Crear o ampliar `pipeline.kts` | `00-decision-tree.md`, `01-pipeline-authoring.md`, `06-jenkins-familiar-dsl.md` |
+| `review` | Auditar pipeline existente | `01-pipeline-authoring.md`, `06-jenkins-familiar-dsl.md`, `08-review-checklist.md` |
+| `run` | Usar PipelineK como gate del trabajo del agente | `02-agentic-loop.md`, `05-events-and-troubleshooting.md` |
+| `migrate` | Sustituir Jenkins/GitHub Actions/GitLab CI | `03-migration-hosted-ci.md`, `06-jenkins-familiar-dsl.md` |
+| `diagnose` | Fallo de DSL, ejecución, toolchain, shim o evento | `04-version-resolution.md`, `05-events-and-troubleshooting.md` |
 
-3. **Diseña el pipeline.** Usa [authoring](references/01-pipeline-authoring.md). Prefiere wrappers del repo (`gradlew`, `mvnw`, package scripts, cargo, etc.), stages con responsabilidad clara y comandos reproducibles. Mantén publicación/despliegue destructivo fuera del pipeline local salvo petición explícita. No inventes DSL: toda construcción nueva debe pasar `pipelinek validate`.
+Si el usuario no nombra modo, infiérelo por intención. Una adopción desde cero normalmente ejecuta `bootstrap → scaffold → run`.
 
-4. **Valida antes de ejecutar.** Ejecuta `pipelinek validate <pipeline>`. Un construct que compila pero no demuestra su semántica no se considera soportado si hay señales contrarias. Simplifica hacia primitives verificadas en vez de fabricar workarounds.
+## No negociables
 
-5. **Ejecuta como agente.** Sigue [agentic loop](references/02-agentic-loop.md): paths de estado fuera del repo, `run --workspace`, outcome/exit/eventos, corrección focal y rerun/resume. Durante desarrollo usa el gate proporcional definido por el proyecto; full pipeline en integración/release, no tras cada edición salvo contrato explícito.
+1. **Identidad exacta.** Antes de acreditar CI conoce `command → realpath → pipelinek version`. Si se pidió `V` y runtime reporta otra versión, es `IDENTITY_MISMATCH`.
+2. **Cero comandos ficticios.** Nunca generes `project-wrapper`, `run-tests-here` ni placeholders ejecutables. Detecta comandos reales del repo.
+3. **Proyecto primero.** Prefiere `./gradlew`, `./mvnw`, scripts de `package.json`, `uv`, `cargo`, `go`, `make` o `just` realmente presentes.
+4. **DSL observada.** `pipelinek validate` es obligatorio después de editar DSL. La tabla Jenkins-familiar de esta skill es orientación; la instalación real manda.
+5. **Fallos visibles.** No añadas `|| true`, `--quiet`, `/dev/null` ni redirecciones que oculten el comando causal. Si usas `tee`, conserva el exit con `pipefail`.
+6. **Estado fuera del repo.** Journal/control-root bajo XDG state salvo política explícita del proyecto.
+7. **No duplicar política.** Si PipelineK es autoridad CI, un workflow remoto puede ser trigger/matrix/distribución, pero no una segunda definición divergente de tests/gates.
+8. **No rebajar gates para obtener verde.** Clasifica el fallo y corrige causa o contrato.
+9. **Credenciales no se imprimen.** Usa bindings soportados y comandos que consuman variables sin volcarlas.
+10. **Jenkins-familiar ≠ Jenkins mágico.** Mantén nombres/patrones familiares donde tengan semántica real; fail-closed para lo aún no soportado.
 
-6. **Cierra con evidencia.** Registra binario resuelto, versión, pipeline usado, comando, exit, `RunFinished.outcome`, fallo tipado si existe y qué quedó sin ejecutar. Nunca conviertas `SKIPPED`, timeout, warning o un recibo anterior en PASS.
+## Flujo por defecto
 
-## Límites
+### 1. Inspeccionar
 
-- PipelineK es autoridad de CI local cuando el proyecto lo adopta; no borres workflows remotos automáticamente. Pueden quedar como trigger fino, distribución o redundancia.
-- No uses GitHub Actions como oráculo si el objetivo del repo es CI local; valida el mismo trabajo mediante PipelineK.
-- No escribas journal/control-root/cachés dentro del repo salvo política explícita.
-- No leas ni edites SQLite como API estable; usa CLI y eventos observables.
-- Para triage de eventos/fallos consulta [troubleshooting](references/05-events-and-troubleshooting.md).
+Lee `AGENTS.md`, build manifests, wrappers, lockfiles, scripts, CI existente y `pipeline.kts`. Detecta stack con `00-decision-tree.md`.
+
+### 2. Bootstrap si hace falta
+
+Si PipelineK falta o la resolución es ambigua, usa `04-version-resolution.md`. En modo bootstrap la instalación **sí está dentro de scope**: prefiere pin por proyecto; no cambies globales salvo petición explícita.
+
+### 3. Diseñar o revisar
+
+Construye stages por responsabilidad observable: validate/static → build → unit/contract → integration/UAT → package. Usa templates de `examples/` sólo después de comprobar que sus comandos existen en el repo.
+
+### 4. Validar DSL
+
+```bash
+pipelinek validate pipeline.kts
+```
+
+Una feature Jenkins-familiar que no valida o cuya semántica no está soportada se rediseña; no se simula.
+
+### 5. Ejecutar como gate agentic
+
+Usa `02-agentic-loop.md`: tests afectados primero durante desarrollo; pipeline completa en frontera de integración/release según política del repo.
+
+### 6. Cerrar con evidencia
+
+Reporta: HEAD, path real de PipelineK, versión, pipeline, comando, exit, `RunFinished.outcome`, primer fallo causal, stages realmente ejecutados y skips/bloqueos.
+
+## Definition of Done
+
+- [ ] No quedan placeholders ejecutables ni comandos inventados.
+- [ ] PipelineK resuelto y versión exacta verificada.
+- [ ] `pipeline.kts` valida con la instalación seleccionada.
+- [ ] Existe al menos un run positivo real.
+- [ ] Si se creó/migró pipeline, existe un negativo discriminante que falla donde debe.
+- [ ] Los comandos de build/test proceden del proyecto, no de memoria.
+- [ ] Los eventos/outcome y exit no se contradicen; si lo hacen, queda reportado.
+- [ ] No se dejó estado operativo dentro del repo sin política explícita.
+- [ ] Si se sustituyó CI alojado, las responsabilidades remotas restantes están delimitadas.
+- [ ] La superficie Jenkins-familiar usada figura como soportada o fue validada explícitamente.

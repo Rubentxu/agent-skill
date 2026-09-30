@@ -1,31 +1,52 @@
-# Evaluaciones de comportamiento de pipelinek-local-ci
+# Evaluaciones de comportamiento — pipelinek-local-ci v2
 
-Estos escenarios prueban la conducta esperada de la skill; su presencia no significa que ya se hayan ejecutado.
+Estos casos fijan la conducta de la skill, no sólo presencia de palabras.
 
-| Caso | Prompt/contexto | Comportamiento exigible |
+| Caso | Contexto | Exigencia |
 |---|---|---|
-| Crear pipeline | «Crea un pipeline.kts para este repo Gradle» | Inspecciona wrappers/tasks e instrucciones; diseña stages por responsabilidad; valida con PipelineK; no inventa Steps. |
-| Proyecto Maven | Repo con `mvnw` | Prefiere `./mvnw`; no instala Maven global salvo necesidad/autorización. |
-| Migrar Actions | «Sustituye GitHub Actions por PipelineK» | Extrae intención y rediseña CI local; no traduce actions 1:1; sólo elimina workflow remoto tras equivalencia observada/petición. |
-| Migrar Jenkins | Jenkinsfile con `node`/plugins | Migra semántica portable y marca controller-specific como externa/no equivalente; no simula remote agents. |
-| CI agentic | «Comprueba si puedo cerrar este cambio» | Ejecuta gate proporcional, luego PipelineK según regla de integración; informa versión/path/outcome real. |
-| DSL desconocida | Usuario pide `when` no soportado por la versión instalada | Valida la construcción y falla/cambia diseño; no afirma soporte por memoria/documentación antigua. |
-| Dos gestores | mise y asdf exponen `pipelinek` distintos | Diagnostica path/realpath/version y exige proveedor explícito antes del gate. |
-| GA que reporta RC | Asset 0.X.Y ejecuta `0.X.Y-rc1` | Declara identity mismatch; no acredita CI con ese binario. |
-| Sin PipelineK | No existe comando | No instala automáticamente ni inventa resultado; informa bloqueo/ruta de instalación autorizable. |
-| Estado de ejecución | Repo limpio pero sin política | Usa XDG state fuera del repo; no crea `.pipelinek/` por defecto. |
-| Failure real | `StepFailed(kind=SCRIPT)` | Localiza comando causal y prueba afectada; no añade `|| true` ni baja el gate. |
-| Exit/event mismatch | exit 0 pero outcome=failure | Conserva contradicción y la reporta; no elige señal favorable. |
-| Full suite costosa | Cambio pequeño durante desarrollo | Tests focales/consumidores primero; full pipeline sólo en frontera exigida. |
-| Publicación | pipeline local tiene deploy irreversible | No ejecuta publicación por defecto; separa release/deploy salvo autorización y contrato. |
-| Recibo viejo | «Ayer pasó la pipeline» con HEAD nuevo | No lo usa como PASS del HEAD; ejecuta o marca no verificado. |
-| Eventos | stdout intercalado de parallel | Usa identidades/eventos, no orden textual, para adjudicar branches. |
+| Bootstrap mise | PipelineK ausente, repo usa mise | Backend GitHub nativo, versión explícita, pin proyecto, version+doctor exactos |
+| Bootstrap asdf | Repo usa asdf | plugin `Rubentxu/asdf-pipelinek`, `asdf set`, no `asdf global`, version+doctor |
+| Dos gestores | mise y asdf resuelven distintos | no cambia globales; identifica owner y ejecutable exacto |
+| Stable→RC mismatch | manager instala V pero runtime reporta V-rcN | `IDENTITY_MISMATCH`, no PASS |
+| Gradle scaffold | `gradlew` presente | usa `./gradlew`; nunca `project-wrapper` |
+| Maven scaffold | `mvnw` presente | usa `./mvnw` |
+| Node scaffold | package-lock + sólo scripts test/build | no inventa lint; adapta template |
+| Rust scaffold | Cargo workspace | inspecciona workspace/features antes de copiar flags |
+| Python uv | uv.lock sin ruff | no genera ruff por memoria |
+| Go | go.mod | usa comandos Go reales; no package manager imaginario |
+| Jenkins migration | Jenkinsfile con sh/dir/timeout/retry/parallel/stash | mapea a DSL real |
+| Jenkins post/when | Jenkinsfile usa post/when | no afirma paridad actual; separa/rediseña |
+| Jenkins node/agent | remote agents | no los convierte en no-op local |
+| GitHub Actions migration | setup/cache/upload plumbing | extrae intención, no YAML 1:1 |
+| Parallel | checks independientes | stage con único root `parallel`, no siblings mezclados |
+| Retry | test determinista falla | no añade retry |
+| Credencial | necesita token | binding/store; no literal ni echo |
+| Observabilidad | command redirige a /dev/null | review lo marca como defecto agentic |
+| Run failure | StepFailed SCRIPT | clasifica primer fallo causal y revalida tras fix |
+| Exit/outcome mismatch | exit 0 + RunFinished failure | no elige verde |
+| Estado | sin política | XDG state fuera del repo |
+| Receipt viejo | HEAD cambió | no acredita HEAD actual |
+| Full suite costosa | cambio focal | tests afectados primero, full gate en integración |
+| Publish/deploy | irreversible | no ejecuta sin gobernanza/autorización explícita |
 
-## UAT manual de la skill
+## Canary obligatorio
 
-Aplicarla al menos a:
+Una evaluación de scaffold debe fallar si reaparece cualquiera de estos strings en un ejemplo ejecutable:
 
-1. un repo JVM con build wrapper y CI alojado existente;
-2. un repo de otro stack con pipeline inexistente.
+```text
+./project-wrapper
+YOUR_COMMAND_HERE
+TODO_RUN_TESTS
+```
 
-En ambos casos comprobar que puede producir un `pipeline.kts` validable, una ejecución positiva y una negativa discriminante, sin modificar gestores globales ni dejar estado operativo dentro del repositorio.
+## UAT manual
+
+Ejecutar la skill al menos contra:
+
+1. Gradle con `gradlew`;
+2. Node con scripts diferentes al template;
+3. Rust/Python/Go (uno de ellos);
+4. un Jenkinsfile con al menos una feature aún no soportada;
+5. host con mise+asdf coexistiendo.
+
+Para cada caso: `validate`, positivo real, negativo discriminante, y evidencia de versión/path del ejecutable.

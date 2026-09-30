@@ -1,86 +1,97 @@
-# Migrar desde GitHub Actions, Jenkins u otro CI
+# Migrar Jenkins / GitHub Actions / GitLab CI a PipelineK
 
-El objetivo no es convertir un archivo de CI en otro. Es trasladar **la política de entrega** a una pipeline local reproducible.
+Migra **política de entrega**, no sintaxis.
 
-## 1. Inventario del CI existente
+## Inventario
 
-Por cada job/stage identifica:
+Por cada job/stage registra: trigger, cwd, toolchain, build, tests, matrix, cache, secrets, artifacts, publish/deploy y condición.
 
-| Elemento | Pregunta |
+Clasifica cada pieza:
+
+```text
+PORTABLE_LOCAL      → PipelineK
+REMOTE_TRIGGER      → workflow fino opcional
+MATRIX_EXTERNAL     → hosted/harness si la máquina local no lo cubre
+RELEASE/PUBLISH     → release train/harness según gobernanza
+PROVIDER_PLUMBING   → eliminar
+```
+
+## GitHub Actions
+
+No traduzcas automáticamente `actions/checkout`, `setup-*`, caches cloud o upload/download artifacts. Pregunta qué capacidad representan.
+
+Ejemplo:
+
+```text
+checkout → setup-java → ./gradlew check → upload jar
+```
+
+puede convertirse localmente en:
+
+```kotlin
+pipeline {
+    stages {
+        stage("verify") { sh("./gradlew --no-daemon check") }
+        stage("package") {
+            sh("./gradlew --no-daemon assemble")
+            archiveArtifacts("build/libs/*.jar", allowEmptyArchive = false)
+        }
+    }
+}
+```
+
+si el repo contiene `gradlew` y esos tasks.
+
+## Jenkins Pipeline
+
+Mapeo de intención actual:
+
+| Jenkins | PipelineK |
 |---|---|
-| Trigger | ¿qué evento lo inicia y sigue siendo necesario localmente? |
-| Checkout | ¿PipelineK se ejecutará ya dentro del repo? |
-| Toolchain | ¿lo gestiona el proyecto, mise/asdf/SDKMAN, contenedor o runner? |
-| Build | ¿qué comando real se ejecuta? |
-| Tests | ¿qué suites y filtros? |
-| Matrix | ¿qué variaciones son contrato real? |
-| Cache | ¿optimización o requisito semántico? |
-| Secrets | ¿qué capacidad necesita el paso? |
-| Artifacts | ¿qué se produce y quién lo consume? |
-| Publish/deploy | ¿es reversible y debe seguir fuera del gate local? |
+| `pipeline/stages/stage` | familiar y soportado |
+| `sh`, `echo`, `error`, `sleep` | soportado |
+| `dir`, `withEnv`, `withCredentials` | soportado |
+| `timeout`, `retry`, `waitUntil` | soportado |
+| `parallel` | soportado con shape canónica |
+| `stash/unstash`, `archiveArtifacts`, `milestone` | soportado |
+| `post` | no usar hasta runtime semantics reales |
+| declarative `when` / legacy `whenCondition` | no usar hasta soporte real |
+| `agent` / `node` remoto | no equivale a allocator local; fail-closed actual |
+| Jenkins `git` shortcut | no usar; checkout SCM actual es parcial/plugin-dependent |
+| controller jobs (`build(job)`) | responsabilidad externa |
 
-## 2. Eliminar plumbing del proveedor
+Consulta `06-jenkins-familiar-dsl.md` antes de migrar un Jenkinsfile.
 
-Normalmente NO se migra como Step de PipelineK:
+## Condicionales
 
-- `actions/checkout` cuando el agente ya trabaja sobre el checkout;
-- setup actions que sólo esconden un wrapper/version manager existente;
-- upload/download de artefactos cuyo consumidor es el propio workflow alojado;
-- sintaxis de matrices del proveedor;
-- expresiones `${{ ... }}` o Groovy del controller;
-- badges y metadatos del proveedor.
+No sustituyas un `when` no soportado por una función que simplemente ejecuta el body. Mientras la versión instalada no tenga predicado declarativo real, rediseña la selección fuera del pipeline o como Kotlin/command flow sólo si su semántica está certificada para ese caso.
 
-Migra la capacidad subyacente, no el wrapper.
+## Hosted CI residual
 
-## 3. Diseñar la autoridad local
-
-Ejemplo conceptual:
+Una arquitectura válida es:
 
 ```text
-GitHub Actions antiguo:
-checkout → setup-java → gradle build → upload artifact
-
-PipelineK local:
-Build: ./gradlew build
-Verify artifact: test -f ...
-```
-
-Si la publicación requiere credenciales o es irreversible, mantenla en un release train/harness explícito. No escondas publicación bajo una condición DSL no certificada.
-
-## 4. Reparto recomendado
-
-```text
-developer/coding agent
-      ↓
-PipelineK local (autoridad CI)
-      ↓
+developer / coding agent
+        ↓
+PipelineK local = CI authority
+        ↓
 artifact/evidence
-      ↓
-opcional trigger remoto fino
-      ↓
-release harness / distribution / deploy
+        ↓
+optional remote trigger
+        ↓
+matrix / release harness / deploy
 ```
 
-El trigger remoto puede seguir existiendo para ejecutar PipelineK en otra plataforma, certificar un SHA externo, publicar artefactos o integrar infraestructura ausente localmente. No debe duplicar la selección de tests ni contener una segunda política CI divergente.
+El remoto no vuelve a definir qué tests constituyen CI.
 
-## 5. Sustitución segura
+## Gate de sustitución
 
-No borres workflows existentes hasta demostrar:
+No elimines el CI anterior hasta demostrar:
 
-1. nuevo `pipeline.kts` valida;
-2. escenario verde real;
-3. escenario negativo falla correctamente;
-4. artefactos/gates necesarios siguen cubiertos;
-5. agentes y humanos pueden reproducirlo localmente;
-6. cualquier responsabilidad que queda remota está documentada.
-
-Si el usuario pide sustituir GitHub Actions completamente, elimina/desactiva sólo después de esa equivalencia observada.
-
-## 6. Jenkins
-
-Para Jenkins, separa:
-
-- semántica portable: `sh`, stages, retry/timeout, filesystem, artifacts;
-- semántica de controller: `node`, remote agents, `build(job)`, Jenkins credentials/plugins.
-
-No finjas paridad donde PipelineK local no posee controller/scheduler. Rediseña el flujo hacia capacidades locales reales y deja lo remoto como integración externa cuando sea necesario.
+1. pipeline nueva valida;
+2. positivo real;
+3. negativo discriminante;
+4. gates/artifacts equivalentes identificados;
+5. secretos no degradados;
+6. responsabilidades que siguen remotas documentadas;
+7. humanos y agentes pueden reproducir localmente.

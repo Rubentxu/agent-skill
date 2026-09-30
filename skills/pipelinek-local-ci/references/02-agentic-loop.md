@@ -1,28 +1,17 @@
-# Bucle agentic de CI local
+# Bucle agentic: PipelineK como autoridad CI local
 
-PipelineK debe dar al agente una señal ejecutable y reproducible, no una opinión sobre si el cambio “parece correcto”.
+## Lanes
 
-## Ciclo normal
+| Momento | Qué ejecutar | Objetivo |
+|---|---|---|
+| edición | test/check afectado | feedback rápido |
+| bloque funcional | consumidores + stage relevante | detectar integración local |
+| integración | `pipelinek validate` + pipeline completa | gate del HEAD |
+| release | pipeline + gates/release harness definidos por el proyecto | evidencia final |
 
-```text
-inspect
-  ↓
-change
-  ↓
-affected verification
-  ↓
-pipelinek validate
-  ↓
-pipelinek run
-  ↓
-typed outcome/events
-  ├─ success → cierre/evidencia
-  └─ failure → localizar causa → corregir → rerun/resume
-```
+No conviertas la full suite en respuesta refleja tras cada edición, ni cierres un bloque sólo con tests focales si la política exige integración.
 
 ## Preflight
-
-Captura:
 
 ```bash
 git rev-parse HEAD
@@ -33,84 +22,94 @@ pipelinek version
 pipelinek doctor
 ```
 
-Si el path/version no es el esperado, no continúes como si la ejecución acreditase el proyecto; ve a `04-version-resolution.md`.
+Si hay mise/asdf conflictivos, detente y usa `04-version-resolution.md`.
+
+## Estado durable fuera del repo
+
+```bash
+root="$(git rev-parse --show-toplevel)"
+repo_id="$(basename "$root")"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/pipelinek/${repo_id}"
+mkdir -p "$state"
+```
 
 ## Validate
 
 ```bash
-pipelinek validate pipeline.kts
+pipelinek validate "$root/pipeline.kts"
 ```
 
-Cierre: exit observado y diagnóstico, no sólo “no imprimió error”.
+`validate` acredita forma/compilación de DSL, no comportamiento de Steps.
 
-## Run
-
-Usa `--workspace` de forma explícita y state fuera del repo:
-
-```bash
-state="${XDG_STATE_HOME:-$HOME/.local/state}/pipelinek/$(basename "$PWD")"
-
-pipelinek run   --workspace .   --db "$state/run.sqlite"   --control-root "$state/control"   pipeline.kts
-```
-
-No reutilices una DB de otro proyecto.
-
-## Señal de éxito
-
-Usa dos canales cuando estén disponibles:
-
-1. exit code real;
-2. evento terminal `RunFinished` y su `outcome`.
-
-Si se contradicen, eso es un defecto/limitación a investigar; no elijas silenciosamente el canal favorable.
-
-Para automatización, captura stdout sin perder el exit:
+## Run observable
 
 ```bash
 set -o pipefail
-pipelinek run --workspace . pipeline.kts | tee /tmp/pipelinek-events.ndjson
+pipelinek run \
+  --workspace "$root" \
+  --db "$state/run.sqlite" \
+  --control-root "$state/control" \
+  "$root/pipeline.kts" \
+  | tee "$state/events.ndjson"
 rc=${PIPESTATUS[0]}
+printf 'pipelinek_exit=%s\n' "$rc"
 ```
 
-Después localiza el evento terminal con las herramientas disponibles. No hagas depender la skill de `jq` si no está instalado.
+stderr queda visible en terminal; stdout conserva la secuencia de eventos. No redirijas todo a un fichero invisible al agente.
 
-## Failure-driven repair
+## Oracle
 
-Ante fallo:
+Usa conjuntamente:
 
-1. encuentra el primer `StepFailed` causal, no el último mensaje ruidoso;
-2. registra `failureKind`, mensaje, stage/step y comando;
-3. decide si el fallo es producto, test, entorno, credencial o pipeline;
-4. corrige la causa mínima;
-5. ejecuta primero la prueba/step afectado;
-6. vuelve al gate exigido.
+1. exit real;
+2. `RunFinished.outcome`;
+3. primer `StepFailed`/fallo causal;
+4. eventos específicos de block/directive cuando la semántica dependa de ellos.
 
-No conviertas automáticamente un fallo de herramienta ausente en cambio de código.
+Si exit y outcome se contradicen: **FAIL/INVESTIGATE**, no elijas el favorable.
 
-## Resume vs rerun
-
-Si el contrato de la versión instalada soporta replay durable:
-
-- **resume**: continuar un run interrumpido usando el mismo DB/control-root;
-- **rerun**: reejecutar deliberadamente tras cambiar entradas/código.
-
-No uses resume después de modificar una semántica cuyo fingerprint/replay contract no entiendes. Cuando haya duda, crea estado limpio o usa el modo de rerun documentado por la versión instalada.
-
-## Cierre agentic
-
-Un cierre útil contiene:
+## Auto-fix loop
 
 ```text
-HEAD/base:
-pipelinek resolved path:
-pipelinek version:
-pipeline:
-command:
-exit:
-terminal outcome:
-tests/stages realmente ejecutados:
-skips/bloqueos:
-next action:
+failure
+  ↓
+classify
+  ├─ code/test bug
+  ├─ pipeline DSL bug
+  ├─ dependency/toolchain
+  ├─ environment/workspace
+  ├─ credentials
+  ├─ timeout/concurrency
+  └─ PipelineK defect/unknown
+  ↓
+smallest causal fix
+  ↓
+affected check
+  ↓
+required PipelineK gate
 ```
 
-Un recibo previo, un workflow configurado o una pipeline que sólo valida sintaxis no acreditan el HEAD actual.
+Un rerun de infraestructura sólo es válido si hay evidencia de causa transitoria. No conviertas flaky en `retry` por defecto.
+
+## Resume / rerun
+
+- `--resume`: para un run durable interrumpido cuando el contrato de la instalación lo soporte.
+- `--rerun`: nueva ejecución deliberada tras cambiar inputs/código.
+
+No uses simultáneamente dos `--resume` contra el mismo run/state salvo que estés ejecutando una prueba explícita de concurrencia: ownership cross-process ha sido una frontera histórica sensible.
+
+## Reporte de cierre
+
+```text
+HEAD:
+PipelineK realpath/version:
+pipeline:
+workspace:
+gate:
+exit:
+RunFinished:
+first causal failure:
+stages executed/skipped:
+evidence path:
+remaining blocker:
+```

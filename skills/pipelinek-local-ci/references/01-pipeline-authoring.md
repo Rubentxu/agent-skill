@@ -1,122 +1,131 @@
-# Creación y definición de pipelines
+# Diseñar y crear `pipeline.kts`
 
-## 1. Extraer intención antes de escribir DSL
+## Regla cero: cero placeholders ejecutables
 
-Inspecciona primero:
+`./project-wrapper` no existe salvo que el repositorio tenga exactamente ese archivo. Nunca pongas un comando ficticio para completar un template.
 
-- `AGENTS.md`, ADRs y reglas de testing/release;
-- wrappers y manifests: `gradlew`, `mvnw`, `package.json`, `Cargo.toml`, `pyproject.toml`, `Makefile`, `justfile`;
-- comandos que los desarrolladores ejecutan realmente;
-- CI existente sólo como fuente de intención: triggers, matrices, build, tests, artefactos, credenciales, publicación.
+Antes de escribir DSL enumera comandos **observados**:
 
-Produce un mapa breve:
-
-```text
-source/change
-  -> validate/static
-  -> compile/build
-  -> unit/contract
-  -> integration/UAT
-  -> package
-  -> release verification
+```bash
+test -x ./gradlew && echo gradle-wrapper
+test -x ./mvnw && echo maven-wrapper
+test -f package.json && cat package.json
+test -f pyproject.toml && sed -n '1,220p' pyproject.toml
+test -f Cargo.toml && sed -n '1,220p' Cargo.toml
+test -f go.mod && cat go.mod
+test -f Makefile && sed -n '1,220p' Makefile
+test -f justfile && sed -n '1,220p' justfile
 ```
 
-No todas las fases deben existir. No introduzcas stages vacíos ni herramientas que el proyecto no usa.
+## Diseña por preguntas observables
 
-## 2. Diseñar stages por responsabilidad
+- **Validate/Static:** ¿configuración, formato, lint y tipos son válidos?
+- **Build:** ¿el producto compila/construye?
+- **Unit/Contract:** ¿contratos rápidos pasan?
+- **Integration/UAT:** ¿flujo real pasa?
+- **Package:** ¿se produjo el artefacto correcto?
+- **Release Verification:** ¿artefacto instalado se identifica/arranca? Sólo cuando pertenezca a este repo.
 
-Un stage debe responder a una pregunta observable. Ejemplos útiles:
+No copies el número de jobs del CI anterior. Un stage existe si separa una responsabilidad, un presupuesto o una semántica de fallo.
 
-- Validate: ¿configuración/DSL/build files son válidos?
-- Compile/Build: ¿el producto compila/se construye?
-- Unit/Contract: ¿los contratos afectados pasan?
-- Architecture/Static: ¿los fitness gates del repo pasan?
-- Integration/UAT: ¿un flujo real funciona?
-- Package: ¿se genera el artefacto?
-- Release Verification: ¿el artefacto instalado se identifica y arranca correctamente?
+## Patrón mínimo real
 
-Evita stages que sólo repitan nombres heredados del CI anterior.
-
-## 3. Comandos: proyecto primero
-
-Prefiere wrappers y scripts ya versionados por el proyecto (`./gradlew`, `./mvnw`, scripts de package manager, `cargo`, `just`, `make`). No sustituyas un wrapper por una instalación global sólo porque exista en el host.
-
-Para repos poliglotas, usa `dir("subproject") { ... }` sólo si la versión instalada lo valida. Si no, usa paths explícitos.
-
-## 4. DSL version-aware
-
-PipelineK evoluciona. Antes de adoptar una construcción nueva:
-
-1. comprueba `pipelinek version`;
-2. busca un ejemplo ya usado por el propio repo;
-3. escribe el cambio mínimo;
-4. ejecuta `pipelinek validate pipeline.kts`;
-5. cuando la semántica importe, ejecuta una sonda discriminante.
-
-No deduzcas soporte porque una función aparezca en documentación histórica o porque el script compile de otra forma.
-
-Especialmente sensibles: directivas declarativas, block steps, runtime-returning calls, environment/credentials, retry/timeout/parallel y builders que devuelven configuración.
-
-Si la intención no tiene representación real, **fail closed o elimina la construcción**.
-
-## 5. Plantilla inicial conservadora
-
-Adapta, no copies ciegamente:
+Cuando aún no conoces comandos del proyecto, empieza sólo con una pipeline inocua:
 
 ```kotlin
 pipeline {
     stages {
-        stage("Build") {
-            sh("./project-wrapper build")
-        }
-
-        stage("Tests") {
-            sh("./project-wrapper test")
+        stage("preflight") {
+            echo("PipelineK is wired to this repository")
         }
     }
 }
 ```
 
-Después:
+Después reemplaza/amplía usando comandos observados. Nunca presentes este smoke como CI completa.
+
+## Composición Jenkins-familiar
+
+Cuando la instalación los soporte, usa blocks en lugar de shell artesanal:
+
+```kotlin
+stage("verify") {
+    withEnv(listOf("CI=true")) {
+        timeout(time = 20, unit = "MINUTES") {
+            retry(count = 2) {
+                sh("./gradlew --no-daemon check")
+            }
+        }
+    }
+}
+```
+
+Para checks independientes:
+
+```kotlin
+stage("checks") {
+    parallel {
+        branch("lint") { sh("npm run lint") }
+        branch("test") { sh("npm test") }
+    }
+}
+```
+
+En la forma canónica actual, un stage `parallel` no mezcla siblings fuera del root paralelo.
+
+## Artefactos
+
+Salida temporal intra-run:
+
+```kotlin
+stash(name = "compiled", includes = "build/libs/*.jar")
+```
+
+y posteriormente:
+
+```kotlin
+unstash(name = "compiled")
+```
+
+Retención final:
+
+```kotlin
+archiveArtifacts(
+    artifacts = "build/libs/*.jar",
+    allowEmptyArchive = false,
+)
+```
+
+No uses `publishHTML(keepAll=true)` sin verificar: esa opción es parcial/fail-closed en la superficie actual.
+
+## Variables y secretos
+
+Variables no secretas:
+
+```kotlin
+withEnv(listOf("CI=true", "MODE=test")) {
+    sh("./gradlew check")
+}
+```
+
+Para credenciales usa bindings soportados y no hagas `echo` del secreto. Consulta `07-security.md`.
+
+## Version-aware DSL
+
+Tras cada cambio estructural:
 
 ```bash
 pipelinek validate pipeline.kts
-pipelinek run --workspace . pipeline.kts
 ```
 
-El ejemplo de esta skill está en [minimal.pipeline.kts](../examples/minimal.pipeline.kts).
+Si el construct falla, contrasta `06-jenkins-familiar-dsl.md` y la versión real. No reemplaces `when/post/agent` no soportados por una simulación silenciosa.
 
-## 6. Testing eficiente para agentes
+## Templates
 
-Durante desarrollo:
+Los ejemplos bajo `examples/` son starters de intención. Antes de copiarlos:
 
-```text
-cambio
-→ tests afectados
-→ contratos consumidores
-→ pipeline/stage focal si existe
-```
-
-Frontera de integración/release:
-
-```text
-→ pipeline completo
-→ artefacto real
-→ UAT/release gates exigidos
-```
-
-No rebajes gates para conseguir verde. Si el pipeline completo tarda demasiado, mejora su arquitectura/caché/partición.
-
-## 7. Estado fuera del repositorio
-
-Por defecto:
-
-```bash
-repo_id="$(basename "$(git rev-parse --show-toplevel)")"
-state="${XDG_STATE_HOME:-$HOME/.local/state}/pipelinek/${repo_id}"
-mkdir -p "$state"
-
-pipelinek run --workspace .   --db "$state/run.sqlite"   --control-root "$state/control"   pipeline.kts
-```
-
-Si el proyecto define otra ubicación, sigue esa autoridad.
+1. confirma la herramienta/wrapper;
+2. confirma cada script/target;
+3. adapta paths y artefactos;
+4. valida DSL;
+5. ejecuta un positivo y un negativo discriminante.
