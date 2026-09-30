@@ -1,8 +1,6 @@
 # pipelinek-local-ci
 
-Skill agent-first para **instalar, crear, migrar, revisar y operar PipelineK como CI/CD local**.
-
-No es una wrapper de CLI: enseña al agente a convertir la política real del repositorio en `pipeline.kts`, usar la DSL Jenkins-familiar que el binario realmente soporte y cerrar trabajo con eventos/outcomes observables.
+Skill agent-first centrada en **PipelineK**: DSL, CLI, ejecución durable, eventos, credenciales y extensiones.
 
 ## Instalar la skill
 
@@ -10,87 +8,68 @@ No es una wrapper de CLI: enseña al agente a convertir la política real del re
 npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
 ```
 
-## Qué mejora la v3
+## Qué cubre
 
-- bootstrap reproducible por proyecto con mise/asdf;
-- preflight read-only de PATH/shims/version/JDK;
-- discovery de wrappers/manifests/CI antes de generar comandos;
-- cookbook Jenkins → PipelineK orientado a semántica;
-- cookbook CLI para run durable, rerun/resume, credenciales y plugins;
-- recetas agentic para monorepos, fast/slow lane, retry y auto-fix;
-- ejemplos adicionales de credenciales y monorepo poliglota;
-- regla estricta: una tabla de compatibilidad nunca supera a `pipelinek validate` + runtime observado.
+- instalar/verificar PipelineK;
+- crear y revisar `pipeline.kts` reales;
+- usar PipelineK como gate local durante desarrollo;
+- replay/resume, eventos y diagnóstico causal;
+- credenciales mediante bindings seguros;
+- plugins de Steps y directivas;
+- modelo de extensión para CredentialProvider/Secret Providers;
+- migración desde Jenkins/Actions/GitLab sólo como fuente de intención.
 
-## Modos
+## Qué NO intenta hacer
 
-- `bootstrap`: instalar/fijar PipelineK con mise o asdf y verificar identidad.
-- `scaffold`: crear una pipeline real por stack.
-- `review`: auditar una pipeline existente.
-- `run`: usar PipelineK como gate local durante desarrollo.
-- `migrate`: mover política CI desde Jenkins/Actions/GitLab.
-- `diagnose`: resolver DSL, toolchains, shims, eventos y fallos.
+- reproducir todo Jenkins;
+- convertir Groovy/YAML 1:1;
+- inventar capacidades que PipelineK aún no tenga;
+- hacer que mise/asdf formen parte conceptual del producto.
 
-## Scripts de la skill
+Mise y asdf aparecen sólo como **canales opcionales para obtener/pinear el binario**.
 
-```bash
-bash scripts/pipelinek-preflight.sh
-bash scripts/discover-ci-context.sh
-```
+## Referencias principales
 
-Son sondas read-only: no instalan herramientas ni cambian gestores/versiones.
+- `13-pipelinek-capability-map.md` — qué familias ofrece PipelineK y cómo decidir si usarlas;
+- `01-pipeline-authoring.md` — creación de `pipeline.kts`;
+- `11-cli-cookbook.md` — validate/run/rerun/resume/credentials/plugins;
+- `14-plugin-extension-model.md` — Steps/directivas externas;
+- `15-credential-provider-extensions.md` — secret providers y límites actuales;
+- `05-events-and-troubleshooting.md` — feedback agentic por eventos.
 
-## Instalación de PipelineK
+## Instalación
 
-Consulta `references/09-installation-cookbook.md`.
-
-### Mise
-
-PipelineK usa el backend GitHub nativo de mise, con pin en `mise.toml`; no hace falta enrutar mise a través del plugin asdf.
-
-### asdf
-
-PipelineK usa `Rubentxu/asdf-pipelinek`, pin en `.tool-versions` y `asdf set` moderno.
-
-En ambos casos instalar no basta: `requested == selected == pipelinek version`.
+`09-installation-cookbook.md` contiene mise/asdf/instalador directo. Esta parte es secundaria a la skill: el objetivo es terminar con un `pipelinek` reproducible y verificable.
 
 ## Ejemplos
 
-- `minimal.pipeline.kts` — smoke inocuo.
-- `gradle-ci.pipeline.kts` — Gradle wrapper.
-- `maven-ci.pipeline.kts` — Maven wrapper.
-- `node-ci.pipeline.kts` — npm + checks paralelos.
-- `rust-ci.pipeline.kts` — fmt/clippy/test/build.
-- `python-uv-ci.pipeline.kts` — uv + tooling declarado.
-- `go-ci.pipeline.kts` — vet/test/build.
-- `credentials.pipeline.kts` — binding tipado de secret text.
-- `polyglot-monorepo.pipeline.kts` — backend Gradle + frontend npm.
-- `jenkins-familiar.pipeline.kts` — scopes, timeout/retry, parallel y artifacts.
+- `minimal.pipeline.kts`
+- `gradle-ci.pipeline.kts`
+- `maven-ci.pipeline.kts`
+- `node-ci.pipeline.kts`
+- `rust-ci.pipeline.kts`
+- `python-uv-ci.pipeline.kts`
+- `go-ci.pipeline.kts`
+- `credentials.pipeline.kts`
+- `polyglot-monorepo.pipeline.kts`
+- `jenkins-familiar.pipeline.kts` — sólo compatibilidad/migración
 
-Cada ejemplo declara precondiciones. El agente debe comprobarlas antes de copiarlo y validar la DSL con la versión seleccionada.
-
-## Jenkins-familiar
-
-PipelineK está orientado a ofrecer capacidades locales comparables a Jenkins Groovy Pipeline, pero la skill separa:
+## Arquitectura mental
 
 ```text
-intención Jenkins
-→ carrier/semántica PipelineK
-→ validate
-→ ejecución observable
+project intent
+   ↓
+PipelineK DSL
+   ↓
+typed carrier / Step / directive
+   ↓
+registry + capabilities
+   ↓
+durable execution
+   ↓
+typed events / outcome
+   ↓
+agent fixes or closes
 ```
 
-No inventa paridad para `when/post/agent/node/...` si la instalación todavía no la tiene. El mapa completo está en `references/10-jenkins-migration-cookbook.md` y `06-jenkins-familiar-dsl.md`.
-
-## Principio agentic
-
-```text
-coding agent
-   ↓
-affected verification
-   ↓
-PipelineK local CI
-   ↓ typed events / durable outcome
-fix ↺                close
-```
-
-Hosted CI puede seguir existiendo para triggers, matrices de SO, release, distribución o deploy, pero no debería contener una segunda política de CI divergente.
+Si falta una capacidad, la skill debe decidir si se resuelve con una primitive existente, un plugin o un capability gap del producto; no simularla.
