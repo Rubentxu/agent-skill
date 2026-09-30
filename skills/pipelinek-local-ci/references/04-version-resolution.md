@@ -1,128 +1,90 @@
-# Bootstrap, instalación y resolución de PipelineK
+# Resolución de versión e instalación
 
-Objetivo: terminar con **una versión explícita por proyecto y un ejecutable cuya identidad runtime coincide exactamente**.
+Esta referencia responde a: **¿qué `pipelinek` ejecutará realmente el agente?** Para recetas de instalación usa `09-installation-cookbook.md`.
 
-PipelineK requiere JDK 21+. Verifica primero:
-
-```bash
-java -version
-```
-
-## Opción A — mise (recomendada cuando el proyecto ya usa mise)
-
-Mise puede consumir directamente los assets de GitHub Releases; no necesita el plugin asdf.
-
-Define el backend de PipelineK con el layout del ZIP:
+## Preflight automatizado
 
 ```bash
-TOOL='github:Rubentxu/pipeline-kotlin[asset_pattern=pipelinek-{{ version }}.zip,strip_components=1,bin_path=bin]'
-mise ls-remote "$TOOL"
+bash <skill>/scripts/pipelinek-preflight.sh
 ```
 
-Elige una **VERSION estable explícita** de esa lista y fíjala en el proyecto:
+La sonda es read-only y muestra repo root, JDK, `command -v`, realpath, versión runtime, mise/asdf y pins de proyecto.
 
-```bash
-VERSION='<VERSION>'
-mise use "$TOOL@$VERSION"
-mise exec -- sh -lc 'command -v pipelinek; pipelinek version; pipelinek doctor'
-```
+## Invariante
 
-`mise use` escribe la selección de proyecto. Usa `mise use -g ...` sólo si el usuario pide un default global.
-
-No dejes `latest` como identidad de CI reproducible. Puedes usarlo para descubrir una versión, pero materializa/pinea el número resuelto.
-
-## Opción B — asdf
-
-Plugin oficial del proyecto:
-
-```bash
-asdf plugin list
-asdf plugin add pipelinek https://github.com/Rubentxu/asdf-pipelinek.git   # sólo si falta
-asdf list all pipelinek
-asdf latest pipelinek
-```
-
-Selecciona/pinea:
-
-```bash
-VERSION='<VERSION>'
-asdf install pipelinek "$VERSION"
-asdf set pipelinek "$VERSION"       # .tool-versions del proyecto
-asdf current pipelinek
-asdf which pipelinek
-asdf exec pipelinek version
-asdf exec pipelinek doctor
-```
-
-Para default de home usa `asdf set -u pipelinek "$VERSION"`, no sintaxis `global` antigua.
-
-El plugin asdf verifica el ZIP contra `SHA256SUMS`, pero la skill **siempre verifica además identidad runtime**.
-
-## Opción C — instalador del producto
-
-Si se trabaja desde un checkout de `pipeline-kotlin` o se ha obtenido el instalador oficial:
-
-```bash
-bash scripts/install-pipelinek.sh install '<VERSION>'
-bash scripts/install-pipelinek.sh use '<VERSION>'
-bash scripts/install-pipelinek.sh list
-bash scripts/install-pipelinek.sh doctor
-```
-
-Este instalador es estable-only, transaccional, usa `SHA256SUMS` y mantiene versiones bajo `~/.local/share/pipelinek` por defecto.
-
-## Verificación obligatoria
-
-Para cualquier canal:
-
-```bash
-type -a pipelinek || true
-resolved="$(command -v pipelinek)"
-printf 'resolved=%s\n' "$resolved"
-readlink -f "$resolved" 2>/dev/null || true
-pipelinek version
-pipelinek doctor
-```
-
-Invariante:
+Una ejecución sólo acredita CI si puedes demostrar:
 
 ```text
-requested version == manager-selected version == runtime-reported version
+requested version
+== manager-selected version
+== resolved executable identity
+== runtime-reported version
 ```
 
-Si `requested 0.X.Y` y runtime devuelve `0.X.Y-rcN`, la instalación **no acredita esa estable** aunque el asset se llame estable.
+Un ZIP/tag con otro nombre no cambia la identidad del binario.
 
-## Cuando mise y asdf conviven
-
-No intentes desinstalar uno automáticamente. Diagnostica:
+## Diagnóstico manual
 
 ```bash
 type -a pipelinek || true
 command -v pipelinek || true
+resolved="$(command -v pipelinek 2>/dev/null || true)"
+[ -n "$resolved" ] && readlink -f "$resolved" 2>/dev/null || true
+[ -n "$resolved" ] && pipelinek version
+
 mise which pipelinek 2>/dev/null || true
 asdf current pipelinek 2>/dev/null || true
 asdf which pipelinek 2>/dev/null || true
 readlink -f "$HOME/.local/share/pipelinek/current" 2>/dev/null || true
 ```
 
-Busca pins: `mise.toml`, `.mise.toml`, `.tool-versions`. Ejecuta el gate mediante el manager seleccionado o path absoluto; no confíes en un shim ambiguo.
+Busca además `mise.toml`, `.mise.toml` y `.tool-versions` desde el cwd/repo.
 
-## Fallos típicos
+## Owner por proyecto
+
+Puedes tener mise y asdf instalados para otras herramientas. Para PipelineK elige uno por proyecto y ejecútalo explícitamente:
+
+```bash
+mise exec -- pipelinek version
+# o
+asdf exec pipelinek version
+```
+
+Si `pipelinek` desnudo resuelve a un tercer shim/symlink, no lo uses como gate hasta reconciliar PATH.
+
+## JDK
+
+PipelineK requiere JDK 21+. La instalación del binario no provisiona necesariamente Java.
+
+```bash
+java -version
+pipelinek doctor
+```
+
+En mise/asdf conviene fijar también Java en el proyecto cuando la toolchain del repo no lo gestiona.
+
+## Stable vs prerelease
+
+- estable: pin explícito `X.Y.Z`;
+- RC: sólo si el proyecto/usuario opta por ello, pin exacto `X.Y.Z-rcN`;
+- nunca promociones una RC localmente renombrando archivos;
+- nunca cambies a RC sólo porque contiene una feature que deseas.
+
+### Finding histórico que la skill debe detectar
+
+El 2026-09-29 se publicó una GA `v0.43.0` cuyos bytes reportaban `pipeline 0.43.0-rc1`. Si esa release sigue accesible y aparece en un bootstrap, el resultado correcto es `IDENTITY_MISMATCH`, no éxito. La skill no debe asumir que este finding sigue siendo la última release: verifica siempre el runtime.
+
+## Síntomas típicos
 
 | Síntoma | Lectura |
 |---|---|
-| `No version is set for command ...` | cwd/pin asdf incorrecto |
-| manager dice V pero `pipelinek version` dice otra | identity mismatch |
-| `pipelinek` resuelve a 0.39 tras instalar nueva | PATH/shim/symlink antiguo |
-| Java no encontrado | JDK 21+ no provisionado en entorno real del proceso |
-| `validate` funciona desde repo pero no fuera | toolchain/shim depende del cwd |
+| `pipelinek` sigue en 0.39 tras instalar otra | shim/symlink/PATH anterior |
+| mise dice V y runtime otra | release/layout o resolver incorrecto |
+| asdf dice `No version is set` | cwd/pin `.tool-versions` |
+| sólo funciona desde un directorio | manager/JDK depende del cwd |
+| estable reporta `-rcN` | identity mismatch de distribución |
+| `doctor` falla Java | JDK 21+ no visible al proceso |
 
-No declares bootstrap terminado hasta ejecutar `version` y `doctor` con el mismo mecanismo que usará el agente.
+## Regla de cambio
 
-Fuentes operativas:
-
-- mise GitHub backend: https://mise.jdx.dev/dev-tools/backends/github.html
-- mise backends/verification: https://mise.jdx.dev/dev-tools/backends/
-- asdf versions (`install`, `latest`, `set`, `current`, shims): https://asdf-vm.com/manage/versions.html
-- plugin PipelineK para asdf: https://github.com/Rubentxu/asdf-pipelinek
-- releases PipelineK: https://github.com/Rubentxu/pipeline-kotlin/releases
+No modifiques globales, borres shims o desinstales managers como efecto lateral de una ejecución CI. Corrige primero el pin/proveedor del proyecto; cambios globales requieren intención explícita.
