@@ -1,6 +1,6 @@
 ---
 name: pipelinek-local-ci
-description: "Adopta PipelineK como CI/CD local agent-first: instala y fija PipelineK con mise/asdf, crea y revisa pipeline.kts reales, migra Jenkins/GitHub Actions/GitLab CI, ejecuta gates locales, diagnostica fallos con eventos tipados, proyecta NDJSON para auto-fix y puede ejecutar operaciones autenticadas mediante Agent Secretless Vault sin entregar secretos al agente. Úsala para bootstrap, scaffold, review, run, migrate, diagnose, observe o secretless."
+description: "Adopta PipelineK como CI/CD local agent-first: instala y fija PipelineK con mise/asdf, crea y revisa pipeline.kts reales, migra Jenkins/GitHub Actions/GitLab CI, ejecuta gates locales, diagnostica fallos con eventos tipados, proyecta NDJSON para auto-fix y selecciona providers/proyecciones de credenciales de PipelineK con la menor exposición disponible. Úsala para bootstrap, scaffold, review, run, migrate, diagnose, observe o credentials."
 metadata:
   version: "2.1.0"
 ---
@@ -20,11 +20,11 @@ PipelineK debe convertirse en la **autoridad local ejecutable** de CI del reposi
 | `review` | Auditar pipeline existente | `01-pipeline-authoring.md`, `06-jenkins-familiar-dsl.md`, `08-review-checklist.md` |
 | `run` | Usar PipelineK como gate del trabajo del agente | `02-agentic-loop.md`, `05-events-and-troubleshooting.md` |
 | `observe` | Filtrar/proyectar eventos sin perder la evidencia completa | `10-event-filters.md` |
-| `secretless` | Pipeline necesita Git/SSH/API/DB autenticado sin entregar credenciales al agente | `07-security.md`, `09-agent-secretless.md`, `10-event-filters.md` |
+| `credentials` | Pipeline necesita Git/SSH/API/DB autenticado o revisar exposición de secretos | `07-security.md`, `09-credential-providers.md`, `10-event-filters.md` |
 | `migrate` | Sustituir Jenkins/GitHub Actions/GitLab CI | `03-migration-hosted-ci.md`, `06-jenkins-familiar-dsl.md` |
 | `diagnose` | Fallo de DSL, ejecución, toolchain, shim, credencial o evento | `04-version-resolution.md`, `05-events-and-troubleshooting.md`, `10-event-filters.md` |
 
-Si el usuario no nombra modo, infiérelo por intención. Una adopción desde cero normalmente ejecuta `bootstrap → scaffold → run`. Si aparecen credenciales, decide explícitamente entre `withCredentials` y `secretless` según el threat model.
+Si el usuario no nombra modo, infiérelo por intención. Una adopción desde cero normalmente ejecuta `bootstrap → scaffold → run`. Si aparecen credenciales, inspecciona providers/proyecciones reales y elige la de menor exposición compatible.
 
 ## No negociables
 
@@ -36,7 +36,7 @@ Si el usuario no nombra modo, infiérelo por intención. Una adopción desde cer
 6. **Estado fuera del repo.** Journal/control-root bajo XDG state salvo política explícita del proyecto.
 7. **No duplicar política.** Si PipelineK es autoridad CI, un workflow remoto puede ser trigger/matrix/distribución, pero no una segunda definición divergente de tests/gates.
 8. **No rebajar gates para obtener verde.** Clasifica el fallo y corrige causa o contrato.
-9. **Credenciales según postura.** Nunca imprimas secretos. `withCredentials` limita/redacta exposición; para non-disclosure frente al agente prefiere signer/proxy/session de ASV. No llames secretless a un env/file que entrega bytes al child.
+9. **Credenciales según proyección.** Nunca imprimas secretos. `withCredentials` limita/redacta exposición; una proyección socket/signer puede ser no exportable, mientras env/file sigue siendo exposición scoped. No llames secretless a env/file.
 10. **Eventos como API agentic.** Conserva el NDJSON completo; usa filtros como proyecciones. Exit y `RunFinished.outcome` contradictorios son un defecto, no una invitación a elegir el verde.
 11. **Jenkins-familiar ≠ Jenkins mágico.** Mantén nombres/patrones familiares donde tengan semántica real; fail-closed para lo aún no soportado.
 
@@ -57,9 +57,11 @@ Construye stages por responsabilidad observable: validate/static → build → u
 Si un step necesita autenticación, clasifica antes:
 
 ```text
-raw env/file acceptable? -> PipelineK withCredentials
-agent must never receive secret? -> ASV signer/proxy/session
+provider/projection non-exportable disponible? -> úsalo
+si no -> PipelineK withCredentials env/file como scoped exposure
 ```
+
+Consulta `09-credential-providers.md`; no inventes un provider que la instalación no ofrezca.
 
 ### 4. Validar DSL
 
@@ -73,13 +75,7 @@ Una feature Jenkins-familiar que no valida o cuya semántica no está soportada 
 
 Usa `02-agentic-loop.md`: tests afectados primero durante desarrollo; pipeline completa en frontera de integración/release según política del repo.
 
-Para secretos fuertes, ejecuta PipelineK dentro de la sesión ASV cuando esa integración esté disponible:
-
-```bash
-asv run -- pipelinek run --workspace . pipeline.kts
-```
-
-ASV resuelve autenticación; no cambia los gates/operator approvals del pipeline.
+Cuando haya credenciales, verifica provider, binding/projection kind y postura antes del run. Un `SSH_AUTH_SOCK` ya provisionado puede usarse hoy con `sh`; no lo presentes como provider PipelineK hasta que exista el plugin correspondiente.
 
 ### 6. Proyectar evidencia
 
@@ -108,6 +104,6 @@ Reporta: HEAD, path real de PipelineK, versión, pipeline, comando, exit, `RunFi
 - [ ] Los eventos/outcome y exit no se contradicen; si lo hacen, queda reportado.
 - [ ] El NDJSON completo se preserva cuando se usan filtros/proyecciones.
 - [ ] No se dejó estado operativo dentro del repo sin política explícita.
-- [ ] Si hay credenciales, la postura está explícita: strong-secretless, short-lived, isolated o process exposure.
+- [ ] Si hay credenciales, la postura está explícita: non-exportable, short-lived exposure o scoped secret.
 - [ ] Si se sustituyó CI alojado, las responsabilidades remotas restantes están delimitadas.
 - [ ] La superficie Jenkins-familiar usada figura como soportada o fue validada explícitamente.
