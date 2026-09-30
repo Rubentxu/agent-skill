@@ -4,15 +4,15 @@
 
 Los secretos deben entrar como capacidades/bindings, no como literales, argumentos visibles o texto de logs.
 
-Antes de elegir mecanismo, decide qué propiedad necesitas:
+Antes de elegir mecanismo, decide qué propiedad necesita el pipeline:
 
 ```text
-¿el child puede poseer temporalmente el secreto?
-  sí -> PipelineK withCredentials
-  no -> Agent Secretless Vault signer/proxy/session
+NON_EXPORTABLE      -> socket/signer/workload identity
+SHORT_LIVED_EXPOSURE -> token temporal
+SCOPED_SECRET       -> env/file dentro de withCredentials
 ```
 
-No mezcles ambas garantías bajo el mismo nombre.
+La postura la determina la proyección real. No llames secretless a env/file.
 
 ## PipelineK `withCredentials`
 
@@ -53,50 +53,23 @@ PipelineK aporta:
 
 Pero el proceso hijo que consume el env/file puede poseer los bytes. Esto es protección y lifecycle de secretos, no non-disclosure fuerte frente al proceso.
 
-## Agent Secretless Vault
+## Providers y proyecciones de PipelineK
 
-Si el threat model dice “el agente no debe recibir el secreto”, consulta `09-agent-secretless.md`.
+Consulta `09-credential-providers.md`.
 
-Patrón preferido:
+El objetivo evolutivo es que `withCredentials` siga siendo la fachada DSL y que providers/plugins puedan resolver una credencial como lease + proyección:
 
-```bash
-asv run -- pipelinek run --workspace . pipeline.kts
-```
+- env/file para compatibilidad Jenkins;
+- SSH-agent/socket para claves no exportables;
+- workload identity/OIDC cuando el servicio lo soporte;
+- tokens cortos cuando no exista una integración mejor.
 
-Para integraciones fuertes el child obtiene handles no secretos:
+El `CredentialProvider` actual materializa `SecretHandle`/`Credential`; no inventes soporte de sockets/signers hasta que el SPI y el plugin correspondiente existan.
 
-- `SSH_AUTH_SOCK`;
-- endpoint/proxy local;
-- surrogate sin autoridad remota;
-- capability/session id;
-- operación semántica brokered.
+KeePassXC puede aportar dos rutas distintas:
 
-El broker conserva el secreto real.
-
-No implementes un adapter ASV que simplemente haga:
-
-```text
-get secret -> SecretHandle -> env child
-```
-
-y lo llames secretless.
-
-## KeePassXC / Secret Service
-
-KeePassXC, GNOME Keyring o KWallet pueden ser buenos almacenes para el **operador**.
-
-No permitas que el agente use directamente `secret-tool lookup`, `keepassxc-cli show` o D-Bus Secret Service para recuperar valores: la API Secret Service está diseñada para devolver secretos a aplicaciones cliente.
-
-Si se integra KeePassXC con ASV:
-
-```text
-human unlock
-→ trusted ingest/import
-→ ASV vault/broker
-→ capability/session para agent
-```
-
-La frontera real es ASV + aislamiento/policy, no el hecho de que el secreto estuviera guardado en KeePassXC.
+- SSH Agent: la private key puede permanecer detrás del agente OpenSSH y PipelineK sólo necesitar `SSH_AUTH_SOCK`;
+- Secret Service: un provider puede recuperar el valor y usar el lifecycle existente de PipelineK, pero eso sigue siendo `SCOPED_SECRET`.
 
 ## Anti-patrones
 
@@ -107,7 +80,8 @@ La frontera real es ASV + aislamiento/policy, no el hecho de que el secreto estu
 - desactivar redacción para depurar;
 - convertir fallo de credencial en `|| true`;
 - llamar “secretless” a un token temporal sólo porque caduca;
-- usar Secret Service como backend accesible por el mismo agente y asumir non-disclosure.
+- asumir que Secret Service/Keyring implica no exportabilidad;
+- hardcodear providers concretos dentro de core.
 
 ## Observabilidad segura
 
@@ -139,4 +113,4 @@ Ante un fallo de credencial, el agente puede reportar:
 
 Nunca valor materializado.
 
-Si necesita comprobar presencia en el store PipelineK usa `credentials list`, no lectura directa del fichero cifrado. En ASV usa sólo metadata/control que la CLI instalada exponga; nunca inventes un comando de reveal.
+Si necesita comprobar presencia en el store PipelineK usa `credentials list`, no lectura directa del fichero cifrado. Para providers externos, usa sólo la superficie realmente instalada y documentada; nunca inventes un comando de reveal.
