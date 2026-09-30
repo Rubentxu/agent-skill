@@ -1,35 +1,51 @@
 # pipelinek-local-ci
 
-Skill para agentes que usan **PipelineK como CI/CD local**: crea y mantiene `pipeline.kts`, migra intención desde GitHub Actions/Jenkins/GitLab CI, ejecuta gates durante desarrollo y usa outcome/eventos como evidencia.
+Skill agent-first para **instalar, crear, migrar, revisar y operar PipelineK como CI/CD local**.
 
-## Instalación
+No es sólo una wrapper de CLI: enseña al agente a convertir la política real del repositorio en `pipeline.kts`, aprovechar la DSL Jenkins-familiar que PipelineK soporta y usar eventos/outcomes como señal de auto-diagnóstico.
+
+## Instalar la skill
 
 ```bash
 npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
 ```
 
-Para instalación global añade `--global` si el host/agente lo soporta.
+## Modos
 
-## Qué hace
+- `bootstrap`: instala/fija PipelineK con mise o asdf y verifica identidad.
+- `scaffold`: crea una pipeline real por stack.
+- `review`: audita una pipeline existente.
+- `run`: usa PipelineK como gate local durante desarrollo.
+- `migrate`: mueve política CI desde Jenkins/Actions/GitLab.
+- `diagnose`: resuelve DSL, toolchains, shims, eventos y fallos.
 
-- inspecciona el stack real antes de diseñar stages;
-- crea/refactoriza `pipeline.kts` sin traducir YAML/Groovy mecánicamente;
-- reutiliza wrappers y comandos del propio proyecto;
-- valida la DSL contra el binario PipelineK realmente resuelto;
-- ejecuta CI local con estado durable fuera del repositorio;
-- interpreta exit, `RunFinished.outcome` y eventos tipados;
-- ayuda a sustituir CI alojado por PipelineK manteniendo sólo triggers remotos cuando aporten valor;
-- detecta conflictos comunes de PATH/shims/mise/asdf antes de confiar en una ejecución.
+## Instalación de PipelineK
 
-## Estructura
+La skill incluye recetas actuales para mise y asdf en `references/04-version-resolution.md`. Las recetas siempre terminan comprobando la identidad runtime; instalar no equivale a verificar.
 
-- `SKILL.md`: procedimiento y guardas.
-- `references/01-pipeline-authoring.md`: diseño y creación de pipelines.
-- `references/02-agentic-loop.md`: bucle de uso por un coding agent.
-- `references/03-migration-hosted-ci.md`: migración desde CI alojado/Jenkins.
-- `references/04-version-resolution.md`: resolución exacta del binario.
-- `references/05-events-and-troubleshooting.md`: eventos, outcomes y triage.
-- `examples/minimal.pipeline.kts`: ejemplo mínimo que siempre debe validarse contra la versión instalada antes de adoptarlo.
-- `tests/skill-evals.md`: escenarios de comportamiento de la skill.
+## Ejemplos incluidos
 
-La skill **no instala PipelineK** ni modifica automáticamente mise/asdf/SDKMAN. La distribución de PipelineK evoluciona independientemente; el agente debe verificar siempre qué binario está ejecutando.
+- `minimal.pipeline.kts` — sólo `echo`, sin comandos ficticios.
+- `gradle-ci.pipeline.kts` — Gradle wrapper + timeout + artifact.
+- `maven-ci.pipeline.kts` — Maven wrapper + verify + artifact.
+- `node-ci.pipeline.kts` — npm + ramas lint/test paralelas.
+- `rust-ci.pipeline.kts` — fmt/clippy/test.
+- `python-uv-ci.pipeline.kts` — uv + ruff/pytest.
+- `go-ci.pipeline.kts` — vet/test/build.
+- `jenkins-familiar.pipeline.kts` — composición de `withEnv`, `timeout`, `retry`, `parallel`, `stash/unstash` y `archiveArtifacts`.
+
+Los templates son **starters condicionados**: sólo se adoptan si el repositorio contiene la herramienta/script correspondiente y la instalación de PipelineK valida la DSL.
+
+## Principio
+
+```text
+coding agent
+   ↓
+affected verification
+   ↓
+PipelineK local CI
+   ↓ typed events / durable outcome
+fix ↺                close
+```
+
+El objetivo es que PipelineK sea el equivalente local agent-first de una pipeline Jenkins: familiar en DSL, pero con contratos tipados, replay durable y hechos observables para automatización.

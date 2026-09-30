@@ -1,90 +1,64 @@
-# Eventos, outcomes y troubleshooting
+# Eventos, observabilidad y auto-diagnóstico
 
-PipelineK está orientado a eventos. Para un agente, los eventos son mejores que inferir estado desde texto libre.
+Un coding agent necesita fallos **legibles y causales**. La salida que sólo vive en un artifact o fichero oculto no sirve para un loop autónomo.
 
-## Jerarquía de evidencia
+## Regla de visibilidad
 
-Para una ejecución:
+- no `> /dev/null`;
+- no `--quiet/-q` en comandos cuyo fallo hay que diagnosticar;
+- no `cmd > log 2>&1` sin mantener también salida visible;
+- no `|| true` para convertir error en PASS;
+- si hay pipe, `set -o pipefail`.
 
-1. proceso realmente ejecutado;
-2. exit code;
-3. evento terminal del run;
-4. `StepFailed` / evento de fallo causal;
-5. transcript/log redactado cuando haga falta;
-6. journal durable sólo a través de APIs/CLI soportadas.
-
-No leas SQLite directamente como contrato estable.
-
-## Triage mínimo
-
-### Compile/validation failure
-
-Síntomas: no aparecen Steps, diagnóstico de compilación/DSL, exit no-cero.
-
-Acción: corrige el pipeline, no el producto, salvo que la DSL aceptada/documentada falle contra una reproducción mínima.
-
-### SCRIPT failure
-
-Un `sh` terminó no-cero.
-
-Acción: reproduce el comando en el mismo workspace/entorno si es seguro; identifica dependencia/toolchain/path; corrige el comando o el producto; no añadas `|| true` para obtener verde.
-
-### Environment/tool missing
-
-Distingue:
+PipelineK emite hechos tipados. Prioriza:
 
 ```text
-producto defectuoso
-vs
-toolchain no provisionada
-vs
-version manager no resuelto
-vs
-workspace incorrecto
+RunFinished
+StageStarted/Finished/Skipped
+StepStarted/Finished/Failed
+block/directive events (Retry*, Timeout*, CatchError*, ...)
+credential lifecycle events
 ```
 
-Los fallos de shims al ejecutarse fuera del root suelen indicar un `--workspace`/cwd incorrecto.
+## Clasificación
 
-### Timeout/retry
+| Señal | Clase | Acción inicial |
+|---|---|---|
+| validate/compile diagnostic | PIPELINE_DSL | corregir DSL |
+| `StepFailed(SCRIPT)` | CODE/TOOL | reproducir comando en mismo workspace |
+| executable missing / shim error | ENVIRONMENT | resolver toolchain/cwd |
+| credential resolution | CREDENTIAL | revisar store/binding, nunca imprimir valor |
+| timeout | BUDGET/DEADLINE | determinar si trabajo es lento o budget incorrecto |
+| duplicate/concurrency anomaly | RUNTIME | preservar runId/sequence/state y escalar |
+| exit/outcome contradicen | PIPELINEK_DEFECT | preservar ambos, no autocorregir a verde |
 
-No conviertas retry en solución genérica para un fallo determinista. Usa retry sólo para el contrato que lo necesita. Un timeout debe producir evidencia de cancelación/fallo; que el proceso termine después no convierte el run en éxito.
+## Primer fallo causal
 
-### Parallel
+No arregles el último mensaje del log por defecto. Busca el primer hecho que convirtió el flujo en failure/unstable y sigue `runId`, stage, step/body identity y causation.
 
-Cuando investigues ramas paralelas, usa sus identidades/events, no orden textual del stdout. La intercalación de salida es normal; colisión de identidad/control-root no lo es.
+## Parallel
 
-## Resultado contradictorio
+stdout de ramas puede intercalarse. Adjudica fallos por identidad/eventos, no por proximidad textual.
 
-Si observas:
+## Retry
 
-```text
-exit 0 + RunFinished failure
-```
+Antes de añadir retry pregunta: ¿el fallo es realmente transitorio? Si es compilación, assertion determinista, permiso o versión incorrecta, retry sólo quema tiempo.
 
-o:
-
-```text
-exit non-zero + RunFinished success
-```
-
-preserva ambos datos y repórtalo. No escondas la contradicción con un parser que sólo mire el valor favorable.
-
-## Informe de fallo para otro agente
+## Reporte para auto-fix
 
 ```text
-PipelineK version/path:
-repo SHA:
-pipeline path:
-workspace:
-db/control-root:
+classification:
+confidence:
+runId:
 stage/step:
-event kind/failureKind:
+failureKind:
 command:
 exit:
-terminal outcome:
+RunFinished.outcome:
+first causal event:
 reproduction:
-expected:
-observed:
+proposed smallest fix:
+verification:
 ```
 
-No incluyas secretos; conserva sólo valores redactados.
+Si la clasificación no es suficientemente fuerte, ampliar investigación es mejor que modificar pipeline/producto al azar.
