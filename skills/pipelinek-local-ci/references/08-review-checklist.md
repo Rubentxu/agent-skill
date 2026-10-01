@@ -9,6 +9,9 @@ El modo `review` no modifica por defecto. Produce evidencia por categoría y só
 | Identity | versión/path inequívocos | shim ambiguo, runtime != requested |
 | Commands | todos existen en el repo/toolchain | placeholder, script/target inventado |
 | DSL honesty | constructs soportados y validados | `post/when/agent/node/git` usados como si fueran reales |
+| Workspace semantics | invocation dir, pipeline path, root y modo diferenciados | pipeline dir usado como root, `--workspace` reflejo, isolated accidental |
+| Execution location | `dir` sólo deriva cwd y restaura | shell `cd` opaco, paths absolutos parcheando cwd |
+| Workspace safety | Attached/Managed explícitos | root `deleteDir/cleanWs`, ownership inferido por `.git` |
 | Stage anatomy | responsabilidad clara | mega-stage, stages ornamentales |
 | Parallelism | branches independientes | writers compitiendo por el mismo output |
 | Failure semantics | rojo permanece rojo | `|| true`, retry sobre fallo determinista |
@@ -21,13 +24,14 @@ El modo `review` no modifica por defecto. Produce evidencia por categoría y só
 
 ## Procedimiento
 
-1. Resuelve PipelineK y registra versión.
+1. Resuelve PipelineK, registra versión y comprueba `pipelinek run --help`.
 2. Ejecuta `pipelinek validate`.
 3. Lee pipeline y comandos referenciados.
 4. Comprueba que los wrappers/scripts/targets existen.
-5. Revisa cada categoría y marca `PASS`, `WARN` o `FAIL` con evidencia concreta.
-6. Si es seguro y está pedido, ejecuta la pipeline y contrasta outcome/eventos.
-7. Prioriza tres cambios por impacto en corrección, feedback agentic y mantenibilidad.
+5. Registra por separado invocation directory, pipeline definition path y workspace mode/root.
+6. Revisa cada categoría y marca `PASS`, `WARN` o `FAIL` con evidencia concreta.
+7. Si es seguro y está pedido, ejecuta la pipeline y contrasta outcome/eventos.
+8. Prioriza tres cambios por impacto en corrección, feedback agentic y mantenibilidad.
 
 ## Salida
 
@@ -35,10 +39,15 @@ El modo `review` no modifica por defecto. Produce evidencia por categoría y só
 Pipeline: pipeline.kts
 PipelineK: <realpath> / <version>
 Validation: PASS|FAIL
+Invocation directory:
+Workspace: default-attached | explicit-attached | isolated-managed | legacy / <root>
 
 Identity: PASS|WARN|FAIL — evidencia
 Commands: ...
 DSL honesty: ...
+Workspace semantics: ...
+Execution location: ...
+Workspace safety: ...
 Stage anatomy: ...
 Parallelism: ...
 Failure semantics: ...
@@ -56,3 +65,5 @@ Top 3 fixes:
 ```
 
 Una pipeline que compila pero contiene una intención descartada o una feature unsupported es `FAIL`, no `WARN`.
+
+Consulta `09-workspaces-and-execution-location.md` para la ley RP-034.
