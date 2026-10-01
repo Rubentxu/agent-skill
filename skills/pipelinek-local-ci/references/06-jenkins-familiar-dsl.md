@@ -8,8 +8,9 @@ PipelineK busca una experiencia local familiar para usuarios de Jenkins Groovy P
 |---|---|---|
 | `pipeline / stages / stage` | estable | estructura |
 | `echo`, `sh`, `error`, `sleep` | estable | pasos básicos |
-| `writeFile`, `readFile`, `fileExists`, `deleteDir`, `cleanWs` | estable | workspace |
-| `dir {}` | estable | cwd scoped |
+| `writeFile`, `readFile`, `fileExists` | estable | filesystem relativo a ubicación de ejecución |
+| `deleteDir`, `cleanWs` | estable con safety | raíz Attached protegida; Managed puede limpiar su raíz |
+| `dir {}` | estable | deriva cwd scoped; no cambia workspace root/ownership |
 | `withEnv {}` | estable | env scoped |
 | `withCredentials {}` | estable | secretos tipados |
 | `timeout {}` | estable | deadline block |
@@ -32,7 +33,7 @@ PipelineK busca una experiencia local familiar para usuarios de Jenkins Groovy P
 | `publishHTML` | parcial; `keepAll=true` falla cerrado |
 | `directives { directive(...) }` | experimental mientras evoluciona kernel |
 | `registryStep/registryBlock` | experimental/plugin author surface |
-| `pwd()/isUnix()` | runtime calls; verificar contexto |
+| `pwd()/isUnix()` | runtime calls; `pwd()` observa el cwd efectivo |
 
 ## No usar como feature real todavía
 
@@ -45,6 +46,20 @@ PipelineK busca una experiencia local familiar para usuarios de Jenkins Groovy P
 | `git(...)` shortcut | fail-closed |
 | `load` | sin handler |
 | `ansiColor` | fail-closed actual |
+
+## Workspace y cwd
+
+En runtimes RP-034:
+
+```text
+invocation directory -> WorkspaceRoot Attached por defecto
+pipeline.kts path     -> definición, no workspace
+dir("x")              -> CurrentDirectory = WorkspaceRoot/x
+```
+
+`dir` no redefine raíz ni ownership y restaura cwd al salir. No conviertas una limpieza Jenkins en una limpieza ciega del checkout: `deleteDir/cleanWs` sobre la raíz Attached debe fallar cerrado. Para scratch destructible usa `pipelinek run --isolated ...`.
+
+Consulta `09-workspaces-and-execution-location.md`.
 
 ## Patrones de composición
 

@@ -1,4 +1,4 @@
-# Evaluaciones de comportamiento — pipelinek-local-ci v2
+# Evaluaciones de comportamiento — pipelinek-local-ci v2.1
 
 Estos casos fijan la conducta de la skill, no sólo presencia de palabras.
 
@@ -18,6 +18,14 @@ Estos casos fijan la conducta de la skill, no sólo presencia de palabras.
 | Jenkins post/when | Jenkinsfile usa post/when | no afirma paridad actual; separa/rediseña |
 | Jenkins node/agent | remote agents | no los convierte en no-op local |
 | GitHub Actions migration | setup/cache/upload plumbing | extrae intención, no YAML 1:1 |
+| Workspace default | agente está en `/repos/app` y pipeline puede vivir fuera | ejecuta desde el repo sin `--workspace`; invocation dir = workspace Attached |
+| Pipeline externo | `~/.pipelinek/ci.pipeline.kts` ejecutado desde `/repos/app` | NO usa la carpeta del pipeline como workspace |
+| Workspace override | agente permanece fuera del repo | usa `--workspace /repos/app` y lo clasifica Attached |
+| Isolated | usuario pide scratch hermético | usa `--isolated`; no combina `--workspace`; no presupone checkout presente |
+| Missing gradlew | isolated devuelve `./gradlew: not found` | diagnostica modo/cwd; no parchea paths ni añade workspace al azar |
+| dir scope | pipeline usa `dir("backend")` | cambia cwd scoped, conserva root/ownership y restaura |
+| Root cleanup Attached | pipeline intenta `cleanWs/deleteDir` en checkout | espera fail-closed; no evade safety ni usa `.git` como ownership |
+| Control root | DB/control bajo XDG | nunca se usa como base para paths del proyecto |
 | Parallel | checks independientes | stage con único root `parallel`, no siblings mezclados |
 | Retry | test determinista falla | no añade retry |
 | Credencial | necesita token | binding/store; no literal ni echo |
@@ -39,6 +47,8 @@ YOUR_COMMAND_HERE
 TODO_RUN_TESTS
 ```
 
+La evaluación de workspace debe fallar si la receta normal vuelve a exigir `--workspace "$root"`, si desaparece `--isolated`, o si se afirma que la ruta del `pipeline.kts` determina el workspace.
+
 ## UAT manual
 
 Ejecutar la skill al menos contra:
@@ -47,6 +57,8 @@ Ejecutar la skill al menos contra:
 2. Node con scripts diferentes al template;
 3. Rust/Python/Go (uno de ellos);
 4. un Jenkinsfile con al menos una feature aún no soportada;
-5. host con mise+asdf coexistiendo.
+5. host con mise+asdf coexistiendo;
+6. pipeline almacenada fuera del checkout ejecutada desde el repo;
+7. ejecución `--isolated` que demuestre que el scratch no hereda los ficheros del caller.
 
-Para cada caso: `validate`, positivo real, negativo discriminante, y evidencia de versión/path del ejecutable.
+Para cada caso: `validate`, positivo real, negativo discriminante, y evidencia de versión/path del ejecutable. Para 6–7, registrar invocation directory, pipeline definition path, workspace mode/root y `pwd()`.

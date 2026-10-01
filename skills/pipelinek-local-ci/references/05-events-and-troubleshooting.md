@@ -27,10 +27,24 @@ credential lifecycle events
 | validate/compile diagnostic | PIPELINE_DSL | corregir DSL |
 | `StepFailed(SCRIPT)` | CODE/TOOL | reproducir comando en mismo workspace |
 | executable missing / shim error | ENVIRONMENT | resolver toolchain/cwd |
+| fichero del proyecto ausente | WORKSPACE | comprobar invocation dir, modo y `dir`; no inferir desde pipeline path |
+| operación destructiva rechazada en raíz | WORKSPACE_SAFETY | comprobar Attached vs Managed; no saltarse ownership |
 | credential resolution | CREDENTIAL | revisar store/binding, nunca imprimir valor |
 | timeout | BUDGET/DEADLINE | determinar si trabajo es lento o budget incorrecto |
 | duplicate/concurrency anomaly | RUNTIME | preservar runId/sequence/state y escalar |
 | exit/outcome contradicen | PIPELINEK_DEFECT | preservar ambos, no autocorregir a verde |
+
+## Diagnóstico de workspace
+
+Ante `./gradlew: no such file`, cwd inesperado o artefacto en ruta incorrecta:
+
+1. registra el cwd desde el que se invocó `pipelinek run`;
+2. registra la ruta del `pipeline.kts` por separado;
+3. confirma `default-attached`, `explicit-attached`, `isolated-managed` o legacy;
+4. observa `pwd()` en root y dentro de `dir`;
+5. comprueba que DB/control-root no se estén usando como base del proyecto.
+
+No uses `.git` como heurística de ownership. Consulta `09-workspaces-and-execution-location.md`.
 
 ## Primer fallo causal
 
@@ -53,6 +67,9 @@ runId:
 stage/step:
 failureKind:
 command:
+invocation directory:
+workspace mode/root:
+current directory:
 exit:
 RunFinished.outcome:
 first causal event:
