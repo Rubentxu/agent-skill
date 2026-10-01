@@ -17,7 +17,20 @@ npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
 - `review`: audita una pipeline existente.
 - `run`: usa PipelineK como gate local durante desarrollo.
 - `migrate`: mueve política CI desde Jenkins/Actions/GitLab.
-- `diagnose`: resuelve DSL, toolchains, shims, eventos y fallos.
+- `diagnose`: resuelve DSL, toolchains, shims, workspaces, eventos y fallos.
+
+## Workspace local-first
+
+La skill sigue el contrato RP-034 de PipelineK:
+
+```bash
+cd /repos/mi-proyecto
+pipelinek run /ruta/al/pipeline.kts
+```
+
+El directorio de invocación es el workspace Attached por defecto; la ubicación del fichero `pipeline.kts` es independiente. Usa `--workspace <repo>` sólo como override explícito y `--isolated` cuando quieras un scratch Managed. `dir { }` cambia el cwd scoped, no la raíz ni el ownership.
+
+Consulta `references/09-workspaces-and-execution-location.md` para la semántica completa, seguridad de `deleteDir/cleanWs` y diagnóstico.
 
 ## Instalación de PipelineK
 
