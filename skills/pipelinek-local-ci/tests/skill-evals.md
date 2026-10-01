@@ -41,7 +41,7 @@ Estos casos fijan la conducta de la skill, no sólo presencia de palabras.
 
 Una evaluación de scaffold debe fallar si reaparece cualquiera de estos strings en un ejemplo ejecutable:
 
- ```text
+```text
 ./project-wrapper
 YOUR_COMMAND_HERE
 TODO_RUN_TESTS
