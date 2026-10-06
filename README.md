@@ -11,7 +11,9 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Disponible |
 | [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Adaptación de la skill de calidad: mismas doce dimensiones y evidencias, con CogniCode para descubrir símbolos, relaciones e impacto. | Disponible |
 | [`pipelinek-local-ci`](skills/pipelinek-local-ci/SKILL.md) | Bootstrap con mise/asdf, diseña/revisa/migra `pipeline.kts` y opera PipelineK como CI/CD local agent-first con DSL Jenkins-familiar, eventos y gates. | Disponible |
-| [`agent-secretless`](skills/agent-secretless/SKILL.md) | Opera Agent Secretless Vault como control plane de credenciales: descubre capacidades por `asv agent discover --json`, ejecuta trabajo secretless y diagnostica instalación sin exponer secretos. | Disponible |\n| [`mosat-technology-learning`](skills/mosat-technology-learning/SKILL.md) | Investigación y aprendizaje tecnológico con MOSAT: perspectivas disciplina/proceso/producto, 7P, fichas trazables, modelos sistémicos, validación y gaps agent-first. | Disponible |
+| [`agent-secretless`](skills/agent-secretless/SKILL.md) | Opera Agent Secretless Vault como control plane de credenciales: descubre capacidades por `asv agent discover --json`, ejecuta trabajo secretless y diagnostica instalación sin exponer secretos. | Disponible |
+| [`mosat-technology-learning`](skills/mosat-technology-learning/SKILL.md) | Investigación y aprendizaje tecnológico con MOSAT: perspectivas disciplina/proceso/producto, 7P, fichas trazables, modelos sistémicos, validación y gaps agent-first. | Disponible |
+| [`agentchanges-review`](skills/agentchanges-review/SKILL.md) | Revisa diffs entre refs con agentchanges: notas ancladas por hash de contenido, elección de kind/status, previsualización, aplicación y verificación de parches sin perder al revisor de vista. | Disponible |
 
 Consulta los README de [la skill genérica](skills/code-quality-evidence-review/README.md) y [la alternativa CogniCode](skills/cognicode-quality-investigator/README.md) para ver cobertura, usos y precauciones. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
 
@@ -33,7 +35,13 @@ npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
 # Usar Agent Secretless Vault como control plane de credenciales
 npx skills add Rubentxu/agent-skill --skill agent-secretless --agent opencode
 
-# Aprender o caracterizar una tecnología con MOSAT\nnpx skills add Rubentxu/agent-skill --skill mosat-technology-learning --agent opencode\n\n# O instalar la skill genérica globalmente en OpenCode
+# Aprender o caracterizar una tecnología con MOSAT
+npx skills add Rubentxu/agent-skill --skill mosat-technology-learning --agent opencode
+
+# Revisar diffs con notas ancladas y parches verificados
+npx skills add Rubentxu/agent-skill --skill agentchanges-review --agent opencode
+
+# O instalar la skill genérica globalmente en OpenCode
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode --global
 ```
 
