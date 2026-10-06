@@ -22,12 +22,12 @@ ASV es la autoridad determinista. Esta skill **navega** el producto; no reimplem
 | `diagnose` | error, schema/protocol mismatch, estado degraded/blocked | [`references/06-diagnostics.md`](references/06-diagnostics.md) |
 | `operator` | approvals/audit/metadata con intervención humana | [`references/05-approvals-audit.md`](references/05-approvals-audit.md) |
 
-Si la intención es ambigua, empieza por `discover`. Carga `00-decision-tree.md` sólo cuando necesites decidir el modo.
+Si la intención es ambigua, empieza por `discover`. Carga `00-decision-tree.md` sólo al decidir el modo.
 
 ## El sobre que devuelve el runtime
 
 Cada respuesta agent-facing es el mismo sobre. Estos son los ocho campos y
-ninguno más; un campo que no exista aquí no viene del producto.
+ninguno más; lo que no está aquí no viene del producto.
 
 ```text
 schema            asv.agent/v1
@@ -42,12 +42,11 @@ warnings          [{ code, message }], no bloquean
 
 `data` lleva `broker`, `installation` y `capabilities` en discovery, y el
 resultado de la operación cuando invocaste un `link`. El `result` de la
-aplicación (`ok` o `refused`) lleva en su `data` las `entries` de una
-operación de lista, como las credenciales almacenadas.
+aplicación (`ok` o `refused`) lleva en su `data` las `entries` de una lista.
 
 ## Relaciones publicadas
 
-El runtime publica seis y sólo seis. Si una no aparece en `links`, no existe
+El runtime publica trece y sólo trece. Si una no aparece en `links`, no existe
 para ti en esta máquina.
 
 | Rel | Para qué |
@@ -58,22 +57,41 @@ para ti en esta máquina.
 | `asv://rels/capabilities` | capacidades reales, no documentadas |
 | `asv://rels/credentials/list` | metadatos de credenciales almacenadas |
 | `asv://rels/session/run` | ejecutar un programa dentro de una sesión |
+| `asv://rels/github/issue/read` | leer un issue con credencial prestada por el broker |
+| `asv://rels/github/issue/create` | crear un issue con credencial prestada por el broker |
+| `asv://rels/github/release/create` | crear un release con credencial prestada por el broker |
+| `asv://rels/registry/manifest/read` | leer un manifiesto OCI |
+| `asv://rels/registry/blob/read` | leer un blob por su digest |
+| `asv://rels/registry/manifest/push` | subir un manifiesto OCI |
+| `asv://rels/registry/blob/push` | subir un blob; el CLI calcula el digest |
 
-El producto declara más relaciones —GitHub, PostgreSQL, firma SSH, approvals y
-audit— pero **no las publica todavía**: aparecen como *withheld*, no como
-opciones. No las sigas ni las simules con otro camino.
+Las tres de GitHub son el camino fuerte: el token nunca entra en un proceso que
+tú controlas. El broker lo presta a una cabecera HTTP durante una petición y lo
+devuelve, así que **no** debes sustituirlas por `gh` con `GITHUB_TOKEN` en el shell.
+
+Las cuatro de registry hacen lo mismo, con una diferencia que no lo es. Al
+**leer** un blob se verifica el `--digest` que se pasó, y la cabecera
+`Docker-Content-Digest` que lo nombra se ignora en vez de creerse. Al **subir** no
+se pasa `--digest`: lo calcula el CLI desde los bytes.
+
+`--credential` es un **id del vault**, nunca el token. `asv credentials` imprime
+los ids; ése es el valor que se pasa.
+
+El producto declara más relaciones —PostgreSQL, firma SSH, approvals y audit—
+pero **no las publica todavía**: aparecen como *withheld*. No las sigas ni las
+simules con otro camino.
 
 ## Reglas no negociables
 
 1. No pidas, leas, exportes, imprimas ni copies material secreto.
 2. No inspecciones el vault, `/proc`, environment, argv ni logs para recuperar credenciales.
-3. No inventes un comando ASV cuando exista un `link` anunciado por el runtime.
+3. No inventes un comando ASV cuando exista un `link` anunciado.
 4. Ejecuta `invoke.program` + `invoke.argv` como argv estructurado; no lo conviertas en `sh -c`.
 5. Valida `schema`. Si no soportas la versión, detente y diagnostica.
 6. Una capability disponible no equivale a autorización. El broker decide.
 7. `requires_human=true` es un stop: no autoapruebes ni busques bypass.
-8. No ejecutes `asv-brokerd` directamente salvo diagnóstico explícito de desarrollo; para producto usa `asv setup/status/doctor` y los links anunciados.
-9. Si ASV no anuncia una operación, no la simules con un secreto obtenido por otra vía.
+8. No ejecutes `asv-brokerd` directamente salvo diagnóstico explícito; para producto usa `asv setup/status/doctor` y los links anunciados.
+9. Si ASV no anuncia una operación, no la simules con un secreto de otra vía.
 10. Reporta hechos observados: versión/schema, status, operación, resultado y bloqueo; nunca atribuyas una verificación que no ejecutaste.
 
 ## Flujo mínimo
@@ -98,8 +116,8 @@ leer nueva respuesta
 
 ## Definition of Done
 
-- la operación se realizó mediante una capability anunciada por ASV, o quedó explícitamente bloqueada/no soportada;
+- la operación se realizó mediante una capability anunciada por ASV, o quedó bloqueada/no soportada;
 - el agente nunca recibió secret material;
-- no se ejecutaron comandos ASV inventados para sortear una relación ausente;
+- no se ejecutaron comandos ASV inventados para sortear una relación;
 - cualquier human gate quedó en manos humanas;
-- el resultado incluye evidencia suficiente para distinguir success, blocked, degraded y unsupported.
+- el resultado distingue success, blocked, degraded y unsupported.
