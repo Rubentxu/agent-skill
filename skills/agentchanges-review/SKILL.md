@@ -45,6 +45,11 @@ filtrado, con anclas verificadas, y descarta lo obsoleto.
    nota no está verificada, digas lo que digas.
 7. **No persigas anclas `content-changed`.** No son reparables con un parche: el
    código que el revisor vio ya no está debajo.
+8. **Un `409` no es un fallo, es un aviso.** Significa que otro proceso escribió
+   la revisión mientras la tuya estaba cargada. Relee, y aplica tu cambio sobre
+   lo último. Reintentar con el documento viejo vuelve a fallar, y lo tuyo no se
+   perdió: lo que no ocurrió fue el guardado. Ver
+   [`references/01-review-loop.md`](references/01-review-loop.md).
 
 ## Los cinco kinds
 

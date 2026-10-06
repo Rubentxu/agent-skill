@@ -86,3 +86,46 @@ El bucle de `note_add` es infinito si no hay tope. Para cuando:
 
 Nada de esto te autoriza a arreglar nada todavía: anotar y parchear son modos
 distintos. Ver [`03-patch-engine.md`](03-patch-engine.md).
+## Cuando el trabajo está en varios proyectos
+
+Un `reviewId` es `<base>__<head>` y **no identifica un proyecto**: dos repos
+pueden tener la misma revisión abierta a la vez. Por eso el MCP devuelve siempre
+su `repo` junto a la respuesta, y por eso `note_show n-01` sin saber de qué repo
+es una ruleta: `n-01` existe en casi todos.
+
+Si te piden "qué tengo pendiente" sin nombrar proyecto, la respuesta es de
+agregado, no de un repo:
+
+```bash
+agc status --all                    # bloqueantes primero, luego lo más parado
+agc note list --all --kind blocker  # sólo los bloqueantes, con su proyecto
+agc note list --all --max 10        # un tope, cuando son muchos
+```
+
+El orden es siempre el mismo: bloqueantes primero, después lo que lleva más
+tiempo sin tocarse. Si vas a elegir por dónde empezar, no uses el orden en que
+salen las notas: usa ese.
+
+Para abrir una nota concreta de otro proyecto hace falta su ruta:
+
+```bash
+agc -C <repoPath> note show <id>
+```
+
+## Cuando el guardado se rechaza
+
+Un `409` con `cambió mientras la estabas editando` no es un fallo: significa que
+otro proceso —la GUI, otro agente, una `agc verify`— escribió la misma revisión
+mientras tú tenías la tuya cargada. Con el store de ficheros esto pasaba en
+silencio y una nota desaparecía; ahora tu escritura simplemente no ocurre.
+
+Qué hacer, en este orden:
+
+1. **No reintentes a ciegas.** Reintentar con el documento viejo vuelve a fallar.
+2. **Relee la revisión** (`review_brief` o `notes_list`) para ver lo que se ha
+   añadido mientras tanto.
+3. **Vuelve a aplicar tu cambio sobre lo último.** Lo tuyo no se perdió: lo que
+   se rechazó es el guardado, no el trabajo.
+
+Si te lo piden mucho, casi siempre es que tienes el MCP atado a un repo y otro
+proceso está escribiendo en el mismo: mira quién más está abierto.

@@ -11,12 +11,35 @@ agc --version
 ```
 
 Requiere Node 20 o superior y un repositorio git para trabajar: fuera de un repo
-sólo funcionan `agc repo list` y `agc store`.
+sólo funcionan `agc repo list`, `agc status --all`, `agc store` y `agc doctor`.
 
 El store (las revisiones y notas) vive en el directorio del usuario, **nunca dentro
 del repositorio**, y se identifica por el remote (`slug(remote)-hash8`) con respaldo
 por ruta. Es deliberado: las revisiones no ensucian el repo y un `git status`
 limpio es una garantía, no una casualidad.
+
+## Dónde están los datos
+
+Las revisiones y las notas viven en un `agc.db` por usuario (SQLite), no
+en ficheros sueltos. Para el agente es lo mismo: no se tocan nunca a mano. Pero
+cambian dos cosas prácticas:
+
+- **Node 22.5 o superior** es lo que usa la base de datos. Por debajo, `agc` sigue
+  funcionando con el store de ficheros y avisa al arrancar. `agc doctor` dice en
+  cuál de los dos estás.
+- **Dos procesos pueden escribir a la vez.** Con ficheros, el último en guardar
+  pisaba al anterior sin avisar. Ahora el guardado obsoleto se **rechaza** con un
+  `409` y el motivo. Si lo ves, recarga y aplica tu cambio sobre lo último: no se
+  ha perdido nada, pero tu escritura no ocurrió.
+
+```bash
+agc store            # dónde está el store, qué backend, cuántos proyectos
+agc doctor           # si esta versión de Node puede usar la base de datos
+```
+
+`brief.md` y `exports/` **siguen siendo ficheros**, dentro de
+`<store>/repositories/<repoId>/reviews/<reviewId>/`. Esos sí se pueden leer con
+cualquier editor, y están ahí a propósito.
 
 ## Registrar el servidor MCP
 
