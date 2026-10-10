@@ -46,24 +46,27 @@ aplicación (`ok` o `refused`) lleva en su `data` las `entries` de una lista.
 
 ## Relaciones publicadas
 
-El runtime publica trece y sólo trece. Si una no aparece en `links`, no existe
-para ti en esta máquina.
+El runtime publica dieciséis y sólo dieciséis. Si una no aparece en `links`, no existe
+para ti.
 
 | Rel | Para qué |
 |---|---|
-| `asv://rels/status` | estado del broker y de la instalación |
-| `asv://rels/doctor` | salud de instalación y broker |
-| `asv://rels/setup` | crear layout runtime, vault y servicio |
-| `asv://rels/capabilities` | capacidades reales, no documentadas |
-| `asv://rels/credentials/list` | metadatos de credenciales almacenadas |
-| `asv://rels/session/run` | ejecutar un programa dentro de una sesión |
-| `asv://rels/github/issue/read` | leer un issue con credencial prestada por el broker |
-| `asv://rels/github/issue/create` | crear un issue con credencial prestada por el broker |
-| `asv://rels/github/release/create` | crear un release con credencial prestada por el broker |
-| `asv://rels/registry/manifest/read` | leer un manifiesto OCI |
-| `asv://rels/registry/blob/read` | leer un blob por su digest |
-| `asv://rels/registry/manifest/push` | subir un manifiesto OCI |
-| `asv://rels/registry/blob/push` | subir un blob; el CLI calcula el digest |
+| `asv://rels/status` | estado del broker |
+| `asv://rels/doctor` | diagnóstico de la instalación |
+| `asv://rels/setup` | bootstrap runtime+vault+servicio |
+| `asv://rels/capabilities` | capacidades |
+| `asv://rels/credentials/list` | metadatos credenciales |
+| `asv://rels/session/run` | ejecutar un programa en sesión |
+| `asv://rels/github/issue/read` | leer issue (broker) |
+| `asv://rels/github/issue/create` | crear issue (broker) |
+| `asv://rels/github/release/create` | crear release (broker) |
+| `asv://rels/registry/manifest/read` | leer manifiesto OCI |
+| `asv://rels/registry/blob/read` | leer blob por digest |
+| `asv://rels/registry/manifest/push` | subir manifiesto OCI |
+| `asv://rels/registry/blob/push` | subir blob (CLI calcula digest) |
+| `asv://rels/upgrade` | comprobar/aplicar versión certificada |
+| `asv://rels/k8s/read` | leer objeto del API server K8s |
+| `asv://rels/mtls/sign` | firmar CSR con SAN declarado |
 
 Las tres de GitHub son el camino fuerte: el token nunca entra en un proceso que
 tú controlas. El broker lo presta a una cabecera HTTP durante una petición y lo
