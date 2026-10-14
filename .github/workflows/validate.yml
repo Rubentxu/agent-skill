@@ -23,3 +23,7 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Run skill utility tests
         run: python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py' -v
+      - name: Run CogniCode diagrams router tests
+        run: python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py' -v
+      - name: Check CogniCode diagrams affordances smoke
+        run: python3 skills/cognicode-diagrams/scripts/affordances.py skills/cognicode-diagrams/examples/session-c4.json
