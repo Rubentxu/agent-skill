@@ -1,0 +1,14 @@
+{
+  "intent": "create",
+  "lens": "c4",
+  "formats": ["mermaid", "structurizr"],
+  "environment": "mcp_ready",
+  "evidence": "graph_ready",
+  "basis": "current",
+  "model": "absent",
+  "has_input_diagram": false,
+  "reconciled": false,
+  "artifacts": {"mermaid": "absent", "structurizr": "absent"},
+  "validators": {"mermaid": "missing", "structurizr": "missing"},
+  "approval": {"install": false, "write_project": false}
+}

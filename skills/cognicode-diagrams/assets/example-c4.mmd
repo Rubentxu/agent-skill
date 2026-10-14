@@ -1,0 +1,9 @@
+C4Container
+    title Ejemplo ilustrativo (no extraído de un repositorio)
+    Person(user, "Usuario")
+    System_Boundary(system, "Sistema de ejemplo") {
+        Container(api, "API", "Rust", "Procesa solicitudes")
+        ContainerDb(db, "Base de datos", "PostgreSQL", "Guarda información")
+    }
+    Rel(user, api, "Usa", "HTTPS")
+    Rel(api, db, "Consulta", "SQL")

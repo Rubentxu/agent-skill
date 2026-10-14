@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "lenses": [
+    {
+      "id": "c4",
+      "status": "ready",
+      "purpose": "Contexto, contenedores, componentes y vistas arquitectónicas fundamentadas",
+      "playbook": "references/lenses/c4.md",
+      "evidence": "architecture",
+      "formats": {
+        "mermaid": {"support": "native", "playbook": "references/formats/mermaid-c4.md"},
+        "structurizr": {"support": "native", "playbook": "references/formats/structurizr-c4.md"}
+      }
+    },
+    {
+      "id": "use-case",
+      "status": "planned",
+      "purpose": "Actores, objetivos e interacciones funcionales; requiere requisitos y comportamiento, no solo grafos",
+      "playbook": "references/lenses/use-case.md",
+      "evidence": "requirements",
+      "formats": {
+        "mermaid": {"support": "adapted", "note": "Flowchart con notación de casos de uso; Mermaid no dispone de UML Use Case nativo"},
+        "structurizr": {"support": "adapted", "note": "System context/custom view es una aproximación, no UML Use Case equivalente"}
+      }
+    },
+    {
+      "id": "class",
+      "status": "planned",
+      "purpose": "Tipos, herencia, composición, interfaces y relaciones estructurales",
+      "playbook": "references/lenses/class.md",
+      "evidence": "symbols",
+      "formats": {
+        "mermaid": {"support": "native", "note": "classDiagram"},
+        "structurizr": {"support": "unsupported", "note": "No hay UML class diagram nativo en Structurizr DSL"}
+      }
+    },
+    {
+      "id": "vertical-slice",
+      "status": "planned",
+      "purpose": "De punto de entrada a lógica y persistencia; distinguir topología estática y orden temporal",
+      "playbook": "references/lenses/vertical-slice.md",
+      "evidence": "flow",
+      "formats": {
+        "mermaid": {"support": "native", "note": "Flowchart estático; sequenceDiagram solo cuando existe evidencia ordenada"},
+        "structurizr": {"support": "adapted", "note": "Dynamic view solo para flujo ordenado corroborado, no a partir de call graph"}
+      }
+    }
+  ]
+}
