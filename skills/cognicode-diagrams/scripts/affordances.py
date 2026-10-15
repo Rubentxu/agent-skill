@@ -25,7 +25,7 @@ VALIDATORS = {"missing", "available"}
 SUPPORT = {"native", "adapted", "unsupported"}
 READY = "ready"
 STATUSES = {"ready", "planned"}
-FORMATS = {"mermaid", "structurizr"}
+# Los formatos se obtienen del registro, no de una whitelist codificada en el router.
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
 
 LINKS = {
@@ -46,6 +46,10 @@ LINKS = {
     "preview-mermaid": "references/kroki.md",
     "preview-structurizr": "references/kroki.md",
     "finish": "references/navigation.md",
+    "inspect-projector": "references/projectors.md",
+    "start-projector": "references/projectors.md",
+    "open-projector": "references/projectors.md",
+    "review-layout": "references/validate.md",
 }
 
 
@@ -73,7 +77,7 @@ def read_catalog(path: Path = CATALOG) -> dict:
         if not isinstance(playbook, str) or not playbook.startswith("references/lenses/") or not (BASE / playbook).is_file():
             raise InvalidState(f"catálogo: falta playbook de {ident}")
         formats = lens.get("formats", {})
-        if not isinstance(formats, dict) or not formats or set(formats) - FORMATS:
+        if not isinstance(formats, dict) or not formats or any(not SLUG.fullmatch(fmt) for fmt in formats):
             raise InvalidState(f"catálogo: formatos inválidos {ident}")
         for fmt, desc in formats.items():
             if not isinstance(desc, dict) or desc.get("support") not in SUPPORT:
@@ -105,6 +109,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if not isinstance(state, dict):
         raise InvalidState("state debe ser objeto")
     catalog = read_catalog() if catalog is None else catalog
+    known_formats = {fmt for lens in catalog.values() for fmt in lens["formats"]}
     intent = enum(state, "intent", INTENTS)
     lens_id = state.get("lens")
     if intent == "catalog":
@@ -153,7 +158,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     reconciled = bool_field(state, "reconciled")
     scan_depth = enum({"scan_depth": state.get("scan_depth", "symbols")}, "scan_depth", {"symbols", "graph"})
     formats = state.get("formats", [])
-    if not isinstance(formats, list) or any(not isinstance(x, str) for x in formats) or len(set(formats)) != len(formats) or set(formats) - FORMATS:
+    if not isinstance(formats, list) or any(not isinstance(x, str) for x in formats) or len(set(formats)) != len(formats) or set(formats) - known_formats:
         raise InvalidState("formats: conjunto inválido")
     if intent in {"create", "translate", "update", "validate"} and not formats:
         raise InvalidState(f"{intent} requiere al menos un formato")
@@ -169,13 +174,59 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if unsupported:
         return {"status": "UNSUPPORTED", "lens": lens_id, "recommended": None, "_links": [], "blockers": [f"formato no compatible para {lens_id}: {', '.join(unsupported)}"]}
 
+    # A browser projector is a viewer of already agent-authored text files.
+    # No code scan, no source-model inference or implicit container start.
+    # The existing Kroki route remains the default for image projections.
+    if intent == "preview" and state.get("projector", "kroki-local") != "kroki-local":
+        projector = enum(state, "projector", {"likec4-local", "structurizr-local"})
+        expected = {"likec4-local": "likec4", "structurizr-local": "structurizr"}[projector]
+        if formats != [expected]:
+            return {"status": "UNSUPPORTED", "lens": lens_id, "recommended": None, "_links": [],
+                    "blockers": [f"{projector} solo acepta el protocolo {expected}; el agente debe generarlo primero"]}
+        observed = enum({"projector_status": state.get("projector_status", "unknown")},
+                        "projector_status", {"unknown", "missing", "stopped", "running", "ready", "failed"})
+        visual_review = enum({"visual_review": state.get("visual_review", "not_run")},
+                             "visual_review", {"not_run", "passed", "failed"})
+        if "start_projector" in approval and not isinstance(approval["start_projector"], bool):
+            raise InvalidState("approval.start_projector debe ser booleano")
+        blockers = []
+        links = []
+        def view_link(rel: str, why: str, approve: bool = False) -> None:
+            links.append({"rel": rel, "href": LINKS[rel], "requires_approval": approve, "why": why})
+        if art.get(expected, "absent") == "absent":
+            return {"status": "BLOCKED", "lens": lens_id, "recommended": None, "_links": [],
+                    "blockers": [f"no existe la fuente editable {expected} en el workspace externo"]}
+        if observed in {"unknown", "running"}:
+            view_link("inspect-projector", "comprobar estado y HTTP local del visor")
+        elif observed in {"missing", "stopped"}:
+            if approval.get("start_projector", False):
+                view_link("start-projector", "arrancar contenedor solo mediante petición autorizada", True)
+            else:
+                blockers.append("visor ausente/parado; necesita autorización explícita para iniciar Podman/Docker")
+        elif observed == "failed":
+            blockers.append("visor fallido; revisar diagnóstico de runtime antes de reintentar")
+        elif visual_review == "not_run":
+            view_link("open-projector", "abrir vista local, inspeccionar legibilidad y registrar observación")
+        elif visual_review == "failed":
+            view_link("review-layout", "corregir fuente editable y revalidar antes de visualizar")
+        else:
+            view_link("finish", "vista inspeccionada; distinguir validez sintáctica y fidelidad semántica")
+        status = ("VERIFIED" if links and links[0]["rel"] == "finish" and art.get(expected) == "valid"
+                  else "PARTIAL" if visual_review == "failed" or (links and links[0]["rel"] == "finish")
+                  else "IN_PROGRESS" if links else "BLOCKED")
+        return {"status": status, "lens": lens_id,
+                "recommended": links[0]["rel"] if links else None, "_links": links, "blockers": blockers}
+
     # Optional visualization is independent of CogniCode discovery and model review.
     # Only OBSERVED renderer/preview states are trusted; no auto-provisioning.
     if intent == "preview":
+        if "likec4" in formats:
+            return {"status": "UNSUPPORTED", "lens": lens_id, "recommended": None, "_links": [],
+                    "blockers": ["Kroki no renderiza LikeC4; usar projector=likec4-local"]}
         kroki = enum({"kroki": state.get("kroki", "unknown")}, "kroki",
                      {"unknown", "missing", "gateway_ready", "full_ready"})
         previews = state.get("previews", {})
-        if not isinstance(previews, dict) or set(previews) - FORMATS or set(previews.values()) - {"absent", "rendered", "failed", "stale"}:
+        if not isinstance(previews, dict) or set(previews) - known_formats or set(previews.values()) - {"absent", "rendered", "failed", "stale"}:
             raise InvalidState("previews inválidos")
         if "start_kroki" in approval and not isinstance(approval["start_kroki"], bool):
             raise InvalidState("approval.start_kroki debe ser booleano")
@@ -275,7 +326,8 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
         link("finish", "el objetivo solicitado está disponible; declarar límites y validaciones")
 
     order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
-    links.sort(key=lambda l: order.index(l["rel"]))
+    # Los renderizadores de nuevas lentes/formatos se insertan sin modificar esta lista.
+    links.sort(key=lambda l: (order.index(l["rel"]) if l["rel"] in order else order.index("validate") - 0.5))
     recommended = links[0]["rel"] if links else None
     if not links:
         status = "BLOCKED" if blockers else "PARTIAL"
