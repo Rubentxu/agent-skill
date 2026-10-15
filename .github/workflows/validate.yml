@@ -27,3 +27,7 @@ jobs:
         run: python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py' -v
       - name: Check CogniCode diagrams affordances smoke
         run: python3 skills/cognicode-diagrams/scripts/affordances.py skills/cognicode-diagrams/examples/session-c4.json
+      - name: Run delivery-first-testing router tests
+        run: python3 -m unittest discover -s skills/delivery-first-testing/tests -p 'test_*.py' -v
+      - name: Check delivery-first-testing navigation smoke
+        run: python3 skills/delivery-first-testing/scripts/affordances.py skills/delivery-first-testing/examples/session-feature.json

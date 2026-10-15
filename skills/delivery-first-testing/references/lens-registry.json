@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "lenses": [
+    {
+      "id": "change-impact",
+      "status": "ready",
+      "question": "Qué puede romper el cambio",
+      "playbook": "references/lenses/change-impact.md",
+      "intents": [
+        "feature",
+        "merge"
+      ],
+      "signals": [
+        "domain",
+        "api",
+        "protocol",
+        "persistence",
+        "security",
+        "ui",
+        "ci",
+        "harness",
+        "unknown"
+      ]
+    },
+    {
+      "id": "ephemeral-uat",
+      "status": "ready",
+      "question": "La feature funciona para el consumidor",
+      "playbook": "references/lenses/ephemeral-uat.md",
+      "intents": [
+        "feature"
+      ],
+      "signals": [
+        "ui",
+        "api",
+        "domain"
+      ]
+    },
+    {
+      "id": "regression-promotion",
+      "status": "ready",
+      "question": "Qué protección mínima merece permanecer",
+      "playbook": "references/lenses/regression-promotion.md",
+      "intents": [
+        "feature"
+      ],
+      "signals": []
+    },
+    {
+      "id": "failure-triage",
+      "status": "ready",
+      "question": "Clasificar el primer fallo causal",
+      "playbook": "references/lenses/failure-triage.md",
+      "intents": [
+        "feature",
+        "merge",
+        "integration",
+        "release",
+        "audit"
+      ],
+      "signals": []
+    },
+    {
+      "id": "merge-assurance",
+      "status": "ready",
+      "question": "Seguridad de integración rápida",
+      "playbook": "references/lenses/merge-assurance.md",
+      "intents": [
+        "merge"
+      ],
+      "signals": []
+    },
+    {
+      "id": "integration-assurance",
+      "status": "ready",
+      "question": "Composición completa posterior a integración",
+      "playbook": "references/lenses/integration-assurance.md",
+      "intents": [
+        "integration"
+      ],
+      "signals": []
+    },
+    {
+      "id": "release-assurance",
+      "status": "ready",
+      "question": "Certificación de artefactos consumibles",
+      "playbook": "references/lenses/release-assurance.md",
+      "intents": [
+        "release"
+      ],
+      "signals": []
+    },
+    {
+      "id": "harness-economics",
+      "status": "ready",
+      "question": "Coste y precisión del harness",
+      "playbook": "references/lenses/harness-economics.md",
+      "intents": [
+        "audit"
+      ],
+      "signals": [
+        "harness",
+        "ci"
+      ]
+    },
+    {
+      "id": "mutation-guidance",
+      "status": "planned",
+      "question": "Medir eficacia de tests críticos sin exigir mutation constante",
+      "playbook": "references/extend-lenses.md",
+      "intents": [
+        "audit"
+      ],
+      "signals": [
+        "security",
+        "persistence"
+      ]
+    },
+    {
+      "id": "historical-test-impact",
+      "status": "planned",
+      "question": "Selector por historial de fallos y archivos",
+      "playbook": "references/extend-lenses.md",
+      "intents": [
+        "feature",
+        "merge"
+      ],
+      "signals": []
+    },
+    {
+      "id": "cross-repo-consumer",
+      "status": "planned",
+      "question": "Contrato entre versiones de consumidor y proveedor",
+      "playbook": "references/extend-lenses.md",
+      "intents": [
+        "integration",
+        "release"
+      ],
+      "signals": [
+        "protocol",
+        "api"
+      ]
+    }
+  ]
+}
