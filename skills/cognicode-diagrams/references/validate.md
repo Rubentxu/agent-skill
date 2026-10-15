@@ -16,3 +16,7 @@
 - Contenedor definido por una biblioteca de funciones => rechazar o etiquetar inferencia pendiente.
 
 No llamar al estado `VERIFIED` sin especificar *qué* se verificó: sintaxis, estructura propia de la lente, equivalencia de formatos o fidelidad al código.
+
+## Rendereo local con Kroki (opcional)
+
+La guía [kroki.md](kroki.md) permite comprobar si Kroki **produce** SVG/PNG para una fuente, y observar errores del parser. Esa observación constituye evidencia de **renderización**, no de equivalencia semántica ni de fidelidad al código. La cobertura depende de versiones de los motores y de los companions instalados; distinguir `RENDERED`, `VISUAL_REVIEW_NOT_RUN` y validación semántica. Para múltiples vistas Structurizr, renderizar cada `view-key` relevante; no interpretar que un único `200 OK` las validó todas.

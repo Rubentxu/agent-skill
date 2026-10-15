@@ -16,12 +16,13 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 
 ## Navegación orientada al objetivo (entrada única)
 
-1. Entender la intención: `setup`, `scan`, `catalog`, `discover`, `create`, `interpret`, `translate`, `review`, `update` o `validate`; lente y formato cuando sean necesarios. Si el usuario proporciona un diagrama para traducir, **no** instalar ni escanear por defecto.
+1. Entender la intención: `setup`, `scan`, `catalog`, `discover`, `create`, `interpret`, `translate`, `review`, `update`, `validate` o `preview`; lente y formato cuando sean necesarios. Si el usuario proporciona un diagrama para traducir, **no** instalar ni escanear por defecto.
 2. Consultar [el catálogo declarativo](references/lens-registry.json). `status=ready` significa que hay procedimiento dentro del paquete; `planned` **no** significa implementado. Comprobar que la combinación lente/formato existe y su semántica (`native`, `adapted`, `unsupported`). No simular una lente inexistente.
 3. Observar las capacidades y el estado real: CLI/MCP, ruta, revisión/dirty, índice/grafo y sus límites, archivos de entrada, validadores, permisos. Usar [navegación de sesión](references/navigation.md) para presentar solo acciones habilitadas. `scripts/affordances.py` es un ejemplo **puro, opcional** para comprobar el catálogo, nunca realiza acciones ni persiste estado.
 4. Cargar solo la referencia indicada en la acción seleccionada: [instalación](references/bootstrap.md), [escaneo](references/scan.md), [lectura y evidencia](references/evidence.md), [lente seleccionada](references/lenses/c4.md) o [representación](references/formats/mermaid-c4.md), [Structurizr](references/formats/structurizr-c4.md). Reinspeccionar tras cada paso: nunca avanzar por mera suposición.
 5. Para interpretar un diagrama existente usar [interpretación](references/interpret.md). Para revisar el modelo contra el código, contrastar cada relación por su fuente. Aplicar [validación](references/validate.md) a la representación y a la semántica por separado.
-6. Entregar los artefactos solicitados con un informe de evidencias, avisos y estado `VERIFIED`, `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Nunca presentar un test no ejecutado, una herramienta ausente o un grafo vacío como PASS.
+6. Si se solicita imagen o inspección visual, cargar [renderización local con Kroki](references/kroki.md). La intención `preview` utiliza los ficheros producidos sin requerir escanear CogniCode de nuevo; no arrancar contenedores sin autorización. Un SVG/PNG válido indica `RENDERED`, no verificación arquitectónica.
+7. Entregar los artefactos solicitados con un informe de evidencias, avisos y estado `VERIFIED`, `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Nunca presentar un test no ejecutado, una herramienta ausente o un grafo vacío como PASS.
 
 ## Rutas por intención
 
@@ -31,6 +32,7 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 | "Escanea este proyecto" | inspeccionar → índice/consultas mínimas → grafo si aporta → comprobar lectura real y cobertura |
 | "Haz C4 del repositorio" | preparar evidencia → lente `c4` → modelo interpretado → Mermaid y/o Structurizr → validar |
 | "Traduce este DSL a Mermaid" | leer diagrama → reconstruir semántica → comprobar compatibilidad → generar → validar. **No exige CogniCode** |
+| "Previsualiza/visualiza los diagramas" | comprobar Kroki local → elegir gateway para Structurizr/companion para Mermaid → exportar SVG/PNG por POST → revisión visual; no rescanear por defecto |
 | "Actualiza según el código" | interpretar diagrama → refrescar evidencia si está caducada → reconciliar → cambios mínimos → validar |
 | "Quiero clases/vertical slices/casos de uso" | consultar catálogo; si `planned`, informar de la capacidad pendiente y remitir a [cómo añadir lentes](references/extend-lenses.md); no fingir soporte |
 
@@ -49,6 +51,6 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 - [Navegación y contratos](references/navigation.md)
 - [Registro de lentes](references/lens-registry.json), [añadir nuevas lentes](references/extend-lenses.md)
 - [Instalación](references/bootstrap.md), [escaneos](references/scan.md), [evidencias](references/evidence.md)
-- [Interpretación](references/interpret.md), [validación](references/validate.md)
+- [Interpretación](references/interpret.md), [validación](references/validate.md), [previsualización local](references/kroki.md)
 - [Lente C4](references/lenses/c4.md), [Mermaid C4](references/formats/mermaid-c4.md), [Structurizr C4](references/formats/structurizr-c4.md)
 - [Evaluaciones](tests/skill-evals.md) y [contratos automatizados](tests/test_affordances.py)

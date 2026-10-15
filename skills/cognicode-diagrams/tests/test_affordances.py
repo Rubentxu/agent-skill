@@ -160,3 +160,54 @@ class RoutingTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class PreviewRoutingTests(unittest.TestCase):
+    def test_preview_never_demands_cognicode_scan(self):
+        x = fixture(intent='preview',environment='missing',evidence='absent',basis='unknown',model='absent',formats=['structurizr'],artifacts={'structurizr':'valid'},kroki='gateway_ready')
+        self.assertEqual(rels(x),['preview-structurizr'])
+
+    def test_gateway_only_blocks_mermaid_without_permission(self):
+        x = fixture(intent='preview',kroki='gateway_ready',artifacts={'mermaid':'draft','structurizr':'valid'})
+        self.assertEqual(rels(x),['preview-structurizr'])
+        self.assertIn('companion',str(engine.affordances(x)['blockers']))
+
+    def test_gateway_only_can_offer_authorized_companion(self):
+        x = fixture(intent='preview',kroki='gateway_ready',artifacts={'mermaid':'draft','structurizr':'valid'},approval={'start_kroki':True})
+        self.assertIn('start-mermaid-companion',rels(x))
+
+    def test_kroki_unknown_observe_first(self):
+        x = fixture(intent='preview',artifacts={'mermaid':'draft','structurizr':'draft'})
+        self.assertEqual(rels(x),['inspect-kroki'])
+
+    def test_missing_kroki_fails_closed(self):
+        x = fixture(intent='preview',kroki='missing',artifacts={'mermaid':'draft','structurizr':'draft'})
+        self.assertEqual(engine.affordances(x)['status'],'BLOCKED')
+
+    def test_only_authorized_bootstrap(self):
+        x = fixture(intent='preview',kroki='missing',artifacts={'mermaid':'draft','structurizr':'draft'},approval={'start_kroki':True})
+        self.assertEqual(rels(x),['start-kroki'])
+        self.assertTrue(engine.affordances(x)['_links'][0]['requires_approval'])
+
+    def test_full_renderer_handles_both(self):
+        x = fixture(intent='preview',kroki='full_ready',artifacts={'mermaid':'draft','structurizr':'valid'})
+        self.assertEqual(rels(x),['preview-mermaid','preview-structurizr'])
+
+    def test_preview_no_source_is_blocked(self):
+        x = fixture(intent='preview',kroki='full_ready',artifacts={'mermaid':'absent','structurizr':'absent'})
+        self.assertEqual(engine.affordances(x)['status'],'BLOCKED')
+
+    def test_rendered_not_verified_if_source_not_valid(self):
+        x = fixture(intent='preview',kroki='full_ready',artifacts={'mermaid':'draft','structurizr':'valid'},previews={'mermaid':'rendered','structurizr':'rendered'})
+        self.assertEqual(engine.affordances(x)['status'],'PARTIAL')
+
+    def test_all_sources_valid_and_previews_rendered(self):
+        x = fixture(intent='preview',kroki='full_ready',artifacts={'mermaid':'valid','structurizr':'valid'},previews={'mermaid':'rendered','structurizr':'rendered'})
+        self.assertEqual(engine.affordances(x)['status'],'VERIFIED')
+
+    def test_unknown_render_state_fail_closed(self):
+        with self.assertRaises(engine.InvalidState):
+            engine.affordances(fixture(intent='preview',kroki='cloud_connected'))
+
+    def test_unobserved_companion_never_render_mermaid(self):
+        x = fixture(intent='preview',kroki='gateway_ready',formats=['mermaid'],artifacts={'mermaid':'draft'})
+        self.assertNotIn('preview-mermaid',rels(x))

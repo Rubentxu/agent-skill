@@ -36,3 +36,16 @@
 ## Cierre de UAT
 
 Ejecutar con un agente real + CogniCode estable instalado y comparar documentos/diagramas generados contra código, configuración y ADR. Registrar comandos, versiones, resultado de herramientas externas de validación, SHA y artefactos. **Estas son pruebas diseñadas, no ejecutadas en este paquete.**
+
+## Kroki (sin tocar CogniCode)
+
+- Gateway solo + `Structurizr` → se ofrece previsualización Structurizr.
+- Gateway solo + Mermaid → no ofrecer renderización Mermaid sin companion.
+- Lente C4 y `intent=preview` con fichero fuente → no instalar ni escanear CogniCode por defecto.
+- Kroki ausente + no autorización → solo bloquear/explicar, no lanzar Docker.
+- Kroki con permiso → mostrar procedimiento compose local, no lanzar nube.
+- Salida SVG/PNG real tras POST → `RENDERED`, mantener validación de ontología separada.
+- HTTP 400, 302 o respuesta HTML → no sobrescribir imagen anterior.
+- Structurizr con varias vistas → `view-key` por cada vista solicitada.
+- Contenido privado → no POST a un dominio externo, ni derivar URL GET con contenido del código.
+- UAT opcional con Docker/Podman real → solo cuando el usuario autorice el arranque, no en tests unitarios.
