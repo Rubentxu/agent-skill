@@ -5,6 +5,7 @@ Skill instalable para investigar repositorios y producir representaciones diagra
 ## Qué aporta
 
 - Entrada única: `SKILL.md`.
+- Workspace externo obligatorio `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/`, vinculado a cada raíz Git sin contaminar el repositorio; resolver con `scripts/workspace.py`.
 - Bootstrap de `cogh`/CLI/MCP y verificación real de la instalación, solo si procede y con autorización.
 - Escaneo mínimo de símbolos y grafos por alcance, sin imponer indexación completa a cada petición.
 - Catálogo de lentes en `references/lens-registry.json`; la única lente actualmente `ready` es **C4**.
@@ -12,6 +13,17 @@ Skill instalable para investigar repositorios y producir representaciones diagra
 - Puntos de extensión documentados para `use-case`, `class`, `vertical-slice`, sin duplicar la skill orquestadora ni crear un nuevo servidor.
 - Vista previa local opcional con **Kroki**: Structurizr con gateway; Mermaid requiere companion; exportar SVG/PNG de fuentes editables, sin servicios públicos ni tocar CogniCode.
 - Pruebas de selección de acciones y de compatibilidad con salidas.
+
+## Directorio de proyecto (fuera de Git)
+
+```bash
+python3 scripts/workspace.py inspect --repo /ruta/a/pipelinek
+python3 scripts/workspace.py init --repo /ruta/a/pipelinek
+python3 scripts/workspace.py init-lens --repo /ruta/a/pipelinek --lens c4
+python3 scripts/workspace.py path --repo /ruta/a/pipelinek --relative lenses/c4/sources/context.mmd
+```
+
+Todos los `.dsl`/`.mmd`, renders SVG/PNG, informes, pruebas y sesiones se guardan en la ruta devuelta. La ruta de CogniCode para consultar sigue siendo la raíz Git. No añadir `.gitignore` ni carpetas dentro del repo. Ver [el contrato del workspace](references/workspace.md).
 
 ## Reglas de formatos
 
@@ -53,6 +65,7 @@ Para OpenCode, el runtime `cognicode-mcp` y sus skills de acompañamiento se ins
 
 ```bash
 python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py' -v
+# Incluye pruebas de aislamiento y resolución de workspace bajo HOME
 python3 skills/cognicode-diagrams/scripts/affordances.py skills/cognicode-diagrams/examples/session-c4.json
 python3 skills/cognicode-diagrams/scripts/affordances.py skills/cognicode-diagrams/examples/session-preview.json
 # pruebas mock HTTP de Kroki incluidas en test_*.py

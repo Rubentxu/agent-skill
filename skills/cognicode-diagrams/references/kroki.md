@@ -1,6 +1,6 @@
 # Vista previa local con Kroki: adaptador de representación, no modelo
 
-**Cargar solo cuando el usuario solicite previsualizar, exportar SVG/PNG o comprobar renderización.** CogniCode y la lente generan e interpretan el archivo fuente; Kroki convierte ese archivo en imagen. Una imagen visualmente correcta NO demuestra fidelidad al código, equivalencia entre lenguajes, completitud de la lente ni verificación arquitectónica.
+**Cargar solo cuando el usuario solicite previsualizar, exportar SVG/PNG o comprobar renderización.** Las entradas de usuario y fuentes editables se leen desde `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/lenses/<lente>/sources/` y las imágenes se escriben en `renders/` del mismo [workspace externo](workspace.md), nunca dentro del repo Git. Antes de escribir, comprobar ruta segura con `scripts/workspace.py path`. CogniCode y la lente generan e interpretan el archivo fuente; Kroki convierte ese archivo en imagen. Una imagen visualmente correcta NO demuestra fidelidad al código, equivalencia entre lenguajes, completitud de la lente ni verificación arquitectónica.
 
 ## Capacidades verificadas en la documentación oficial
 

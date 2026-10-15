@@ -1,11 +1,12 @@
 # Navegación HATEOAS-like: sesión como recurso, playbooks como enlaces
 
-No hay API HTTP, servidor, router de comandos, base de datos ni extensión de CogniCode. El agente observa la sesión y elige solo la acción cuyo requisito está acreditado. `rel` expresa intención, `href` referencia una guía local; no equivale a haber ejecutado la acción. El helper puro opcional `scripts/affordances.py` calcula ejemplos de enlaces sin ejecutar tareas.
+No hay API HTTP, servidor, router de comandos, base de datos ni extensión de CogniCode. Los artefactos de proyecto viven únicamente en el [workspace externo](workspace.md) `~/.cognicode-diagrams`. Antes de cualquier operación que escriba, resolver `workspace=ready`. El agente observa la sesión y elige solo la acción cuyo requisito está acreditado. `rel` expresa intención, `href` referencia una guía local; no equivale a haber ejecutado la acción. El helper puro opcional `scripts/affordances.py` calcula ejemplos de enlaces sin ejecutar tareas.
 
 ## Estado efímero de entrada
 
 ```json
 {
+  "workspace": "ready",
   "intent": "create",
   "lens": "c4",
   "formats": ["mermaid", "structurizr"],
@@ -21,7 +22,8 @@ No hay API HTTP, servidor, router de comandos, base de datos ni extensión de Co
 }
 ```
 
-- `intent`: `catalog|setup|scan|discover|create|interpret|translate|review|update|validate`.
+- `workspace`: `unknown|absent|incomplete|ready|invalid`. `unknown` ofrece `inspect-workspace`; `absent|incomplete` ofrece `init-workspace`; `invalid` bloquea. Ver [workspace.md](workspace.md). `catalog` y `setup` quedan exentos.
+- `intent`: `catalog|setup|scan|discover|create|interpret|translate|review|update|validate|preview`.
 - `lens`: `id` del registro de lentes. Para `catalog` puede omitirse; las lentes `planned` no se ofrecen para ejecución.
 - `environment`: `unknown|missing|cli_ready|mcp_ready|both_ready`. La observación se toma de comandos/calls, nunca de memoria.
 - `evidence`: `absent|symbols_ready|graph_ready|partial|stale`; un grafo READY exige consulta posterior que confirme su disponibilidad, no solo un stdout exit 0.
@@ -37,6 +39,7 @@ Ejemplo de estado observado, con imagen pendiente y gateway de Kroki disponible 
 
 ```json
 {
+  "workspace": "ready",
   "intent": "preview", "lens": "c4", "formats": ["structurizr", "mermaid"],
   "environment": "missing", "evidence": "absent", "basis": "unknown", "model": "absent",
   "artifacts": {"structurizr": "valid", "mermaid": "draft"},
@@ -50,7 +53,7 @@ Ejemplo de estado observado, con imagen pendiente y gateway de Kroki disponible 
 
 ## Semántica de las acciones
 
-`inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
+`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
 
 A continuación de cada acción, observar si ha funcionado y actualizar **en la conversación** los campos realmente cambiados. Evitar ejecutar el mismo paso sin que cambie alguna precondición. El agente puede saltarse el helper y aplicar estas normas directamente.
 

@@ -1,5 +1,7 @@
 # Escaneos previos y evaluación de preparación
 
+**Antes de ejecutar el escaneo:** resolver el [workspace externo](workspace.md) y comprobar estado `ready`. Todas las fichas, salidas guardadas y logs generados por el agente van a `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/evidence` o `sessions`; nunca a la raíz Git. Las cachés propias del runtime CogniCode siguen siendo responsabilidad de CogniCode.
+
 ## Elección mínima de trabajo
 
 | Perfil | Necesidad | Escaneo justificado | Preparación |

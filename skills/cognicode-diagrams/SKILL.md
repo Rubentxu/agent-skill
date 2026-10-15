@@ -12,13 +12,14 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 - **Lente** = pregunta y ontología que gobiernan el diagrama: `c4` ahora; más adelante `use-case`, `class`, `vertical-slice`, etc.
 - **Formato** = lenguaje de representación: `mermaid` y `structurizr`. No todos los formatos expresan todas las lentes de manera equivalente.
 - **Evidencia** = resultados reales de CLI/MCP + código, manifiestos, ADR, requisitos, tests o trazas. La mera existencia de un call graph no prueba despliegue, casos de uso ni orden runtime.
+- **Workspace externo** = `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/`; siempre fuera del repositorio Git, almacena fuentes, imágenes y evidencias derivadas sin duplicar índices de CogniCode.
 - **Affordance** = acción posible según observación (`rel` + `href` local + precondiciones); no es una petición HTTP ni un comando inventado. El catálogo de acciones se deriva de la sesión actual; solo se ejecutan las útiles y autorizadas.
 
 ## Navegación orientada al objetivo (entrada única)
 
 1. Entender la intención: `setup`, `scan`, `catalog`, `discover`, `create`, `interpret`, `translate`, `review`, `update`, `validate` o `preview`; lente y formato cuando sean necesarios. Si el usuario proporciona un diagrama para traducir, **no** instalar ni escanear por defecto.
 2. Consultar [el catálogo declarativo](references/lens-registry.json). `status=ready` significa que hay procedimiento dentro del paquete; `planned` **no** significa implementado. Comprobar que la combinación lente/formato existe y su semántica (`native`, `adapted`, `unsupported`). No simular una lente inexistente.
-3. Observar las capacidades y el estado real: CLI/MCP, ruta, revisión/dirty, índice/grafo y sus límites, archivos de entrada, validadores, permisos. Usar [navegación de sesión](references/navigation.md) para presentar solo acciones habilitadas. `scripts/affordances.py` es un ejemplo **puro, opcional** para comprobar el catálogo, nunca realiza acciones ni persiste estado.
+3. Resolver **antes de escanear o generar archivos** [el workspace externo del proyecto](references/workspace.md) mediante `scripts/workspace.py inspect`; si está ausente, inicializarlo bajo `~/.cognicode-diagrams` y verificar `ready`. Si es inválido, bloquear escrituras. No guardar ningún artefacto en Git. Observar las capacidades y el estado real: CLI/MCP, ruta, revisión/dirty, índice/grafo y sus límites, archivos de entrada, validadores, permisos. Usar [navegación de sesión](references/navigation.md) para presentar solo acciones habilitadas. `scripts/affordances.py` es un ejemplo **puro, opcional** para comprobar el catálogo, nunca realiza acciones ni persiste estado.
 4. Cargar solo la referencia indicada en la acción seleccionada: [instalación](references/bootstrap.md), [escaneo](references/scan.md), [lectura y evidencia](references/evidence.md), [lente seleccionada](references/lenses/c4.md) o [representación](references/formats/mermaid-c4.md), [Structurizr](references/formats/structurizr-c4.md). Reinspeccionar tras cada paso: nunca avanzar por mera suposición.
 5. Para interpretar un diagrama existente usar [interpretación](references/interpret.md). Para revisar el modelo contra el código, contrastar cada relación por su fuente. Aplicar [validación](references/validate.md) a la representación y a la semántica por separado.
 6. Si se solicita imagen o inspección visual, cargar [renderización local con Kroki](references/kroki.md). La intención `preview` utiliza los ficheros producidos sin requerir escanear CogniCode de nuevo; no arrancar contenedores sin autorización. Un SVG/PNG válido indica `RENDERED`, no verificación arquitectónica.
@@ -44,10 +45,11 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 - Reutilizar CogniCode; no crear índices canónicos, bases de conocimiento duplicadas, motores de grafos ni un DSL universal propio. La representación conceptual vive en el contexto del agente o en un informe **derivado** opcional, no como nuevo sistema de registro.
 - Si el formato solo ofrece una **adaptación**, comunicar qué se pierde. Ejemplo: Structurizr DSL no tiene un diagrama UML de clases nativo; el diagrama de clases Mermaid `classDiagram` no es lo mismo que una vista C4 de componentes.
 - Una comprobación de sintaxis no acredita fidelidad arquitectónica. `VERIFIED` requiere alcance de verificaciones explicitado; sin herramienta de validación de sintaxis o sin cobertura suficiente, declarar `PARTIAL`.
-- No escribir en el repo de código salvo que el usuario pida allí los diagramas. Preferir el destino indicado; si no existe, artefactos de sesión sin ensuciar el repositorio.
+- **Nunca escribir los assets de esta skill en el repositorio Git por defecto.** Ubicación obligatoria: `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/`. Resolverla con `scripts/workspace.py`; no crear ficheros, carpetas auxiliares, `.gitignore` ni datos de sesión en la raíz Git. Si una excepción explícita requiere exportar al checkout, pedir permiso aparte. Ver [workspace.md](references/workspace.md).
 
 ## Referencias a cargar solo bajo demanda
 
+- [Workspace externo obligatorio](references/workspace.md) y [resolver/crear workspace](scripts/workspace.py)
 - [Navegación y contratos](references/navigation.md)
 - [Registro de lentes](references/lens-registry.json), [añadir nuevas lentes](references/extend-lenses.md)
 - [Instalación](references/bootstrap.md), [escaneos](references/scan.md), [evidencias](references/evidence.md)
