@@ -12,6 +12,7 @@ Skill instalable para investigar repositorios y producir representaciones diagra
 - C4 en Mermaid (`C4Context`, `C4Container`, `C4Component`), Structurizr DSL y LikeC4 `.c4`; el agente produce el protocolo desde las evidencias de CogniCode.
 - Puntos de extensión documentados para `use-case`, `class`, `vertical-slice`, sin duplicar la skill orquestadora ni crear un nuevo servidor.
 - Tres proyectores locales opcionales: **Kroki** (SVG/PNG), **LikeC4** (visor interactivo `.c4`) y **Structurizr Local** (navegador C1/C2/C3 `.dsl`), sin servicios públicos ni alterar CogniCode. El gestor prioriza Podman y acepta Docker.
+- Atlas visual de diagramas con **Markmap**: miniaturas SVG/PNG, enlaces a archivos y a visores LikeC4/Structurizr comprobados, HTML navegable bajo `navigation/` sin escanear de nuevo.
 - Pruebas de selección de acciones y de compatibilidad con salidas.
 
 ## Directorio de proyecto (fuera de Git)
@@ -58,6 +59,22 @@ python3 scripts/projectors.py start  --repo /ruta/a/repo --projector likec4 --en
 
 `start` es una operación explícita y puede descargar una imagen de contenedor; no se ejecuta durante una simple consulta. Ver [guía de proyectores](references/projectors.md), [LikeC4](references/projectors/likec4.md) y [Structurizr Local](references/projectors/structurizr-local.md). Los visores no analizan repositorios: interpretan exclusivamente los DSL escritos por el agente. `status --check-http` verifica la respuesta web local, pero **no** constituye revisión visual.
 
+## Atlas interactivo Markmap (sin escribir en Git)
+
+Después de producir fuentes y renders en el workspace del proyecto:
+
+```bash
+python3 scripts/atlas.py build --repo /ruta/mi-proyecto
+python3 scripts/atlas.py check --repo /ruta/mi-proyecto
+# Opcional: enlaces a contenedores de visores locales comprobados:
+python3 scripts/atlas.py build --repo /ruta/mi-proyecto --viewers --engine podman
+# Construir la imagen una vez solo con autorización, desde la carpeta skill:
+podman build -f assets/markmap.Containerfile -t cognicode-markmap:0.18.12 assets/
+python3 scripts/render_markmap.py --repo /ruta/mi-proyecto --engine podman
+```
+
+`navigation/atlas.md` ofrece enlaces e imágenes; `navigation/atlas.html` es la proyección navegable. Las miniaturas usan archivos relativos y deben acompañar al HTML. **Ni el índice ni Markmap analizan código**. Más detalles: [referencia Markmap](references/projectors/markmap.md). El render offline en contenedor está pendiente de UAT real por posibles descargas de assets de la versión de Markmap.
+
 ## Ejemplos de peticiones
 
 - "Prepara CogniCode localmente y escanea este repositorio para hacer diagramas más tarde".
@@ -68,6 +85,7 @@ python3 scripts/projectors.py start  --repo /ruta/a/repo --projector likec4 --en
 - "Investiga el código con CogniCode, crea un `.c4` y ábrelo con LikeC4 en Podman".
 - "Abre el Structurizr DSL generado en Structurizr Local y revisa los límites C1/C2/C3".
 - "Previsualiza en local con Kroki todas las vistas de workspace.dsl y corrige si hay errores de sintaxis, sin tocar CogniCode".
+- "Crea un atlas Markmap de las lentes y las imágenes producidas, con miniaturas y enlaces a LikeC4 y Structurizr Local si están en marcha".
 
 ## Integrar / instalar
 
