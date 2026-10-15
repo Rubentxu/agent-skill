@@ -1,6 +1,6 @@
 # Extender la solución con una nueva lente, sin tocar CogniCode
 
-**No crear una skill instalable nueva por lente.** Todo vive en `skills/cognicode-diagrams/`; no modificar la lógica del orquestador al añadir una lente.
+**No crear una skill instalable nueva por lente.** Los diagramas producidos por esa lente se almacenan en `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/lenses/<id>/` siguiendo el [contrato de workspace](workspace.md); no crear carpetas de nueva lente dentro del repo. Todo vive en `skills/cognicode-diagrams/`; no modificar la lógica del orquestador al añadir una lente.
 
 1. Definir la pregunta que resuelve, entidades y relaciones propias y qué evidencias requiere. Para un flujo ordenado, especificar evidencia temporal; para casos de uso, objetivos del actor; para clases, relaciones de tipos. No asumir que un grafo de llamadas satisface todas las lentes.
 2. Crear `references/lenses/<id>.md` con: ámbito, entradas, ruta mínima CLI/MCP con descubrimiento real de herramientas, ontología, incertidumbres, modelos equivocados frecuentes, criterios de evidencia, salidas compatibles y pruebas negativas.
