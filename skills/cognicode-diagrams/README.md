@@ -10,11 +10,25 @@ Skill instalable para investigar repositorios y producir representaciones diagra
 - Catálogo de lentes en `references/lens-registry.json`; la única lente actualmente `ready` es **C4**.
 - C4 en Mermaid (`C4Context`, `C4Container`, `C4Component`) y Structurizr DSL; interpretación y reconciliación con código.
 - Puntos de extensión documentados para `use-case`, `class`, `vertical-slice`, sin duplicar la skill orquestadora ni crear un nuevo servidor.
+- Vista previa local opcional con **Kroki**: Structurizr con gateway; Mermaid requiere companion; exportar SVG/PNG de fuentes editables, sin servicios públicos ni tocar CogniCode.
 - Pruebas de selección de acciones y de compatibilidad con salidas.
 
 ## Reglas de formatos
 
 **Lente != formato.** Una lente establece qué entidades/relaciones tienen sentido; los renderizadores expresan lo que cada lenguaje admite. Mermaid tiene `classDiagram`, pero Structurizr DSL no equivale a UML class diagrams. Structurizr tiene vistas dinámicas, pero requieren una semántica ordenada; el grafo de llamadas no basta para inferirla. Nunca convertir "aproximadamente" sin declararlo.
+
+## Visualización con Kroki
+
+Para previsualizar Structurizr basta `docker run -d --name kroki -p 127.0.0.1:8000:8000 yuzutech/kroki` (con autorización). Para Mermaid **hace falta además `kroki-mermaid`**; seguir [la guía Kroki](references/kroki.md) o usar [`assets/kroki-compose.yml`](assets/kroki-compose.yml).
+
+Con Kroki ya iniciado, ejecutar desde la carpeta de la skill:
+
+```bash
+python3 scripts/render_kroki.py assets/example-workspace.dsl /tmp/c4-context.svg --type structurizr --view-key Context
+python3 scripts/render_kroki.py assets/example-c4.mmd /tmp/c4-mermaid.svg --type mermaid
+```
+
+Las imágenes son vistas derivadas: no sustituyen al DSL/Mermaid editable ni validan fidelidad al código. Se conserva fuente local y el helper **rechaza destinos remotos y redirecciones**.
 
 ## Ejemplos de peticiones
 
@@ -23,6 +37,7 @@ Skill instalable para investigar repositorios y producir representaciones diagra
 - "Interpreta este workspace.dsl y tradúcelo a Mermaid C4, preservando el significado".
 - "Revisa el C4 del repositorio contra HEAD y señala relaciones inventadas".
 - "Enumera las lentes disponibles y dime cuáles están por implementar".
+- "Previsualiza en local con Kroki todas las vistas de workspace.dsl y corrige si hay errores de sintaxis, sin tocar CogniCode".
 
 ## Integrar / instalar
 
@@ -39,6 +54,8 @@ Para OpenCode, el runtime `cognicode-mcp` y sus skills de acompañamiento se ins
 ```bash
 python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py' -v
 python3 skills/cognicode-diagrams/scripts/affordances.py skills/cognicode-diagrams/examples/session-c4.json
+python3 skills/cognicode-diagrams/scripts/affordances.py skills/cognicode-diagrams/examples/session-preview.json
+# pruebas mock HTTP de Kroki incluidas en test_*.py
 ```
 
 El helper es una **referencia pura opcional**, no una dependencia necesaria para el agente. No ejecuta CogniCode, no escribe archivos y no utiliza red. Las pruebas no sustituyen UAT con agente, CogniCode real y validadores de los diagramas.
