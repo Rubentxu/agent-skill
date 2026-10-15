@@ -20,3 +20,7 @@ No llamar al estado `VERIFIED` sin especificar *qué* se verificó: sintaxis, es
 ## Rendereo local con Kroki (opcional)
 
 La guía [kroki.md](kroki.md) permite comprobar si Kroki **produce** SVG/PNG para una fuente, y observar errores del parser. Esa observación constituye evidencia de **renderización**, no de equivalencia semántica ni de fidelidad al código. La cobertura depende de versiones de los motores y de los companions instalados; distinguir `RENDERED`, `VISUAL_REVIEW_NOT_RUN` y validación semántica. Para múltiples vistas Structurizr, renderizar cada `view-key` relevante; no interpretar que un único `200 OK` las validó todas.
+
+## LikeC4 y visualizadores interactivos
+
+El agente genera y mantiene `.c4` en el workspace externo mediante [la receta LikeC4](formats/likec4-c4.md); la CLI de LikeC4 se emplea exclusivamente para `validate` del **protocolo** escrito. La UI LikeC4/Structurizr Local ofrece inspección del resultado, no una lectura de símbolos de código. Guardar estados independientes: `FORMAT_VALID`, `HTTP_READY`, `VISUALLY_REVIEWED`, `SEMANTICALLY_REVIEWED`. El router `preview` nunca afirma revisión visual por el simple HTTP 200. El agente solo declara fidelidad al código si previamente contrastó las entidades y relaciones con CogniCode y las fuentes necesarias, y la base continúa vigente.
