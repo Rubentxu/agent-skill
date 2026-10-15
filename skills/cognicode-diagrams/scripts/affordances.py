@@ -16,6 +16,7 @@ BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
 INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
+WORKSPACES = {"unknown", "absent", "incomplete", "ready", "invalid"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
 BASIS = {"unknown", "current", "stale"}
 MODELS = {"absent", "draft", "reviewed"}
@@ -28,6 +29,8 @@ FORMATS = {"mermaid", "structurizr"}
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
 
 LINKS = {
+    "inspect-workspace": "references/workspace.md",
+    "init-workspace": "references/workspace.md",
     "list-lenses": "references/extend-lenses.md",
     "inspect-environment": "references/bootstrap.md",
     "install-cognicode": "references/bootstrap.md",
@@ -111,6 +114,24 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
             "lenses": [{"id": x["id"], "status": x["status"], "formats": {k: v["support"] for k, v in x["formats"].items()}} for x in catalog.values()],
             "blockers": [],
         }
+    # Artifact-producing requests always require an independently resolved HOME workspace.
+    # This gate is before ANY CogniCode scan or projector operation: no Git contamination.
+    if intent not in {"setup", "catalog"}:
+        workspace = enum({"workspace": state.get("workspace", "unknown")}, "workspace", WORKSPACES)
+        if workspace != "ready":
+            blockers = []
+            if workspace == "unknown":
+                rel, why = "inspect-workspace", "resolver ubicación externa mediante git rev-parse sin escribir archivos"
+            elif workspace in {"absent", "incomplete"}:
+                rel, why = "init-workspace", "crear/completar directorios solo bajo ~/.cognicode-diagrams"
+            else:
+                rel, why = None, ""
+                blockers.append("workspace inseguro/identidad no válida: no escribir ni modificar el repositorio")
+            links = ([{"rel": rel, "href": LINKS[rel], "requires_approval": False, "why": why}]
+                     if rel else [])
+            return {"status": "IN_PROGRESS" if links else "BLOCKED", "lens": lens_id,
+                    "recommended": rel, "_links": links, "blockers": blockers}
+
     # Setup/scan are general CogniCode operations, independent of any diagram lens.
     generic = lens_id is None and intent in {"setup", "scan"}
     if generic:
