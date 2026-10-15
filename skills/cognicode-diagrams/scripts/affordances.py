@@ -14,7 +14,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
-INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview"}
+INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
 WORKSPACES = {"unknown", "absent", "incomplete", "ready", "invalid"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
@@ -50,6 +50,11 @@ LINKS = {
     "start-projector": "references/projectors.md",
     "open-projector": "references/projectors.md",
     "review-layout": "references/validate.md",
+    "build-atlas": "references/projectors/markmap.md",
+    "inspect-markmap": "references/projectors/markmap.md",
+    "render-atlas": "references/projectors/markmap.md",
+    "open-atlas": "references/projectors/markmap.md",
+    "review-atlas": "references/projectors/markmap.md",
 }
 
 
@@ -136,6 +141,44 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
                      if rel else [])
             return {"status": "IN_PROGRESS" if links else "BLOCKED", "lens": lens_id,
                     "recommended": rel, "_links": links, "blockers": blockers}
+
+    # Cross-lens navigation is deliberately independent of CogniCode readiness.
+    # No model inference, no container auto-start, no implied visual verification.
+    if intent == "atlas":
+        source = enum({"atlas_source": state.get("atlas_source", "absent")},
+                      "atlas_source", {"absent", "stale", "ready"})
+        html = enum({"atlas_html": state.get("atlas_html", "absent")},
+                    "atlas_html", {"absent", "stale", "rendered", "failed"})
+        renderer = enum({"markmap": state.get("markmap", "unknown")},
+                        "markmap", {"unknown", "missing", "ready"})
+        review = enum({"visual_review": state.get("visual_review", "not_run")},
+                      "visual_review", {"not_run", "passed", "failed"})
+        assets = state.get("atlas_assets", "unknown")
+        if assets not in {"unknown", "absent", "present"}:
+            raise InvalidState("atlas_assets inválido")
+        def atlas_link(rel: str, reason: str) -> dict:
+            return {"rel": rel, "href": LINKS[rel], "requires_approval": False, "why": reason}
+        if assets == "absent":
+            return {"status": "BLOCKED", "lens": None, "recommended": None, "_links": [],
+                    "blockers": ["no existen diagramas: generarlos mediante lente y agente antes del atlas"]}
+        if source in {"absent", "stale"}:
+            links = [atlas_link("build-atlas", "indexar fuentes/renders ya existentes en workspace externo")]
+        elif html in {"absent", "stale", "failed"}:
+            if renderer == "unknown":
+                links = [atlas_link("inspect-markmap", "comprobar Markmap o imagen OCI local sin instalar")]
+            elif renderer == "missing":
+                return {"status": "PARTIAL", "lens": None, "recommended": None, "_links": [],
+                        "blockers": ["atlas.md disponible; falta motor Markmap local, instalar solo con autorización"]}
+            else:
+                links = [atlas_link("render-atlas", "proyectar Markdown como HTML interactivo local")]
+        elif review == "not_run":
+            links = [atlas_link("open-atlas", "inspeccionar miniaturas y enlaces realmente en el navegador")]
+        elif review == "failed":
+            links = [atlas_link("review-atlas", "corregir el índice derivado o el render y revalidar")]
+        else:
+            links = [atlas_link("finish", "atlas visualmente revisado: no certifica arquitectura")]
+        return {"status": "PARTIAL" if links[0]["rel"] == "review-atlas" else "VERIFIED" if links[0]["rel"] == "finish" else "IN_PROGRESS",
+                "lens": None, "recommended": links[0]["rel"], "_links": links, "blockers": []}
 
     # Setup/scan are general CogniCode operations, independent of any diagram lens.
     generic = lens_id is None and intent in {"setup", "scan"}

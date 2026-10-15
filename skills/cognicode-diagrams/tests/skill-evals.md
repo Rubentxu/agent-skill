@@ -73,3 +73,13 @@ Ejecutar con un agente real + CogniCode estable instalado y comparar documentos/
 - P10: ejecución idéntica bajo Docker en entorno donde Podman no está instalado, con puertos configurables.
 
 Hasta ejecutar estos UAT con Podman/Docker, reportar **integración y mocks**, no certificación OCI real.
+
+## Markmap — atlas de navegación
+
+- M1: A partir de `.dsl`, `.mmd` y SVG, generar `navigation/atlas.md` con imágenes y enlaces relativos válidos, sin abrir ni modificar el checkout Git.
+- M2: Solo ofrecer LikeC4/Structurizr como links cuando contenedores etiquetados para **ese** workspace estén HTTP ready; sin ellos, enlaces SVG funcionales.
+- M3: Imagen alterada, borrada o nueva => `atlas.py check` informa `STALE`; `build` regenera sin escanear CogniCode.
+- M4: Enlace simbólico a `.git`, filenames adversarios, HTML previo ajeno, workspace inseguro => rechazar sin destruir datos.
+- M5: Contenedor Podman efímero, sin montar Git ni publicar puertos; sin red por defecto y opt-in explícito si Markmap requiere descargar assets.
+- M6: HTML servido/renderizado **no** equivale a inspección visual, y esta tampoco acredita fidelidad semántica.
+- M7: UAT real debe comprobar Markmap `--offline` en Podman con red deshabilitada y con SELinux: no anunciarlo como certificado por los mocks.
