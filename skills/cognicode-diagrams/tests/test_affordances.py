@@ -14,7 +14,7 @@ spec.loader.exec_module(engine)
 
 def fixture(**changes):
     state = {
-        'intent': 'create', 'lens': 'c4', 'formats': ['mermaid','structurizr'],
+        'workspace': 'ready', 'intent': 'create', 'lens': 'c4', 'formats': ['mermaid','structurizr'],
         'environment': 'both_ready', 'evidence': 'graph_ready', 'basis': 'current',
         'model': 'absent', 'has_input_diagram': False, 'reconciled': False,
         'artifacts': {'mermaid':'absent','structurizr':'absent'},
@@ -211,3 +211,33 @@ class PreviewRoutingTests(unittest.TestCase):
     def test_unobserved_companion_never_render_mermaid(self):
         x = fixture(intent='preview',kroki='gateway_ready',formats=['mermaid'],artifacts={'mermaid':'draft'})
         self.assertNotIn('preview-mermaid',rels(x))
+
+
+class WorkspaceRoutingTests(unittest.TestCase):
+    def test_create_missing_workspace_is_first_action(self):
+        self.assertEqual(rels(fixture(workspace="unknown")), ["inspect-workspace"])
+        self.assertEqual(rels(fixture(workspace="absent")), ["init-workspace"])
+
+    def test_preview_cannot_write_before_workspace_ready(self):
+        x = fixture(intent="preview", workspace="absent", kroki="full_ready",
+                    artifacts={"mermaid": "valid", "structurizr": "valid"})
+        self.assertEqual(rels(x), ["init-workspace"])
+
+    def test_scan_cannot_run_before_workspace_ready(self):
+        x = fixture(intent="scan", lens=None, formats=[], workspace="unknown")
+        self.assertEqual(rels(x), ["inspect-workspace"])
+
+    def test_workspace_invalid_fails_closed(self):
+        x = fixture(workspace="invalid")
+        self.assertEqual(engine.affordances(x)["status"], "BLOCKED")
+        self.assertEqual(rels(x), [])
+
+    def test_workspace_incomplete_can_be_recovered(self):
+        self.assertEqual(rels(fixture(workspace="incomplete")), ["init-workspace"])
+
+    def test_no_workspace_needed_for_catalog(self):
+        self.assertEqual(engine.affordances({"intent": "catalog"})["status"], "READY")
+
+    def test_no_workspace_needed_for_environment_setup(self):
+        x = fixture(intent="setup", lens=None, formats=[], workspace="unknown")
+        self.assertEqual(engine.affordances(x)["status"], "VERIFIED")
