@@ -1,0 +1,16 @@
+{
+  "intent": "preview",
+  "lens": "c4",
+  "formats": ["mermaid", "structurizr"],
+  "environment": "missing",
+  "evidence": "absent",
+  "basis": "unknown",
+  "model": "absent",
+  "has_input_diagram": true,
+  "reconciled": false,
+  "artifacts": {"mermaid": "draft", "structurizr": "valid"},
+  "validators": {"mermaid": "missing", "structurizr": "available"},
+  "kroki": "gateway_ready",
+  "previews": {"mermaid": "absent", "structurizr": "absent"},
+  "approval": {"start_kroki": false}
+}
