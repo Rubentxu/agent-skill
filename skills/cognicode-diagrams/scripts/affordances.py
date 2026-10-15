@@ -14,7 +14,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
-INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate"}
+INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
 BASIS = {"unknown", "current", "stale"}
@@ -37,6 +37,11 @@ LINKS = {
     "review-model": "references/evidence.md",
     "reconcile": "references/interpret.md",
     "validate": "references/validate.md",
+    "inspect-kroki": "references/kroki.md",
+    "start-kroki": "references/kroki.md",
+    "start-mermaid-companion": "references/kroki.md",
+    "preview-mermaid": "references/kroki.md",
+    "preview-structurizr": "references/kroki.md",
     "finish": "references/navigation.md",
 }
 
@@ -142,6 +147,52 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     unsupported = [fmt for fmt in formats if fmt not in lens["formats"] or lens["formats"][fmt]["support"] == "unsupported"]
     if unsupported:
         return {"status": "UNSUPPORTED", "lens": lens_id, "recommended": None, "_links": [], "blockers": [f"formato no compatible para {lens_id}: {', '.join(unsupported)}"]}
+
+    # Optional visualization is independent of CogniCode discovery and model review.
+    # Only OBSERVED renderer/preview states are trusted; no auto-provisioning.
+    if intent == "preview":
+        kroki = enum({"kroki": state.get("kroki", "unknown")}, "kroki",
+                     {"unknown", "missing", "gateway_ready", "full_ready"})
+        previews = state.get("previews", {})
+        if not isinstance(previews, dict) or set(previews) - FORMATS or set(previews.values()) - {"absent", "rendered", "failed", "stale"}:
+            raise InvalidState("previews inválidos")
+        if "start_kroki" in approval and not isinstance(approval["start_kroki"], bool):
+            raise InvalidState("approval.start_kroki debe ser booleano")
+        # Partial renders are useful but must never masquerade as a completed render request.
+        pending = [fmt for fmt in formats if previews.get(fmt, "absent") != "rendered"]
+        links: list[dict] = []
+        blockers: list[str] = []
+        def add_preview_action(rel: str, why: str, approve: bool = False) -> None:
+            links.append({"rel": rel, "href": LINKS[rel], "requires_approval": approve, "why": why})
+        for fmt in pending:
+            if art.get(fmt, "absent") == "absent":
+                blockers.append(f"falta fuente de texto {fmt}; generar o proporcionar archivo antes de previsualizar")
+        if pending and kroki == "unknown":
+            add_preview_action("inspect-kroki", "comprobar render local real antes de usarlo")
+        elif pending and kroki == "missing":
+            if approval.get("start_kroki", False):
+                add_preview_action("start-kroki", "instalar/arrancar contenedores solo con autorización", True)
+            else:
+                blockers.append("Kroki no disponible; arrancar contenedores requiere autorización")
+        elif pending:
+            for fmt in pending:
+                if art.get(fmt, "absent") == "absent":
+                    continue
+                if fmt == "mermaid" and kroki != "full_ready":
+                    if approval.get("start_kroki", False):
+                        add_preview_action("start-mermaid-companion", "Mermaid necesita el contenedor complementario", True)
+                    else:
+                        blockers.append("Mermaid requiere el companion kroki-mermaid; arranque no autorizado")
+                else:
+                    add_preview_action("preview-" + fmt, "renderizar fuente mediante POST local y comprobar bytes SVG/PNG")
+        if not pending:
+            add_preview_action("finish", "previsualizaciones generadas; revisar visualmente y declarar alcance")
+            status = "VERIFIED" if all(art.get(fmt) == "valid" for fmt in formats) else "PARTIAL"
+        else:
+            status = "IN_PROGRESS" if links else ("PARTIAL" if any(previews.get(fmt) == "rendered" for fmt in formats) else "BLOCKED")
+        return {"status": status, "lens": lens_id,
+                "recommended": links[0]["rel"] if links else None, "_links": links,
+                "blockers": blockers}
 
     links: list[dict] = []
     blockers: list[str] = []
