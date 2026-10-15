@@ -31,9 +31,26 @@ No hay API HTTP, servidor, router de comandos, base de datos ni extensión de Co
 - `validators`: por formato `available|missing`, comprobado en el sistema actual.
 - `approval`: booleans de instalación y escritura; no autoriza por sí sola cambios a CogniCode.
 
+## Previsualización independiente (`intent=preview`)
+
+Ejemplo de estado observado, con imagen pendiente y gateway de Kroki disponible (pero sin Mermaid):
+
+```json
+{
+  "intent": "preview", "lens": "c4", "formats": ["structurizr", "mermaid"],
+  "environment": "missing", "evidence": "absent", "basis": "unknown", "model": "absent",
+  "artifacts": {"structurizr": "valid", "mermaid": "draft"},
+  "validators": {"structurizr": "available", "mermaid": "missing"},
+  "kroki": "gateway_ready", "previews": {"structurizr": "absent", "mermaid": "absent"},
+  "approval": {"start_kroki": false}
+}
+```
+
+`kroki=unknown|missing|gateway_ready|full_ready` describe comprobaciones reales. `gateway_ready` permite Structurizr, **no Mermaid**. `full_ready` exige render real de Mermaid+Structurizr. `previews.<formato>=absent|rendered|failed|stale`: se actualiza solamente tras observar resultados. `approval.start_kroki` **no** equivale a autorización para eliminar otro contenedor ni conectar a un servidor público. Ver [kroki.md](kroki.md). El estado `VERIFIED` en esta ruta significa *render local de artefactos sintácticamente validados*, no verificación semántica.
+
 ## Semántica de las acciones
 
-`inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `finish`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
+`inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
 
 A continuación de cada acción, observar si ha funcionado y actualizar **en la conversación** los campos realmente cambiados. Evitar ejecutar el mismo paso sin que cambie alguna precondición. El agente puede saltarse el helper y aplicar estas normas directamente.
 
