@@ -67,3 +67,7 @@ El script lee **solo** el fichero elegido, se conecta únicamente a localhost (n
 - Si el agente no puede ver o abrir el archivo resultante: declarar `VISUAL_REVIEW_NOT_RUN`, aunque exista imagen.
 
 **AAT**: gateway solo acepta Structurizr y rechaza Mermaid; Compose permite los dos; `!include` no se facilita eludiendo SECURE; fallo de render no machaca imagen previa; ningún POST sale de localhost; view-key selecciona cada vista; Mermaid C4 real produce imagen o se reporta limitación verificable. AAT requiere Docker/Podman y debe ejecutarse en un entorno autorizado.
+
+## Otros visores, misma frontera de responsabilidades
+
+`LikeC4` **no** es `diagram_type` de Kroki. Para `.c4`, seguir [LikeC4 local](projectors/likec4.md). Para explorar interactivamente `workspace.dsl`, seguir [Structurizr Local](projectors/structurizr-local.md). El agente crea todos estos formatos desde CogniCode y la lente C4; ningún proyector analiza código o sustituye las consultas CogniCode.

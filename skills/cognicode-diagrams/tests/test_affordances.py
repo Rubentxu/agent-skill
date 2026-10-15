@@ -241,3 +241,79 @@ class WorkspaceRoutingTests(unittest.TestCase):
     def test_no_workspace_needed_for_environment_setup(self):
         x = fixture(intent="setup", lens=None, formats=[], workspace="unknown")
         self.assertEqual(engine.affordances(x)["status"], "VERIFIED")
+
+
+class InteractiveProjectorRoutingTests(unittest.TestCase):
+    def test_likec4_is_a_format_not_a_new_lens(self):
+        catalog = engine.read_catalog()
+        self.assertEqual(catalog['c4']['formats']['likec4']['support'], 'adapted')
+        self.assertTrue((SKILL/catalog['c4']['formats']['likec4']['playbook']).is_file())
+
+    def test_likec4_format_is_agent_generated_from_c4_lens(self):
+        x=fixture(formats=['likec4'],model='reviewed',artifacts={'likec4':'absent'}, validators={'likec4':'available'})
+        self.assertIn('render-likec4',rels(x))
+
+    def test_likec4_not_routed_into_kroki(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'valid'},projector='kroki-local')
+        self.assertEqual(engine.affordances(x)['status'],'UNSUPPORTED')
+
+    def test_interactive_viewer_no_cognicode_rescan(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'valid'},
+                  environment='missing',evidence='absent',model='absent',basis='unknown',
+                  projector='likec4-local',projector_status='ready')
+        self.assertEqual(rels(x),['open-projector'])
+        self.assertNotIn('scan-symbols',rels(x))
+
+    def test_viewer_has_to_be_observed(self):
+        x=fixture(intent='preview',formats=['structurizr'],artifacts={'structurizr':'valid'},
+                  projector='structurizr-local', projector_status='unknown')
+        self.assertEqual(rels(x),['inspect-projector'])
+
+    def test_viewer_not_started_without_consent(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'draft'},
+                  projector='likec4-local',projector_status='missing')
+        self.assertEqual(engine.affordances(x)['status'],'BLOCKED')
+        self.assertNotIn('start-projector',rels(x))
+
+    def test_viewer_can_start_when_explicitly_authorized(self):
+        x=fixture(intent='preview',formats=['structurizr'],artifacts={'structurizr':'draft'},
+                  projector='structurizr-local',projector_status='missing',approval={'start_projector':True})
+        self.assertEqual(rels(x),['start-projector'])
+        self.assertTrue(engine.affordances(x)['_links'][0]['requires_approval'])
+
+    def test_projector_must_match_format(self):
+        x=fixture(intent='preview',formats=['mermaid'],artifacts={'mermaid':'valid'},
+                  projector='structurizr-local',projector_status='ready')
+        self.assertEqual(engine.affordances(x)['status'],'UNSUPPORTED')
+
+    def test_viewer_http_ready_does_not_claim_vision(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'valid'},
+                  projector='likec4-local',projector_status='ready',visual_review='not_run')
+        self.assertNotEqual(engine.affordances(x)['status'],'VERIFIED')
+        self.assertEqual(rels(x),['open-projector'])
+
+    def test_interactive_visual_review_passes_but_validation_missing(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'draft'},
+                  projector='likec4-local',projector_status='ready',visual_review='passed')
+        self.assertEqual(engine.affordances(x)['status'],'PARTIAL')
+
+    def test_interactive_verified_is_only_visual_format(self):
+        x=fixture(intent='preview',formats=['structurizr'],artifacts={'structurizr':'valid'},
+                  projector='structurizr-local',projector_status='ready',visual_review='passed')
+        self.assertEqual(engine.affordances(x)['status'],'VERIFIED')
+
+    def test_failed_visual_review_requires_revision(self):
+        x=fixture(intent='preview',formats=['structurizr'],artifacts={'structurizr':'valid'},
+                  projector='structurizr-local',projector_status='ready',visual_review='failed')
+        self.assertEqual(engine.affordances(x)['status'],'PARTIAL')
+        self.assertEqual(rels(x),['review-layout'])
+
+    def test_absent_input_blocks_viewer(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'absent'},
+                  projector='likec4-local',projector_status='ready')
+        self.assertEqual(engine.affordances(x)['status'],'BLOCKED')
+
+    def test_viewer_invalid_state_fail_closed(self):
+        x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'valid'},
+                  projector='likec4-local',projector_status='cloud_ready')
+        with self.assertRaises(engine.InvalidState):engine.affordances(x)

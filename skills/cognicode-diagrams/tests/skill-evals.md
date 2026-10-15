@@ -33,6 +33,15 @@
 - D3: No prometer que la base de conocimiento persista entre sesiones: mostrar qué cache/índice existe y qué se puede volver a consultar.
 - D4: No escribir nuevos artefactos dentro del repo inspeccionado sin petición; no ejecutar código ajeno arbitrario.
 
+## E — Aislamiento de proyecto bajo HOME
+
+- E1: ``/projects/pipelinek`` ⇒ `~/.cognicode-diagrams/workspaces/pipelinek--<hash>/`; no creaciones dentro de Git.
+- E2: dos repositorios distintos con el mismo basename ⇒ workspaces diferentes; un subdirectorio ⇒ misma identidad Git.
+- E3: directorio de HOME dentro del worktree, symlink de `.cognicode-diagrams` a la raíz Git, `../` o ruta absoluta ⇒ rechazar.
+- E4: `workspace.json` de otro repositorio ⇒ bloquear sin sobrescritura ni migración automática.
+- E5: intents `create`, `scan`, `preview` con workspace desconocido/ausente ⇒ `inspect-workspace`/`init-workspace` antes de generación o proyección.
+- E6: `init-lens` solo crea carpetas de la lente solicitada; fuente/imagen/trazas no se duplican en Git.
+
 ## Cierre de UAT
 
 Ejecutar con un agente real + CogniCode estable instalado y comparar documentos/diagramas generados contra código, configuración y ADR. Registrar comandos, versiones, resultado de herramientas externas de validación, SHA y artefactos. **Estas son pruebas diseñadas, no ejecutadas en este paquete.**
@@ -49,3 +58,18 @@ Ejecutar con un agente real + CogniCode estable instalado y comparar documentos/
 - Structurizr con varias vistas → `view-key` por cada vista solicitada.
 - Contenido privado → no POST a un dominio externo, ni derivar URL GET con contenido del código.
 - UAT opcional con Docker/Podman real → solo cuando el usuario autorice el arranque, no en tests unitarios.
+
+## Proyectores LikeC4 y Structurizr Local — UAT/AAT pendientes de ejecutar
+
+- P1: proyecto Git limpio; el agente usa CogniCode real y escribe `model.c4` + `workspace.dsl` **solo en HOME**; Git status permanece idéntico.
+- P2: Podman rootless/SELinux: arranque LikeC4, HTTP 200 local, `/view/index` navegable, HMR funcional; el agente verifica un detalle y anota la revisión visual.
+- P3: Podman rootless/SELinux: arranque Structurizr Local contra `workspace.dsl`, navegación C1/C2/C3 y lectura sin permisos de edición; comprobar que no se crea nada en Git.
+- P4: `start` no se ejecuta sin autorización explícita, no abre puertos públicos ni manda DSL a servicios externos.
+- P5: dos clones llamados igual crean contenedores/paths distintos y ninguno puede controlar el del otro.
+- P6: conflicto de puertos o contenedor con mismo nombre y etiquetas ajenas => fallo cerrado; stop/remove solo del contenedor propio.
+- P7: LikeC4 `validate` falla sobre DSL inválido => no declarar `VERIFIED`; HTTP 200 por sí solo no significa vista inspeccionada.
+- P8: modificaciones del `.c4` y `.dsl` en HOME se reflejan en las vistas sin volver a escanear CogniCode; cambios en el código requieren reconciliación previa.
+- P9: un diagrama LikeC4 no debe enviarse a Kroki ni inferirse automáticamente de Structurizr DSL.
+- P10: ejecución idéntica bajo Docker en entorno donde Podman no está instalado, con puertos configurables.
+
+Hasta ejecutar estos UAT con Podman/Docker, reportar **integración y mocks**, no certificación OCI real.

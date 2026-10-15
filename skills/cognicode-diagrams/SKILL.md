@@ -1,6 +1,6 @@
 ---
 name: cognicode-diagrams
-description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MCP: instala y verifica bajo autorización, prepara escaneos, interpreta evidencias y genera, revisa o traduce Mermaid y Structurizr DSL mediante lentes especializadas. C4 disponible; extensible a casos de uso, clases, vertical slices y futuras lentes sin modificar CogniCode. Navegación guiada por affordances tipo HATEOAS."
+description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MCP: instala y verifica bajo autorización, prepara escaneos, interpreta evidencias y genera, revisa o traduce Mermaid, Structurizr DSL y LikeC4 mediante lentes especializadas. C4 disponible; extensible a casos de uso, clases, vertical slices y futuras lentes sin modificar CogniCode. Navegación guiada por affordances tipo HATEOAS."
 ---
 
 # CogniCode Diagrams — orquestación de lentes especializadas
@@ -10,7 +10,7 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 ## Distinciones fundamentales
 
 - **Lente** = pregunta y ontología que gobiernan el diagrama: `c4` ahora; más adelante `use-case`, `class`, `vertical-slice`, etc.
-- **Formato** = lenguaje de representación: `mermaid` y `structurizr`. No todos los formatos expresan todas las lentes de manera equivalente.
+- **Formato** = lenguaje de representación: `mermaid`, `structurizr` y `likec4`. No todos los formatos expresan todas las lentes de manera equivalente.
 - **Evidencia** = resultados reales de CLI/MCP + código, manifiestos, ADR, requisitos, tests o trazas. La mera existencia de un call graph no prueba despliegue, casos de uso ni orden runtime.
 - **Workspace externo** = `~/.cognicode-diagrams/workspaces/<repo-name>--<id>/`; siempre fuera del repositorio Git, almacena fuentes, imágenes y evidencias derivadas sin duplicar índices de CogniCode.
 - **Affordance** = acción posible según observación (`rel` + `href` local + precondiciones); no es una petición HTTP ni un comando inventado. El catálogo de acciones se deriva de la sesión actual; solo se ejecutan las útiles y autorizadas.
@@ -22,7 +22,7 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 3. Resolver **antes de escanear o generar archivos** [el workspace externo del proyecto](references/workspace.md) mediante `scripts/workspace.py inspect`; si está ausente, inicializarlo bajo `~/.cognicode-diagrams` y verificar `ready`. Si es inválido, bloquear escrituras. No guardar ningún artefacto en Git. Observar las capacidades y el estado real: CLI/MCP, ruta, revisión/dirty, índice/grafo y sus límites, archivos de entrada, validadores, permisos. Usar [navegación de sesión](references/navigation.md) para presentar solo acciones habilitadas. `scripts/affordances.py` es un ejemplo **puro, opcional** para comprobar el catálogo, nunca realiza acciones ni persiste estado.
 4. Cargar solo la referencia indicada en la acción seleccionada: [instalación](references/bootstrap.md), [escaneo](references/scan.md), [lectura y evidencia](references/evidence.md), [lente seleccionada](references/lenses/c4.md) o [representación](references/formats/mermaid-c4.md), [Structurizr](references/formats/structurizr-c4.md). Reinspeccionar tras cada paso: nunca avanzar por mera suposición.
 5. Para interpretar un diagrama existente usar [interpretación](references/interpret.md). Para revisar el modelo contra el código, contrastar cada relación por su fuente. Aplicar [validación](references/validate.md) a la representación y a la semántica por separado.
-6. Si se solicita imagen o inspección visual, cargar [renderización local con Kroki](references/kroki.md). La intención `preview` utiliza los ficheros producidos sin requerir escanear CogniCode de nuevo; no arrancar contenedores sin autorización. Un SVG/PNG válido indica `RENDERED`, no verificación arquitectónica.
+6. Si se solicita imagen o inspección visual, elegir [proyector compatible](references/projectors.md): Kroki para SVG/PNG, [LikeC4](references/projectors/likec4.md) para vista interactiva `.c4` o [Structurizr Local](references/projectors/structurizr-local.md) para navegador de `workspace.dsl`. La intención `preview` utiliza los ficheros producidos sin requerir escanear CogniCode de nuevo; no arrancar contenedores sin autorización. Un SVG/PNG válido indica `RENDERED`, no verificación arquitectónica.
 7. Entregar los artefactos solicitados con un informe de evidencias, avisos y estado `VERIFIED`, `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Nunca presentar un test no ejecutado, una herramienta ausente o un grafo vacío como PASS.
 
 ## Rutas por intención
@@ -33,7 +33,9 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 | "Escanea este proyecto" | inspeccionar → índice/consultas mínimas → grafo si aporta → comprobar lectura real y cobertura |
 | "Haz C4 del repositorio" | preparar evidencia → lente `c4` → modelo interpretado → Mermaid y/o Structurizr → validar |
 | "Traduce este DSL a Mermaid" | leer diagrama → reconstruir semántica → comprobar compatibilidad → generar → validar. **No exige CogniCode** |
-| "Previsualiza/visualiza los diagramas" | comprobar Kroki local → elegir gateway para Structurizr/companion para Mermaid → exportar SVG/PNG por POST → revisión visual; no rescanear por defecto |
+| "Previsualiza/visualiza los diagramas" | comprobar formato/archivo en HOME → seleccionar Kroki / LikeC4 / Structurizr Local → comprobar servicio local → proyectar → revisión visual; no rescanear por defecto |
+| "Quiero vistas C4 navegables con LikeC4" | CogniCode → lente C4 → agente crea `.c4` en HOME → validar DSL → proyector LikeC4 con Podman/Docker → inspeccionar |
+| "Abre el C4 en Structurizr Local" | usar `workspace.dsl` en HOME → arrancar `structurizr local` aislado → abrir vistas C1/C2/C3 y comprobarlas |
 | "Actualiza según el código" | interpretar diagrama → refrescar evidencia si está caducada → reconciliar → cambios mínimos → validar |
 | "Quiero clases/vertical slices/casos de uso" | consultar catálogo; si `planned`, informar de la capacidad pendiente y remitir a [cómo añadir lentes](references/extend-lenses.md); no fingir soporte |
 
@@ -53,6 +55,10 @@ description: "Orquesta diagramas y vistas de código basados en CogniCode CLI/MC
 - [Navegación y contratos](references/navigation.md)
 - [Registro de lentes](references/lens-registry.json), [añadir nuevas lentes](references/extend-lenses.md)
 - [Instalación](references/bootstrap.md), [escaneos](references/scan.md), [evidencias](references/evidence.md)
-- [Interpretación](references/interpret.md), [validación](references/validate.md), [previsualización local](references/kroki.md)
-- [Lente C4](references/lenses/c4.md), [Mermaid C4](references/formats/mermaid-c4.md), [Structurizr C4](references/formats/structurizr-c4.md)
+- [Interpretación](references/interpret.md), [validación](references/validate.md), [proyectores](references/projectors.md), [Kroki](references/kroki.md)
+- [Lente C4](references/lenses/c4.md), [Mermaid C4](references/formats/mermaid-c4.md), [Structurizr C4](references/formats/structurizr-c4.md), [LikeC4 C4](references/formats/likec4-c4.md)
 - [Evaluaciones](tests/skill-evals.md) y [contratos automatizados](tests/test_affordances.py)
+
+## Contenedores opcionales y workspace externo
+
+Antes de cualquier operación del visor: [workspace en HOME](references/workspace.md) preparado y fuentes de la lente creadas por el agente. El script `scripts/projectors.py` prioriza **Podman**, admite Docker, comprueba etiquetas de identidad y vincula puertos solo a localhost. No arranca, elimina, analiza ni instala nada de forma implícita; `start`/`stop`/`remove` requieren una acción explícita del usuario. Los proyectores nunca reciben el checkout Git. `VERIFIED` en previsualización acredita únicamente sintaxis/render y revisión visual declarada, no fidelidad arquitectónica.

@@ -8,8 +8,19 @@
       "playbook": "references/lenses/c4.md",
       "evidence": "architecture",
       "formats": {
-        "mermaid": {"support": "native", "playbook": "references/formats/mermaid-c4.md"},
-        "structurizr": {"support": "native", "playbook": "references/formats/structurizr-c4.md"}
+        "mermaid": {
+          "support": "native",
+          "playbook": "references/formats/mermaid-c4.md"
+        },
+        "structurizr": {
+          "support": "native",
+          "playbook": "references/formats/structurizr-c4.md"
+        },
+        "likec4": {
+          "support": "adapted",
+          "playbook": "references/formats/likec4-c4.md",
+          "note": "LikeC4 tiene semántica C4 flexible; el agente debe preservar identidad y relaciones, no convertir archivos .dsl mecánicamente"
+        }
       }
     },
     {
@@ -19,8 +30,14 @@
       "playbook": "references/lenses/use-case.md",
       "evidence": "requirements",
       "formats": {
-        "mermaid": {"support": "adapted", "note": "Flowchart con notación de casos de uso; Mermaid no dispone de UML Use Case nativo"},
-        "structurizr": {"support": "adapted", "note": "System context/custom view es una aproximación, no UML Use Case equivalente"}
+        "mermaid": {
+          "support": "adapted",
+          "note": "Flowchart con notación de casos de uso; Mermaid no dispone de UML Use Case nativo"
+        },
+        "structurizr": {
+          "support": "adapted",
+          "note": "System context/custom view es una aproximación, no UML Use Case equivalente"
+        }
       }
     },
     {
@@ -30,8 +47,14 @@
       "playbook": "references/lenses/class.md",
       "evidence": "symbols",
       "formats": {
-        "mermaid": {"support": "native", "note": "classDiagram"},
-        "structurizr": {"support": "unsupported", "note": "No hay UML class diagram nativo en Structurizr DSL"}
+        "mermaid": {
+          "support": "native",
+          "note": "classDiagram"
+        },
+        "structurizr": {
+          "support": "unsupported",
+          "note": "No hay UML class diagram nativo en Structurizr DSL"
+        }
       }
     },
     {
@@ -41,8 +64,14 @@
       "playbook": "references/lenses/vertical-slice.md",
       "evidence": "flow",
       "formats": {
-        "mermaid": {"support": "native", "note": "Flowchart estático; sequenceDiagram solo cuando existe evidencia ordenada"},
-        "structurizr": {"support": "adapted", "note": "Dynamic view solo para flujo ordenado corroborado, no a partir de call graph"}
+        "mermaid": {
+          "support": "native",
+          "note": "Flowchart estático; sequenceDiagram solo cuando existe evidencia ordenada"
+        },
+        "structurizr": {
+          "support": "adapted",
+          "note": "Dynamic view solo para flujo ordenado corroborado, no a partir de call graph"
+        }
       }
     }
   ]

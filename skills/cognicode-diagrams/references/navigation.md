@@ -51,9 +51,26 @@ Ejemplo de estado observado, con imagen pendiente y gateway de Kroki disponible 
 
 `kroki=unknown|missing|gateway_ready|full_ready` describe comprobaciones reales. `gateway_ready` permite Structurizr, **no Mermaid**. `full_ready` exige render real de Mermaid+Structurizr. `previews.<formato>=absent|rendered|failed|stale`: se actualiza solamente tras observar resultados. `approval.start_kroki` **no** equivale a autorización para eliminar otro contenedor ni conectar a un servidor público. Ver [kroki.md](kroki.md). El estado `VERIFIED` en esta ruta significa *render local de artefactos sintácticamente validados*, no verificación semántica.
 
+## Visores interactivos opcionales (`intent=preview`)
+
+Para mostrar contenido que ya existe en el workspace externo, **sin activar CogniCode ni volver a escanear**, el agente puede elegir `projector=likec4-local` con `formats=["likec4"]` o `projector=structurizr-local` con `formats=["structurizr"]`. Campos observados adicionales:
+
+```json
+{
+  "intent": "preview", "lens": "c4", "formats": ["likec4"],
+  "workspace": "ready", "projector": "likec4-local",
+  "projector_status": "ready", "visual_review": "not_run",
+  "artifacts": {"likec4": "valid"}, "approval": {"start_projector": false},
+  "environment": "missing", "evidence": "absent", "basis": "unknown",
+  "model": "absent", "has_input_diagram": false, "reconciled": false
+}
+```
+
+`projector_status=unknown|missing|stopped|running|ready|failed` sale de la inspección del contenedor y, para `ready`, del HTTP local comprobado. `visual_review=not_run|passed|failed` solo lo actualiza el agente **después de inspeccionar la vista**. `ready` sin revisión visual no cierra el ciclo; `start-projector` requiere `approval.start_projector=true`. `open-projector` solo ofrece una guía al agente; no afirma que el navegador se abrió realmente. La ruta anterior de Kroki se conserva como `projector=kroki-local` por defecto. No se soporta proyectar LikeC4 a través de Kroki. Ver [proyectores](projectors.md).
+
 ## Semántica de las acciones
 
-`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
+`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`, `inspect-projector`, `start-projector`, `open-projector`, `review-layout`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
 
 A continuación de cada acción, observar si ha funcionado y actualizar **en la conversación** los campos realmente cambiados. Evitar ejecutar el mismo paso sin que cambie alguna precondición. El agente puede saltarse el helper y aplicar estas normas directamente.
 

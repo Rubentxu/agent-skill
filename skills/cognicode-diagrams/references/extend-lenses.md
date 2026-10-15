@@ -21,3 +21,7 @@
 `planned` significa especificado como hueco para evolución; **no significa listo**. La matriz oficial reside en el JSON, no en esta tabla.
 
 Documentación: https://mermaid.js.org/intro/ y https://docs.structurizr.com/dsl/language.
+
+## Protocolo distinto de proyector
+
+Actualmente la lente C4 admite `mermaid`, `structurizr` y `likec4` (este último `adapted`, requiere [su receta](formats/likec4-c4.md)). Un nuevo proyector debe consumir un formato generado por el agente, declarar precondiciones y acreditar su visualización sin introducir análisis de repositorios o servidores MCP alternativos. Añadir playbook bajo `references/projectors/`, sin instalar una skill extra y manteniendo el gestor de contenedores aislado del Git checkout. El router admite nuevos formatos declarados en el catálogo; para nuevos binarios contenedorizados, ampliar la lista explícita de imágenes/proyectores con pruebas de seguridad.
