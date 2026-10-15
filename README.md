@@ -11,6 +11,7 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Disponible |
 | [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Adaptación de la skill de calidad: mismas doce dimensiones y evidencias, con CogniCode para descubrir símbolos, relaciones e impacto. | Disponible |
 | [`cognicode-diagrams`](skills/cognicode-diagrams/SKILL.md) | Orquestador de diagramas con CogniCode CLI/MCP, navegación por affordances y lentes extensibles. C4 disponible en Mermaid y Structurizr; otras lentes planificadas. | Disponible (C4) |
+| [`delivery-first-testing`](skills/delivery-first-testing/SKILL.md) | Orquestación de testing orientado a valor: UAT efímeros, selección por impacto, promoción selectiva de regresiones y lentes navegables. | Disponible (router) |
 | [`pipelinek-local-ci`](skills/pipelinek-local-ci/SKILL.md) | Bootstrap con mise/asdf, diseña/revisa/migra `pipeline.kts` y opera PipelineK como CI/CD local agent-first con DSL Jenkins-familiar, eventos y gates. | Disponible |
 | [`agent-secretless`](skills/agent-secretless/SKILL.md) | Opera Agent Secretless Vault como control plane de credenciales: descubre capacidades por `asv agent discover --json`, ejecuta trabajo secretless y diagnostica instalación sin exponer secretos. | Disponible |
 | [`mosat-technology-learning`](skills/mosat-technology-learning/SKILL.md) | Investigación y aprendizaje tecnológico con MOSAT: perspectivas disciplina/proceso/producto, 7P, fichas trazables, modelos sistémicos, validación y gaps agent-first. | Disponible |
@@ -32,6 +33,9 @@ npx skills add Rubentxu/agent-skill --skill cognicode-quality-investigator --age
 
 # Crear diagramas C4 con CogniCode CLI/MCP (futuras lentes extensibles)
 npx skills add Rubentxu/agent-skill --skill cognicode-diagrams --agent opencode
+
+# Orquestar tests rápidos, UAT efímeros y regresiones mínimas
+npx skills add Rubentxu/agent-skill --skill delivery-first-testing --agent opencode
 
 # Crear/operar CI local con PipelineK
 npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
@@ -96,6 +100,7 @@ python3 scripts/validate_skills.py
 python3 -m unittest discover -s tests -p 'test_*.py'
 python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/delivery-first-testing/tests -p 'test_*.py'
 ```
 
 El workflow de GitHub Actions ejecuta estas comprobaciones para cada PR y push. Los tests de una skill nueva deben registrarse en CI cuando se añada.

@@ -1,0 +1,14 @@
+{
+  "intent": "feature",
+  "inventory": "ready",
+  "impact": "known",
+  "basis": "current",
+  "changed": [
+    "ui",
+    "domain"
+  ],
+  "risk": "routine",
+  "affected": "passed",
+  "uat": "passed",
+  "regression": "pending"
+}
