@@ -66,3 +66,7 @@ Para peticiones que produzcan artefactos o evidencias (`scan`, `discover`, `crea
 - `workspace.json` ajeno, symlink que sale hacia repo, destino `../` o HOME dentro de Git ⇒ se rechaza.
 - `git status --porcelain` antes/después de cualquier ciclo de la skill ⇒ sin modificaciones **causadas por la skill**; no se confunden cambios de terceros con los propios.
 - CogniCode MCP/CLI no se toca; sus cachés internos son responsabilidad del runtime y no se reinventan en este workspace.
+
+## Proyectores locales y aislamiento
+
+Los `.c4` para LikeC4 y `workspace.dsl` para Structurizr Local se generan en `lenses/<lente>/sources/` de **este** workspace. `scripts/projectors.py` obtiene de `scripts/workspace.py` la identidad del checkout Git, pero solo monta `sources/` del directorio HOME en los contenedores. No utiliza un Dockerfile dentro del repo, no modifica `.gitignore` y no monta el checkout. `stop` no destruye el contenido. Los contenedores están separados por workspace/lente, con etiquetas verificadas y puertos configurables en loopback. Revisar [projectors.md](projectors.md).
