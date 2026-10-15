@@ -1,5 +1,7 @@
 # Evidencias para cualquier lente
 
+Guardar el informe derivado únicamente en el [workspace externo](workspace.md) (`evidence/`, `lenses/<lente>/reports/`). Las referencias pueden apuntar al código fuente Git en modo lectura, pero no generar ficheros dentro de ese checkout.
+
 La skill no crea una base de conocimiento nueva. CogniCode proporciona índices, resultados MCP/CLI y caches según su versión, mientras el agente compone una ficha derivada y efímera de afirmaciones arquitectónicas o de código para el objetivo solicitado.
 
 ## Campos recomendados del handoff del agente
