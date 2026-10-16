@@ -49,7 +49,7 @@ Publicación GitHub ≠ descubrimiento confirmado en skills.sh. El CLI no debe c
 
 - La distribución JVM canónica puede incluir `bin/` + `lib/*.jar` (bytecode, no fuente); el JDK requerido puede ser externo.
 - En SDK/bibliotecas, Maven Central exige habitualmente JAR principal, POM, `-sources.jar`, `-javadoc.jar` y firmas. El ZIP de fuentes completo de GitHub NO sustituye esos artefactos.
-- GitHub Packages es gratuito para paquetes públicos pero el registro Maven/Gradle exige credenciales de consumo; para librerías públicas con consumo anónimo priorizar Maven Central.
+- GitHub Packages es gratuito para paquetes públicos pero el registro Maven/Gradle exige credenciales de consumo; para librerías públicas con consumo anónimo evaluar Maven Central **solo tras comprobar** si el proyecto es comunitario elegible para el Publisher Tier gratuito o exige Pro (política vigente desde 2026-10-01).
 - Para múltiples productos distinguir `product_set`, `route_set`, `asset_set` y verificación remota. No llamar DONE al CLI cuando falla el SDK.
 - GitHub añade *Source code* automáticamente. `.gitattributes export-ignore` puede podar su contenido sin reducir el tamaño real del checkout o historial; no elimina la UI.
 - Evidencias completas en certifier/storage; assets de consumidor y metadatos **normativos** en release; notas breves y digests en texto.
