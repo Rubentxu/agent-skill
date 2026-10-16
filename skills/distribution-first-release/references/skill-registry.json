@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "related_skills": [
+    {
+      "id": "delivery-first-testing",
+      "intents": [
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "consumer",
+        "release"
+      ],
+      "purpose": "Verificar con el mínimo de UAT efímeras y preservar garantías críticas"
+    },
+    {
+      "id": "pipelinek-local-ci",
+      "intents": [
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "release"
+      ],
+      "purpose": "Usar gates locales PipelineK si el proyecto ya adopta esa herramienta"
+    },
+    {
+      "id": "code-quality-evidence-review",
+      "intents": [
+        "audit",
+        "prepare"
+      ],
+      "signals": [
+        "integrity",
+        "git"
+      ],
+      "purpose": "Auditar afirmaciones de calidad con evidencia concreta"
+    },
+    {
+      "id": "retrospective-cycle-audit",
+      "intents": [
+        "audit",
+        "cleanup"
+      ],
+      "signals": [
+        "evidence",
+        "history"
+      ],
+      "purpose": "Reconciliar recibos previos y riesgos de falsos verdes"
+    }
+  ]
+}
