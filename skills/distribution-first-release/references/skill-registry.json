@@ -20,9 +20,10 @@
         "release"
       ],
       "signals": [
-        "release"
+        "release",
+        "publish"
       ],
-      "purpose": "Usar gates locales PipelineK si el proyecto ya adopta esa herramienta"
+      "purpose": "Autoridad local de CI; validar, ejecutar y publicar productos confirmados por registro sin duplicar gates"
     },
     {
       "id": "code-quality-evidence-review",
