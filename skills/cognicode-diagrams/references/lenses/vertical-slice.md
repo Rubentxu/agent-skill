@@ -1,5 +1,5 @@
-# Lente futura: `vertical-slice` — **PLANNED, NO ACTIVA**
+# Lente futura: vertical-slice — PLANNED
 
-Antes de habilitar: delimitar caso, entrada (HTTP, CLI, evento, job), flujo por aplicación/dominio/infraestructura y persistencia/efectos. Usar `get_call_hierarchy`, `trace_path`, símbolos y código a través de CogniCode como **topología estática**, corroborar lo que sea necesario con pruebas, rutas y configuración.
+**No activar aún.** La evidencia debe proceder del análisis de **código** suministrado por CogniCode CLI/MCP. Investigar entradas (HTTP/CLI/evento), llamadas, persistencia y efectos mediante consultas de símbolos, subgrafos y fragmentos **en CogniCode**; no leer archivos del checkout, tests, trazas ni configuración con otra herramienta.
 
-Mermaid `flowchart` para la topología de la vertical slice; `sequenceDiagram` solo con evidencia de orden de ejecución. Structurizr `dynamic view` se reserva para secuencias realmente acreditadas y elementos C4 apropiados; no transformar un call graph en orden temporal. Si faltan trazas, informar `DYNAMIC_UNSUPPORTED`, no inventar pasos.
+Una cadena de llamadas prueba alcanzabilidad estática, **no el orden runtime**. Si CogniCode no proporciona evidencia ordenada, emitir `DYNAMIC_UNSUPPORTED` y representar solo el mapa estático acotado, con incertidumbre explícita. Mermaid flowchart y Structurizr dynamic view no son equivalentes sin dicha prueba. Petición de detalle exige nuevas consultas, no ampliar imaginativamente.

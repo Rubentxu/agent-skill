@@ -1,38 +1,20 @@
-# Proyectores locales — ciclo de vida y límites
+# Proyectores de artefactos — aislamiento absoluto del repositorio
 
-## Responsabilidad única
+Los proyectores **solo** leen fuentes y renders creados por el agente bajo `~/.cognicode-diagrams/workspaces/<id>/`. Nunca leen, montan, analizan ni buscan archivos del checkout; su `--repo` es únicamente un identificador opaco para resolver un workspace derivado mediante ruta explícita **sin Git**. No ejecutan CogniCode, porque la investigación ocurre ANTES con agente + CLI/MCP. [Contrato](investigation-contract.md).
 
-**Los proyectores consumen archivos de diagramas que el agente ya creó**. Nunca montan el checkout Git ni invocan CogniCode. No se habilitan MCP de LikeC4/Structurizr, análisis automatizado de repositorios ni servicios remotos. La salida visible no se convierte en fuente de verdad sobre código o arquitectura.
+| Proyector | Entradas derivadas | Salida |
+|---|---|---|
+| Kroki local | `lenses/*/sources/*.mmd|*.dsl|*.puml` | `lenses/*/renders/*.svg|*.png` |
+| LikeC4 local | `lenses/*/sources/*.c4` | visor interactivo local |
+| Structurizr Local | `lenses/*/sources/workspace.dsl` | visor C1/C2/C3 local |
+| Markmap | `navigation/atlas.md` formado de sources/renders | `navigation/atlas.html` |
 
-| Proyector | Entrada que genera el agente | Superficie | Procedimiento |
-|---|---|---|---|
-| Kroki local | Mermaid `.mmd`, Structurizr `.dsl`, PlantUML `.puml` | SVG/PNG | [Kroki](kroki.md) |
-| LikeC4 local | LikeC4 `.c4`/`.likec4` | UI web interactiva, vistas y drill-down | [LikeC4](projectors/likec4.md) |
-| Markmap (atlas) | Markdown `navigation/atlas.md` derivado de renders/sources | HTML interactivo, miniaturas/enlaces a SVG/PNG y visores locales | [Markmap](projectors/markmap.md) |
-| Structurizr Local | `workspace.dsl` | UI web C4 interactiva C1/C2/C3 | [Structurizr Local](projectors/structurizr-local.md) |
+## Contrato OCI y render
 
-No se crea un formato universal: la lente decide las entidades y relaciones; las recetas de formato enseñan al agente a escribir cada archivo de manera explícita. Los motores interpretan **solo el DSL**, no el repositorio.
+- Solo proyectar si `workspace.py inspect` informa `ready`; `init-lens` crea carpetas del workspace, no inspecciona repo. No pasar código al runtime de render.
+- Para `projectors.py start|stop|remove --repo <ruta-raiz-explicita>`, autorización específica de contenedores; preferir Podman, admitir Docker. El contenedor monta exclusivamente `sources/` del workspace (nunca el checkout), con puertos en loopback y verificación de etiquetas/volúmenes.
+- Kroki `scripts/render_kroki.py` restringe origen `sources/` y destino `renders/` en el mismo workspace y lente; no permite archivos arbitrarios ni endpoints públicos.
+- Markmap y Atlas usan únicamente el workspace y sus ficheros; no regeneran ni certifican hechos de código.
+- `HTTP_READY`, `FORMAT_VALID`, `RENDERED` y `VISUALLY_REVIEWED` no implican `IMPLEMENTATION_GROUNDED`. Este último solo se obtiene mediante claims de CogniCode previos y actuales.
 
-## Workspace y contenedores
-
-Antes de llamar a `projectors.py`, comprobar `scripts/workspace.py inspect` y `init-lens`. Siempre fuentes bajo `~/.cognicode-diagrams/workspaces/<repo>--<id>/lenses/<lente>/sources/`. No copiar ni montar código, ADR privados ni `.git` por defecto. Cuando se pidan explicaciones arquitectónicas, primero CogniCode y las evidencias autorizadas.
-
-`python3 scripts/projectors.py status|start|stop|remove --repo <ruta Git> --projector likec4|structurizr [--engine podman|docker] [--lens c4]`
-
-- `status`: solo inspecciona un contenedor etiquetado con el workspace, la lente y el proyector; `--check-http` consulta únicamente `127.0.0.1`. `running` no significa que el servicio esté listo.
-- `start`: operación explícita autorizada; si falta el DSL no inicia. Usa imágenes oficiales, rutas de montaje del workspace externo, binding HTTP a loopback, y `:z` para SELinux/Podman cuando se comparten los archivos.
-- `stop`: solo detiene el contenedor propio; **no borra archivos**.
-- `remove`: retira el contenedor **propio**, tras parada; no borra imágenes ni fuentes. No se ejecuta automáticamente.
-- `--port` y `--hmr-port` permiten resolver conflictos entre varios workspaces. Los puertos de cada contenedor ya existente no se cambian implícitamente.
-
-La imagen LikeC4 se referencia actualmente como `likec4/likec4:latest` (tag móvil); la de Structurizr como `structurizr/structurizr:2026.09.19`. Registrar imagen/digest en las evidencias de UAT al reproducir una ejecución y fijar los digests para despliegues estrictamente reproducibles.
-
-## HATEOAS y verificación
-
-Para `intent=preview`, el agente elige `projector=likec4-local` con `formats=["likec4"]`, o `projector=structurizr-local` con `["structurizr"]`. La navegación solo anuncia `inspect-projector`, `start-projector`, `open-projector` o `review-layout` si cumplen precondiciones observadas. Un contenedor corriendo no habilita `VERIFIED`: requiere HTTP local observado, origen de los archivos válido, comprobación de sintaxis y revisión visual ejecutada. La revisión semántica **se acredita por separado** mediante CogniCode y la lente.
-
-Usar [validación](validate.md), [evidencias](evidence.md), [workspace](workspace.md) y [navegación](navigation.md). UAT con Podman/Docker real pendiente hasta observar el proceso, no se sustituye por mocks.
-
-## Atlas Markmap
-
-`intent=atlas` ofrece un índice **transversal** de las lentes ya generadas. Se crea únicamente bajo `navigation/` en el workspace externo y no añade análisis ni un modelo canónico nuevo; permite seguir enlaces a visores interactivos solo tras observar que el contenedor responde en localhost. Markmap se ejecuta sin servicio permanente mediante [procedimiento](projectors/markmap.md), preferentemente con Podman.
+Procedimientos existentes: [Kroki](kroki.md), [LikeC4](projectors/likec4.md), [Structurizr Local](projectors/structurizr-local.md), [Markmap](projectors/markmap.md).
