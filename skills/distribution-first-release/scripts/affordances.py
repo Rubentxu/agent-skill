@@ -11,12 +11,14 @@ CATALOG = ROOT / "references" / "lens-registry.json"
 RELATED = ROOT / "references" / "skill-registry.json"
 
 INTENTS = {"catalog", "audit", "prepare", "release", "cleanup"}
-PRODUCTS = {"unknown", "application", "cli", "library", "sdk", "plugin", "container"}
-SIGNALS = {"release", "git", "archive", "package", "consumer", "integrity", "evidence", "history", "unknown"}
+PRODUCTS = {"unknown", "application", "cli", "library", "sdk", "plugin", "container", "portfolio"}
+SIGNALS = {"release", "git", "archive", "package", "consumer", "integrity", "evidence", "history", "unknown", "discovery", "registry", "publish"}
 CHECKS = {"not_run", "passed", "failed", "blocked"}
 ACTIONS = {
     "list-lenses": "references/navigation.md",
-    "inspect-product": "references/lenses/asset-selection.md",
+    "inspect-product": "references/lenses/product-discovery.md",
+    "inventory-products": "references/lenses/product-discovery.md",
+    "route-channels": "references/lenses/registry-contracts.md",
     "refresh-basis": "references/lenses/integrity-provenance.md",
     "plan-git-hygiene": "references/lenses/git-hygiene.md",
     "clarify-source-archives": "references/lenses/source-archive-boundary.md",
@@ -85,6 +87,8 @@ def affordances(state: dict) -> dict:
     basis = _one(state.get("basis", "unknown"), "basis", {"current", "unknown", "stale"})
     git = _one(state.get("git_artifacts", "unknown"), "git_artifacts", {"unknown", "clean", "bloated"})
     assets = _one(state.get("asset_set", "unknown"), "asset_set", {"unknown", "complete", "incomplete", "unexpected"})
+    product_set = _one(state.get("product_set", "unknown"), "product_set", {"unknown", "complete", "incomplete"})
+    route_set = _one(state.get("route_set", "unknown"), "route_set", {"unknown", "complete", "incomplete"})
     for key in ("package", "consumer", "integrity", "publication"):
         _one(state.get(key, "not_run"), key, CHECKS)
     _one(state.get("risk", "routine"), "risk", {"routine", "high", "critical"})
@@ -95,6 +99,10 @@ def affordances(state: dict) -> dict:
         action, status = "list-lenses", "READY"
     elif inventory == "unknown" or product == "unknown":
         action, status = "inspect-product", "READY"
+    elif product_set != "complete":
+        action, status = "inventory-products", ("FAILED" if product_set == "incomplete" else "READY")
+    elif route_set != "complete":
+        action, status = "route-channels", ("FAILED" if route_set == "incomplete" else "READY")
     elif basis != "current":
         action, status = "refresh-basis", "BLOCKED"
     elif intent == "cleanup":

@@ -18,6 +18,7 @@ npx skills add Rubentxu/agent-skill --skill pipelinek-local-ci --agent opencode
 - `run`: usa PipelineK como gate local durante desarrollo.
 - `migrate`: mueve política CI desde Jenkins/Actions/GitLab.
 - `diagnose`: resuelve DSL, toolchains, shims, eventos y fallos.
+- `publish`: automatiza desde la CI local **producto confirmado → staging → upload por canal → verificación remota**, delegando descubrimiento/selección de registros en `distribution-first-release`. Leer [`09-artifact-publishing.md`](references/09-artifact-publishing.md).
 
 ## Instalación de PipelineK
 

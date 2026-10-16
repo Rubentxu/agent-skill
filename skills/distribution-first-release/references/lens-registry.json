@@ -2,6 +2,21 @@
   "schema_version": 1,
   "lenses": [
     {
+      "id": "product-discovery",
+      "status": "ready",
+      "question": "¿Cuáles son TODOS los productos reales y módulos distribuibles desde este SHA?",
+      "playbook": "references/lenses/product-discovery.md",
+      "intents": [
+        "audit",
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "discovery",
+        "release"
+      ]
+    },
+    {
       "id": "git-hygiene",
       "status": "ready",
       "question": "¿Se están versionando outputs compilados y copias de release?",
@@ -128,15 +143,17 @@
     },
     {
       "id": "registry-contracts",
-      "status": "planned",
+      "status": "ready",
       "question": "¿Publicación de paquetes fuente/metadatos requerida por cada registry?",
-      "playbook": "references/extend-lenses.md",
+      "playbook": "references/lenses/registry-contracts.md",
       "intents": [
         "prepare",
         "release"
       ],
       "signals": [
-        "package"
+        "registry",
+        "package",
+        "release"
       ]
     },
     {
@@ -149,6 +166,20 @@
       ],
       "signals": [
         "consumer"
+      ]
+    },
+    {
+      "id": "publishing-pipelinek",
+      "status": "ready",
+      "question": "¿Cómo ejecutar publish remoto con PipelineK local como autoridad de gates?",
+      "playbook": "references/lenses/publishing-pipelinek.md",
+      "intents": [
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "publish",
+        "release"
       ]
     }
   ]

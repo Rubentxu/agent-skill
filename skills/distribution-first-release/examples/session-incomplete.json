@@ -13,5 +13,7 @@
   "package": "passed",
   "consumer": "passed",
   "integrity": "passed",
-  "publication": "not_run"
+  "publication": "not_run",
+  "product_set": "complete",
+  "route_set": "complete"
 }
