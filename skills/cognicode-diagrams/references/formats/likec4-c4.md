@@ -4,7 +4,7 @@
 
 ## Creación
 
-1. El agente obtiene del repositorio las afirmaciones C1/C2/C3 con CogniCode y fuentes corroboradas. Mantiene `OBSERVED`, `CURATED`, `INFERRED`, `UNKNOWN` en el informe externo.
+1. El agente obtiene afirmaciones C1/C2/C3 **solo** mediante consultas CogniCode CLI/MCP sobre código implementado y solicita por CogniCode los fragmentos corroborantes. No usa lectura directa ni documentos/ADR/manifiestos. Mantiene `OBSERVED_CODE`, `INFERRED`, `UNKNOWN` con `query_id` por elemento/arista en el informe externo.
 2. El agente escribe `~/.cognicode-diagrams/workspaces/<repo>--<id>/lenses/c4/sources/model.c4` o distribuye los `.c4` en un subdirectorio de `sources/`. LikeC4 encuentra recursivamente `.c4`/`.likec4`.
 3. `specification` declara tipos (actor, system, container, component); `model` los elementos y relaciones; `views` las vistas. Identificadores estables y fronteras fieles a la lente; un crate/librería NO se convierte en contenedor desplegable por convención.
 4. Crear vistas con `view index`, `view of <sistema>`, y otras con nombres explícitos. Las vistas pueden agregar automáticamente relaciones: estas agregaciones **no** se consideran nueva evidencia ni se reinyectan a CogniCode.

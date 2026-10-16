@@ -51,9 +51,16 @@ class KrokiTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.addCleanup(self.server.server_close)
         self.addCleanup(self.server.shutdown)
-        self.source = Path(self.temp.name) / "source.mmd"
+        self.home = Path(self.temp.name)
+        self.workspace = self.home / ".cognicode-diagrams" / "workspaces" / "repo--123456789abc"
+        self.source = self.workspace / "lenses" / "c4" / "sources" / "source.mmd"
+        self.source.parent.mkdir(parents=True)
         self.source.write_text("C4Context\n    System(foo, \"Service\")\n", encoding="utf-8")
-        self.target = Path(self.temp.name) / "diagram.svg"
+        self.target = self.workspace / "lenses" / "c4" / "renders" / "diagram.svg"
+        self.target.parent.mkdir(parents=True)
+        self.home_patch = patch.object(module.Path, "home", return_value=self.home)
+        self.home_patch.start()
+        self.addCleanup(self.home_patch.stop)
 
     def test_mermaid_renders_from_source_and_svg(self):
         Handler.responses = [(200, "image/svg+xml", SVG, {})]
@@ -116,12 +123,31 @@ class KrokiTests(unittest.TestCase):
             module.build_request("x" * (module.MAX_INPUT + 1), "mermaid", "svg")
 
     def test_symlink_output_rejected(self):
-        existing = Path(self.temp.name) / "existing.svg"
+        existing = self.target.parent / "existing.svg"
         existing.write_bytes(SVG)
         self.target.symlink_to(existing)
         with self.assertRaisesRegex(module.RenderError, "enlace simbólico"):
             module.render(self.source, self.target, "mermaid", "svg", self.url)
         self.assertEqual(existing.read_bytes(), SVG)
+
+    def test_rejects_source_from_original_repository(self):
+        repo = self.home / "source-repository"
+        repo.mkdir()
+        forbidden = repo / "model.mmd"
+        forbidden.write_text("C4Context", encoding="utf-8")
+        with self.assertRaisesRegex(module.RenderError, "artefactos derivados"):
+            module.render(forbidden, self.target, "mermaid", "svg", self.url)
+        self.assertEqual(Handler.requests, [])
+
+    def test_rejects_destination_outside_derived_workspace(self):
+        with self.assertRaisesRegex(module.RenderError, "artefactos derivados"):
+            module.render(self.source, self.home / "escape.svg", "mermaid", "svg", self.url)
+        self.assertEqual(Handler.requests, [])
+
+    def test_rejects_cross_workspace_source_destination(self):
+        dst = self.home / ".cognicode-diagrams" / "workspaces" / "foreign--123456789abc" / "lenses" / "c4" / "renders" / "foo.svg"
+        with self.assertRaisesRegex(module.RenderError, "deben compartir"):
+            module.render(self.source, dst, "mermaid", "svg", self.url)
 
     def test_unreachable_local_returns_error(self):
         with self.assertRaisesRegex(module.RenderError, "no disponible"):

@@ -23,5 +23,7 @@
     "install": false,
     "write_project": false
   },
-  "workspace": "ready"
+  "workspace": "ready",
+  "evidence_origin": "cognicode",
+  "claim_coverage": "partial"
 }

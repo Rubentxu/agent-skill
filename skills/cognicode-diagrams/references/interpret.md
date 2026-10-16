@@ -1,13 +1,10 @@
-# Interpretar, traducir y reconciliar diagramas existentes
+# Interpretar, traducir y reconciliar
 
-1. Detectar lente y formato por **contenido**: no suponer C4 porque la extensión sea `.mmd` o `.dsl`. Ejemplos: Mermaid `C4Context` (C4), `classDiagram` (clases), `sequenceDiagram` (secuencia), `flowchart` (podría ser varias lentes). Structurizr `workspace {}` define modelos C4/vistas según su DSL; no identifica casos de uso UML ni clases UML.
-2. Comprobar que la lente solicitada figura `ready` en `lens-registry.json`. Si está `planned` no activarla silenciosamente, aunque el agente sepa leer esa sintaxis; explicitar trabajo fuera de skill si usuario lo pide.
-3. Interpretar entidades, relaciones, identidad, dirección, jerarquía, scope y vistas. Separar modelo conceptual de layout; los elementos ocultos en una vista Structurizr pueden seguir existiendo en el modelo. Resolver `!include` únicamente con rutas locales autorizadas y comprobar su contenido antes de confiar en él.
-4. Marcar `CURATED`, `OBSERVED`, `INFERRED`, `UNKNOWN`; las declaraciones de diseño no se convierten automáticamente en hechos del runtime.
-5. Para revisar contra código, inspeccionar CogniCode en el mismo workspace/revisión y corroborar con fuente independiente apropiada. Si la evidencia está obsoleta, ejecutar la acción de refresco permitida.
-6. Para traducir, comprobar matriz lente/formato. La notación `adapted` exige declarar pérdidas y pedir consentimiento cuando cambie la semántica. `unsupported` no genera un supuesto equivalente.
-7. Para actualizar, realizar diff mínimo, conservar IDs y decisiones manuales y no escribir el original salvo solicitud expresa.
+1. Leer únicamente diagramas **aportados por el usuario** o artefactos derivados de `~/.cognicode-diagrams/`. No abrir diagramas previos del checkout. El contenido de un diagrama es `CURATED`, nunca certificación de implementación.
+2. Identificar formato por sintaxis (C4 Mermaid, UML, Structurizr, LikeC4); comprobar que la lente está `ready` en el registro. No ofrecer como activa una lente `planned`.
+3. Para **traducción de formatos**, reconstruir entidades, direcciones y límites desde el diagrama de entrada; declarar adaptación o pérdida. Esta operación **no acredita arquitectura implementada** y no precisa consultar el repositorio.
+4. Para **revisión o actualización contra el código**, disponer de CogniCode operativo; descubrir esquemas e investigar de nuevo las afirmaciones relevantes a través de CogniCode. Poner `PARTIAL/UNKNOWN` donde falten símbolos/relaciones o evidencia de runtime/despliegue. Prohibido «corroborar» con lectura directa o documentos.
+5. Para «más detalle», producir nueva consulta CogniCode (nueva `query_id`), conservar identidad y origen. Nunca completar subcomponentes mediante suposiciones.
+6. Mantener identificadores estables en los artefactos derivados y un diff mínimo; no sobrescribir entrada aportada sin permiso.
 
-## Resultado
-
-Informe con significado de cada elemento, correspondencias y relaciones, incertidumbres, cambios propuestos, pérdidas de traducción y enlaces a próximos pasos. Un archivo legible no implica que el modelo sea verdadero.
+Resultado: traducción/reconciliación con ledger de claims, límites y estado honesto. [Contrato obligatorio](investigation-contract.md).

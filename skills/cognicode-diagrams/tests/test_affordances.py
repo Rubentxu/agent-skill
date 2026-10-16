@@ -16,6 +16,7 @@ def fixture(**changes):
     state = {
         'workspace': 'ready', 'intent': 'create', 'lens': 'c4', 'formats': ['mermaid','structurizr'],
         'environment': 'both_ready', 'evidence': 'graph_ready', 'basis': 'current',
+        'evidence_origin': 'cognicode', 'claim_coverage': 'verified',
         'model': 'absent', 'has_input_diagram': False, 'reconciled': False,
         'artifacts': {'mermaid':'absent','structurizr':'absent'},
         'validators': {'mermaid':'available','structurizr':'available'},
@@ -58,6 +59,33 @@ class CatalogTests(unittest.TestCase):
     def test_future_class_does_not_claim_dsl_support(self):
         cat = engine.read_catalog()
         self.assertEqual(cat['class']['formats']['structurizr']['support'], 'unsupported')
+
+
+class StrictInvestigationTests(unittest.TestCase):
+    def test_detail_request_forces_query(self):
+        x = fixture(model="reviewed", detail_requested=True)
+        self.assertEqual(rels(x), ["query-cognicode"])
+        self.assertNotIn("render-mermaid", rels(x))
+
+    def test_evidence_insufficient_never_renders(self):
+        x = fixture(model="reviewed", evidence_insufficient=True)
+        self.assertEqual(rels(x), ["query-cognicode"])
+        self.assertNotEqual(engine.affordances(x)["status"], "VERIFIED")
+
+    def test_non_cognicode_evidence_refused(self):
+        x = fixture(model="reviewed", evidence_origin="other")
+        self.assertEqual(rels(x), ["query-cognicode"])
+        self.assertIn("ajena a CogniCode", str(engine.affordances(x)["blockers"]))
+
+    def test_cognicode_missing_no_substitute(self):
+        x = fixture(model="reviewed", environment="missing", detail_requested=True)
+        self.assertEqual(engine.affordances(x)["status"], "BLOCKED")
+        self.assertNotIn("query-cognicode", rels(x))
+
+    def test_claim_coverage_unknown_not_verified(self):
+        x = fixture(model="reviewed", claim_coverage="unknown",
+                    artifacts={"mermaid":"valid", "structurizr":"valid"})
+        self.assertNotEqual(engine.affordances(x)["status"], "VERIFIED")
 
 
 class RoutingTests(unittest.TestCase):

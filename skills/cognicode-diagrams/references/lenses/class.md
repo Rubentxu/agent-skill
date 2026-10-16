@@ -1,5 +1,5 @@
-# Lente futura: `class` — **PLANNED, NO ACTIVA**
+# Lente futura: class — PLANNED
 
-Antes de habilitar: inferir clases/tipos/traits/interfaces y relaciones de composición, asociación, herencia e implementación a partir de símbolos y código **corroborados**. No convertir automáticamente imports o llamadas en herencia/composición. Declarar qué relaciones son estáticas, hipotéticas o genéricas.
+Para habilitar, descubrir mediante CogniCode CLI/MCP los esquemas efectivos de símbolos/relaciones, consultar tipos, interfaces/traits, composición, asociación, herencia e implementación y pedir fragmentos por CogniCode para verificar cada relación. **Nunca leer fuentes directamente** ni convertir imports o llamadas en herencia.
 
-Destino natural: Mermaid `classDiagram`. **Structurizr DSL no ofrece un diagrama UML de clases nativo**; negarse a ofrecer equivalencia. Una vista de componentes C4 es otro tipo de información. Si se pide Structurizr, advertir incompatibilidad y ofrecer representación de componentes solo con consentimiento informado.
+Mermaid `classDiagram` es el destino previsto. Structurizr DSL carece de UML class diagram nativo ⇒ `UNSUPPORTED`, no falsa equivalencia. Ausencia de relación observable no significa ausencia real fuera de cobertura.

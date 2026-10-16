@@ -1,5 +1,7 @@
 # Markmap — atlas interactivo derivado de diagramas existentes
 
+> **Entrada exclusivamente derivada del workspace en HOME.** No leer, buscar, montar ni inspeccionar el checkout, tampoco mediante Git; `--repo` es un identificador de ruta explícita. [Contrato](../investigation-contract.md).
+
 **Contrato:** Markmap es un proyector de navegación, nunca una lente que analice código. CogniCode CLI/MCP es la única interfaz de exploración de código; el agente crea/contrasta los `.dsl`, `.mmd`, `.c4` y otros protocolos. Este proyector solo indexa ficheros ya presentes y transforma `atlas.md` a HTML. No ejecuta CogniCode, no monta Git ni consulta repositorios.
 
 ## Preparación y ciclo completo

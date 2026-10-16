@@ -1,5 +1,7 @@
 # LikeC4 — visor interactivo opcional, contenido producido por el agente
 
+> **Entrada exclusivamente derivada del workspace en HOME.** No leer, buscar, montar ni inspeccionar el checkout, tampoco mediante Git; `--repo` es un identificador de ruta explícita. [Contrato](../investigation-contract.md).
+
 **No instalar LikeC4 MCP ni usar LikeC4 para explorar el repositorio.** El agente, guiado por [LikeC4 DSL](../formats/likec4-c4.md), crea fuentes `.c4` desde CogniCode. LikeC4 interpreta sus propios archivos solo para servir vistas y navegación C4.
 
 ## Inicio seguro con Podman (recomendado)

@@ -26,7 +26,7 @@
     {
       "id": "use-case",
       "status": "planned",
-      "purpose": "Actores, objetivos e interacciones funcionales; requiere requisitos y comportamiento, no solo grafos",
+      "purpose": "Actores y objetivos SOLO si el análisis de código a través de CogniCode los demuestra; planned, no requisitos documentales como prueba",
       "playbook": "references/lenses/use-case.md",
       "evidence": "requirements",
       "formats": {

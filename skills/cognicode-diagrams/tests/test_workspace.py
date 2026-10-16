@@ -60,14 +60,21 @@ class WorkspaceTests(unittest.TestCase):
         b = module.init(other, home=self.home)
         self.assertNotEqual(a["workspace"], b["workspace"])
 
-    def test_subfolder_maps_to_repository_root(self):
+    def test_root_is_explicit_without_git_auto_discovery(self):
         inner = self.repo / "src" / "nested"
         inner.mkdir(parents=True)
-        self.assertEqual(module.init(inner, home=self.home)["repository"], str(self.repo))
+        self.assertEqual(module.init(self.repo, home=self.home)["repository"], str(self.repo))
+        self.assertEqual(module.inspect(inner, home=self.home)["repository"], str(inner))
 
-    def test_non_git_directory_rejected(self):
+    def test_invalid_directory_rejected(self):
         with self.assertRaises(module.WorkspaceError):
-            module.init(self.home, home=self.home)
+            module.init(self.base / "does-not-exist", home=self.home)
+
+    def test_workspace_never_calls_git(self):
+        from unittest.mock import patch
+        with patch.object(subprocess, "run", side_effect=AssertionError("Git forbidden")):
+            result = module.init(self.repo, home=self.home)
+        self.assertEqual(result["status"], "ready")
 
     def test_home_inside_git_checkout_rejected(self):
         nested_home = self.repo / "fake-home"

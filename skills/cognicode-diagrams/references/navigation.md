@@ -1,5 +1,7 @@
 # Navegación HATEOAS-like: sesión como recurso, playbooks como enlaces
 
+**Política heredada obligatoria:** toda investigación arquitectónica, incluido el trabajo de subagentes, se realiza exclusivamente mediante CogniCode CLI/MCP. El router opera sobre estados declarados, pero **no atestigua** que una observación provenga de CogniCode: el agente debe conservar queries/claims verificables bajo HOME. [Contrato](investigation-contract.md).
+
 No hay API HTTP, servidor, router de comandos, base de datos ni extensión de CogniCode. Los artefactos de proyecto viven únicamente en el [workspace externo](workspace.md) `~/.cognicode-diagrams`. Antes de cualquier operación que escriba, resolver `workspace=ready`. El agente observa la sesión y elige solo la acción cuyo requisito está acreditado. `rel` expresa intención, `href` referencia una guía local; no equivale a haber ejecutado la acción. El helper puro opcional `scripts/affordances.py` calcula ejemplos de enlaces sin ejecutar tareas.
 
 ## Estado efímero de entrada
@@ -12,6 +14,10 @@ No hay API HTTP, servidor, router de comandos, base de datos ni extensión de Co
   "formats": ["mermaid", "structurizr"],
   "environment": "mcp_ready",
   "evidence": "graph_ready",
+  "evidence_origin": "cognicode",
+  "claim_coverage": "partial",
+  "detail_requested": false,
+  "evidence_insufficient": false,
   "basis": "current",
   "model": "absent",
   "has_input_diagram": false,
@@ -27,7 +33,10 @@ No hay API HTTP, servidor, router de comandos, base de datos ni extensión de Co
 - `lens`: `id` del registro de lentes. Para `catalog` puede omitirse; las lentes `planned` no se ofrecen para ejecución.
 - `environment`: `unknown|missing|cli_ready|mcp_ready|both_ready`. La observación se toma de comandos/calls, nunca de memoria.
 - `evidence`: `absent|symbols_ready|graph_ready|partial|stale`; un grafo READY exige consulta posterior que confirme su disponibilidad, no solo un stdout exit 0.
-- `basis`: `unknown|current|stale`. Un SHA sin conocer `dirty` y cobertura no demuestra vigencia.
+- `basis`: `unknown|current|stale`, **obtenido solo de CogniCode**. Sin él, `unknown`; no usar `git status` ni lectura del checkout.
+- `evidence_origin`: `cognicode|unknown|other`. La evidencia ajena a CogniCode no habilita arquitectura.
+- `claim_coverage`: `unknown|partial|verified`. `verified` solo tras enlazar **todos** los elementos/aristas con consultas y contrastes de código vía CogniCode.
+- `detail_requested` o `evidence_insufficient`: verdadero ⇒ la siguiente affordance de investigación es `query-cognicode` con consulta **nueva**; nunca re-renderizar como sustituto.
 - `model`: `absent|draft|reviewed`; `reviewed` significa que el agente comprobó la coherencia indicada, no que el software se haya certificado por magia.
 - `artifacts`: por formato `absent|draft|valid|invalid`. `valid` significa que el validador requerido fue realmente ejecutado y pasó.
 - `validators`: por formato `available|missing`, comprobado en el sistema actual.
@@ -74,13 +83,13 @@ Para mostrar contenido que ya existe en el workspace externo, **sin activar Cogn
 
 ## Semántica de las acciones
 
-`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`, `inspect-projector`, `start-projector`, `open-projector`, `review-layout`, `build-atlas`, `inspect-markmap`, `render-atlas`, `open-atlas`, `review-atlas`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
+`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `query-cognicode`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`, `inspect-projector`, `start-projector`, `open-projector`, `review-layout`, `build-atlas`, `inspect-markmap`, `render-atlas`, `open-atlas`, `review-atlas`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
 
 A continuación de cada acción, observar si ha funcionado y actualizar **en la conversación** los campos realmente cambiados. Evitar ejecutar el mismo paso sin que cambie alguna precondición. El agente puede saltarse el helper y aplicar estas normas directamente.
 
 ## Reglas de cierre
 
-- `VERIFIED`: artefactos presentes con validaciones realmente ejecutadas y modelo revisado; declarar en la respuesta el **alcance de la verificación**, que puede ser solo formato si se traduce un archivo sin código.
+- `VERIFIED`: alcance comprobado; para fidelidad arquitectónica requiere claims contrastados con **CogniCode** y `claim_coverage=verified`. En `preview/translate` solo certifica el formato/visor, nunca la implementación.
 - `PARTIAL`: diagrama entregable, pero falta revisión de modelo, validador o datos suficientes; no afirmar PASS.
 - `BLOCKED`: hace falta instalación/permisos/entrada y no se dispone de ello.
 - `FAILED`: un validador o contrato ha demostrado un fallo.
