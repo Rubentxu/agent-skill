@@ -18,9 +18,9 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 
 1. **Pregunta concreta** con símbolo o ámbito, lenguaje y plano: ¿entrada ejecutable, responsabilidad, colaborador, interacción, almacenamiento o frontera?
 2. **Descubrimiento real**: ayuda/capabilities si el CLI instalado las admite o MCP `initialize` + `tools/list` paginado y schemas. **Anunciada ≠ funcional**.
-3. **Comprobación por lenguaje sobre símbolo real**: índice, identidad, ubicación, contexto, relación pertinente y cobertura/limitaciones. Guardar resultado por **capacidad + lenguaje**. El fallo del grafo general no significa «Kotlin incompatible».
+3. **Comprobación por lenguaje sobre símbolo real**: índice, identidad, ubicación, contexto, relación pertinente y cobertura/limitaciones. Guardar `probes[lenguaje]` por cada capacidad: un éxito de Rust no certifica Kotlin. El fallo del grafo general no significa «Kotlin incompatible».
 4. **Elección de una capacidad pertinente** según [research-protocol.md](references/research-protocol.md), sin invocarlas todas. Preferir respuestas estructuradas; usar lo ya obtenido si basta.
-5. **Evidencia antes de dibujar**: cada elemento/arista vincula pregunta, consulta-respuesta CogniCode, símbolos, relación, plano y limitaciones. El agente interpreta pero nunca eleva inferencias a hechos.
+5. **Evidencia y cobertura antes de dibujar**: cada elemento/arista vincula pregunta, consulta-respuesta CogniCode, símbolos, relación, plano y limitaciones. Comprobar con CogniCode los **archivos omitidos** y su relevancia para la vista; si son esenciales o desconocidos, `PARTIAL/UNKNOWN`. El agente interpreta pero no eleva inferencias a hechos.
 6. **Fin acotado**: si no hay progreso, probar otra capacidad estructurada relevante o cerrar pregunta `PARTIAL/UNKNOWN`. Más detalle = nueva pregunta y consultas concretas; jamás bucles sin valor.
 
 `scripts/affordances.py` aplica las decisiones puras de `scripts/research_protocol.py`: un `graph_ready`/`claim_coverage=verified` declarado **no** permite saltarse el registro verificable de la pregunta. El helper no ejecuta CogniCode ni certifica autenticidad de sus respuestas.

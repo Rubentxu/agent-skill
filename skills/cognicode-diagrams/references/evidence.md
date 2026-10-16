@@ -34,3 +34,7 @@ Se exige el estado `research` del [protocolo de preguntas](research-protocol.md)
 - El cierre `EVIDENCE_READY` demuestra consistencia de **los claims declarados** para **esa pregunta**, no cobertura completa del lenguaje, ni autenticidad de las respuestas del agente.
 - Si hay nueva petición de detalle, registrar nueva pregunta, capacidad seleccionada, pruebas y consultas. Si no hay progreso, terminar `PARTIAL/UNKNOWN`, sin repetir la misma operación hasta agotar contexto.
 - Cuando la consulta estructurada ya es suficiente, evitar búsquedas y lecturas extra: no aportan valor ni elevan certificación.
+
+## Evidencia sobre ficheros omitidos
+
+Guardar `scope.report_id`, `scope.languages`, `scope.coverage`, `scope.omissions_complete` y por cada fichero excluido la ruta **devuelta por CogniCode**, la relevancia para la pregunta y las consultas estructuradas que fundamentan esa decisión. `omitted_files=[]` solo es concluyente cuando el propio análisis informa una lista completa. La identidad de símbolo y la verificación por lenguaje son requisitos distintos de la cobertura. No atribuir a Kotlin un probe observado únicamente en Rust.

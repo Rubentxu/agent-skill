@@ -109,3 +109,7 @@ formulate-question -> discover-capabilities -> probe-capability -> query-structu
 `
 
 Son **acciones semánticas** que el agente implementa exclusivamente llamando a capacidades reales de CogniCode; no son nombres de comandos inventados. `probe-capability` prueba cada lenguaje sobre símbolo real. No seleccionar por conteo de herramientas. `read_file(raw)` como bypass bloquea la investigación; `search_content` solo puede ubicar candidatos, nunca fundar arquitectura. La proyección seguirá necesitando validación independiente de formato y plano.
+
+## Preconditions del cierre arquitectónico
+
+`research.scope` exige el inventario de omisiones de CogniCode y la matriz `capabilities[].probes[lenguaje]`. Los enlaces `assess-coverage` y `assess-omissions` solicitan acciones del runtime descubierto, **no comandos inventados**. Con ficheros omitidos relevantes/indeterminados no se habilita la vista como implementada. Una vista acotada con omisiones justificadas conserva el estado `PARTIAL` si `scope.coverage=partial`.

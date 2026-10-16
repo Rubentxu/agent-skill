@@ -10,3 +10,7 @@
 6. Terminar si hay suficiente evidencia para responder; si no hay nueva prueba ni otra capacidad viable, cerrar `PARTIAL/UNKNOWN` sin bucles, sin documentos, sin otra herramienta.
 
 No ejecutar `analyze .` ni construir todo el grafo por rutina. El coste y la profundidad los gobierna la pregunta. Para «más detalle», nueva pregunta sobre el componente requerido, no un dibujo más grande a partir del mismo reporte.
+
+## Comprobación de cobertura antes de C4
+
+Antes de representar una vista, preguntar a CogniCode qué lenguajes ha analizado y qué ficheros ha omitido. Un grafo parcial con `skipped_files` no demuestra que la parte omitida sea irrelevante. Evaluar cada omisión para la **pregunta** y pedir una consulta estructurada acotada cuando sea posible. Si no hay capacidad que aporte esta evidencia, declarar `PARTIAL/UNKNOWN`; nunca examinar manualmente archivos no indexados ni deducir procesos/relaciones a partir de nombres.

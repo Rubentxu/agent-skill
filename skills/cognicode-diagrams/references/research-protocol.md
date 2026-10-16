@@ -23,14 +23,14 @@ Tomar un **símbolo real devuelto por CogniCode**, nunca deducido de README/ADR.
 - ¿Resuelve la relación solicitada o informa ausencia/limitación?
 - ¿Cuál es la cobertura y precisión observada? `complete|partial|unknown` y omisiones.
 
-El registro `probe` tiene `status=untried|usable|partial|failed|unsupported`, `query_id`, `symbol_id`, `location`, `context=present|missing|unknown`, `relations=present|missing|unknown`, `coverage`. Ningún resultado de una operación basta para afirmar incompatibilidad de todo un lenguaje. Si `build_graph` falla para Kotlin, probar otra consulta estructurada pertinente; no pasar a `read_file(raw)`.
+Cada capacidad tiene un mapa `probes` indexado **por lenguaje del proyecto**. El resultado por lenguaje tiene `status=untried|usable|partial|failed|unsupported`, `query_id`, `symbol_id`, `location`, `context=present|missing|unknown`, `relations=present|missing|unknown`, `coverage`. Ningún resultado de una operación basta para afirmar incompatibilidad de todo un lenguaje. Si `build_graph` falla para Kotlin, probar otra consulta estructurada pertinente; no pasar a `read_file(raw)`.
 
 ## Contrato mínimo de sesión
 
 Se trabaja **una pregunta concreta por sesión**; combinar luego claims contrastados de varias sesiones, nunca promesas o suposiciones. El router recibe `research` con:
 - `catalog=unknown|observed`.
 - `question={id,text,kind,language,target}`; kind: `responsibilities`, `understand_symbol`, `collaborators`, `interaction` o `view_grouping`.
-- `capabilities[]` con nombre/runtime, rol, lenguajes, `advertised`, `schema_observed` y `probe`.
+- `capabilities[]` con nombre/runtime, rol, lenguajes, `advertised`, `schema_observed` y `probes:{lenguaje:probe}`. Nunca usar el probe de Rust para certificar Kotlin.
 - `queries[]` con `id`, `question_id`, `capability`, `target`, `mode=structured|symbol_context|text_candidate`, `status`, `coverage`, `symbol_ids`, `relation_ids` y `observation_plane`.
 - `claims[]` con `id`, `question_id`, `kind=entity|relation`, `status=observed`, `plane`, `query_ids` y `symbol_id` o `from_symbol,to_symbol,relation_id`.
 - `diagram_claim_ids[]` = exactamente las afirmaciones que se van a representar; `max_queries` por defecto 4 y como máximo 12.
@@ -55,3 +55,15 @@ Consultar [el ejemplo](../examples/session-c4.json), que es **sintético**, no e
 **Antibucle:** no repetir una capacidad sobre el mismo `target` cuando no hubo progreso; elegir otra capacidad de roles compatibles o terminar `PARTIAL`. Más detalle significa nueva pregunta/id/alcance. Una respuesta suficiente **elimina consultas adicionales**.
 
 La decisión pura verifica consistencia de **datos declarados**, no autenticidad criptográfica de respuestas CLI/MCP. El agente debe registrar el resultado real y una UAT debe comprobar que no inventa observaciones. Investigación textual alternativa autorizada es un **modo separado**, no `IMPLEMENTATION_GROUNDED` ni sustituto automático.
+
+## Gate de omisiones antes de dibujar
+
+El estado `research` requiere `scope`: `source=cognicode`, `report_id`, `languages` realmente observados, `coverage=complete|partial|unknown`, `omissions_complete` y `omitted_files[]`. Cada elemento omitido incluye `path`, `relevance=relevant|irrelevant|unknown` y `review_query_ids`. **Todos estos valores proceden de respuestas de CogniCode**, no de búsquedas directas.
+
+- Si CogniCode no informa lista exhaustiva de omitidos, registrar `omissions_complete=false`; una lista vacía no significa «sin omisiones». Acción `assess-coverage`, después `PARTIAL` si sigue sin respuesta.
+- Si hay omitidos con relevancia desconocida, acción `assess-omissions` mediante una capacidad **estructurada**; nunca leer el archivo omitido con shell, GitHub o `read_file(raw)`.
+- Si un archivo omitido es relevante para una entrada/relación de la vista, terminar `PARTIAL` incluso cuando los claims ya registrados tengan símbolos.
+- Para acreditar `irrelevant` se necesita `review_query_ids` referenciado a una consulta estructurada satisfactoria con la ruta explícita en `coverage_paths`. Si falta evidencia, `PARTIAL`.
+- Si `scope.coverage=partial` y los omitidos son justificadamente irrelevantes, se puede generar una **vista acotada**, pero no etiquetarla como verificación global. `VERIFIED` exige cobertura `complete`.
+
+La prueba de la capacidad se guarda en `capabilities[].probes[language]` sobre un símbolo real; la disponibilidad anunciada no equivale a prueba para cada lenguaje. Probar solo las capacidades pertinentes a la pregunta y detener las consultas cuando haya evidencia suficiente. Las pruebas puras del router no ejecutan los parsers Kotlin/Rust; UAT real con CogniCode sigue `NOT_RUN`.
