@@ -44,6 +44,8 @@ LINKS = {
     "probe-capability": "references/research-protocol.md",
     "query-structured": "references/research-protocol.md",
     "justify-claims": "references/research-protocol.md",
+    "assess-coverage": "references/research-protocol.md",
+    "assess-omissions": "references/research-protocol.md",
     "interpret-input": "references/interpret.md",
     "review-model": "references/evidence.md",
     "reconcile": "references/interpret.md",
@@ -411,7 +413,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if achieved:
         link("finish", "el objetivo solicitado está disponible; declarar límites y validaciones")
 
-    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "formulate-question", "discover-capabilities", "probe-capability", "query-structured", "justify-claims", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
+    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "formulate-question", "discover-capabilities", "probe-capability", "query-structured", "justify-claims", "assess-coverage", "assess-omissions", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
     # Los renderizadores de nuevas lentes/formatos se insertan sin modificar esta lista.
     links.sort(key=lambda l: (order.index(l["rel"]) if l["rel"] in order else order.index("validate") - 0.5))
     recommended = links[0]["rel"] if links else None
@@ -428,7 +430,9 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
         complete_evidence = evidence != "partial" if intent in {"scan", "discover", "create", "review", "update"} else True
         implementation_grounded = (not requires_code or
                                    (evidence_origin == "cognicode" and claim_coverage == "verified"))
-        status = "VERIFIED" if (syntax_ok or intent in {"setup", "scan", "discover", "interpret", "review"}) and reviewed and evidence_ok and complete_evidence and implementation_grounded and not blockers else "PARTIAL"
+        coverage_certified = (not architecture or
+                              state.get("research", {}).get("scope", {}).get("coverage") == "complete")
+        status = "VERIFIED" if (syntax_ok or intent in {"setup", "scan", "discover", "interpret", "review"}) and reviewed and evidence_ok and complete_evidence and implementation_grounded and coverage_certified and not blockers else "PARTIAL"
 
     return {"status": status, "lens": lens_id, "recommended": recommended, "_links": links, "blockers": blockers}
 
