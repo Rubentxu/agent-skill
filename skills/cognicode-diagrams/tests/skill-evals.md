@@ -45,3 +45,14 @@ Guardar fuera del checkout: versión CLI/MCP, `tools/list`, consultas y argument
 - **Q8 — concurrencia de subagentes**: todos reciben misma regla y comparten solo preguntas/observaciones CogniCode; ninguno explora repositorio directamente.
 
 Los tests puros del protocolo demuestran selección, bloqueos y fin de consultas **sobre fixtures sintéticos**. Una UAT real deberá registrar el orden de llamadas CLI/MCP, entradas/salidas, cobertura, y probar que el agente no usó otras herramientas para obtener arquitectura. Hasta realizarla: `NOT_RUN`.
+
+## Evaluaciones específicas añadidas (UAT de agente con CogniCode: NOT_RUN)
+
+- **L1**: Kotlin y Rust con catálogo común, probe Rust satisfactorio y Kotlin fallido. El agente no extrapola compatibilidad; prueba otra operación estructurada Kotlin.
+- **L2**: grafo parcial omite un fichero que podría contener la entrada del proceso. Debe consultar relevancia exclusivamente mediante CogniCode, no dibujar proceso.
+- **L3**: claim de relación respaldado, pero entrada relevante omitida. Estado arquitectónico `PARTIAL` aunque la arista tenga evidencia.
+- **L4**: CogniCode no expone lista exhaustiva de omitidos. Jamás equivale a «sin omisiones».
+- **L5**: solo una consulta estructurada registrada con la ruta omitida puede acreditar irrelevancia, y la vista sigue siendo de alcance parcial.
+- **L6**: el CLI instalado no anuncia `doctor` ni `capabilities --json`. El agente descubre otras herramientas reales sin probar comandos imaginarios.
+
+Los tests del protocolo usan **fixtures sintéticos** y no verifican los parsers reales de Kotlin/Rust. Para certificar lenguajes hay que ejecutar UAT con CogniCode CLI/MCP instalado y conservar sus respuestas. Hasta entonces: `NOT_RUN`.

@@ -18,7 +18,7 @@ def fixture(**changes):
         'workspace': 'ready', 'intent': 'create', 'lens': 'c4', 'formats': ['mermaid','structurizr'],
         'environment': 'both_ready', 'evidence': 'graph_ready', 'basis': 'current',
         'evidence_origin': 'cognicode', 'claim_coverage': 'verified',
-        'research': {"catalog":"observed","question":{"id":"RQ-1","text":"Cuál es la responsabilidad implementada?","kind":"responsibilities","language":"rust","target":"module::run"},"capabilities":[{"name":"query_symbol_index","role":"symbol_index","languages":["rust"],"advertised":True,"schema_observed":True,"probes":{"rust":{"status":"usable","query_id":"P-1","symbol_id":"module::run","location":"src/main.rs:12","context":"present","relations":"unknown","coverage":"partial"}}}],"queries":[{"id":"Q-1","question_id":"RQ-1","target":"module::run","capability":"query_symbol_index","mode":"structured","status":"ok","coverage":"partial","observation_plane":"static","symbol_ids":["module::run"],"relation_ids":[]}],"claims":[{"id":"C-1","question_id":"RQ-1","kind":"entity","status":"observed","plane":"static","symbol_id":"module::run","query_ids":["Q-1"]}],"diagram_claim_ids":["C-1"],"scope":{"source":"cognicode","report_id":"COV-1","languages":["rust"],"coverage":"complete","omissions_complete":True,"omitted_files":[]}},
+        'research': {"catalog":"observed","question":{"id":"RQ-1","text":"Cuál es la responsabilidad implementada?","kind":"responsibilities","language":"rust","target":"module::run"},"capabilities":[{"name":"query_symbol_index","role":"symbol_index","languages":["rust"],"advertised":True,"schema_observed":True,"probe":{"status":"usable","query_id":"P-1","symbol_id":"module::run","location":"src/main.rs:12","context":"present","relations":"unknown","coverage":"partial"}}],"queries":[{"id":"Q-1","question_id":"RQ-1","target":"module::run","capability":"query_symbol_index","mode":"structured","status":"ok","coverage":"partial","observation_plane":"static","symbol_ids":["module::run"],"relation_ids":[]}],"claims":[{"id":"C-1","question_id":"RQ-1","kind":"entity","status":"observed","plane":"static","symbol_id":"module::run","query_ids":["Q-1"]}],"diagram_claim_ids":["C-1"]},
         'model': 'absent', 'has_input_diagram': False, 'reconciled': False,
         'artifacts': {'mermaid':'absent','structurizr':'absent'},
         'validators': {'mermaid':'available','structurizr':'available'},
@@ -100,6 +100,25 @@ class RoutingTests(unittest.TestCase):
     def test_grounded_question_can_render(self):
         x = fixture(model="reviewed", artifacts={"mermaid":"valid", "structurizr":"valid"})
         self.assertEqual(engine.affordances(x)["status"], "VERIFIED")
+
+    def test_omitted_essential_file_blocks_even_with_grounded_claim(self):
+        import copy
+        s = fixture(model="reviewed")
+        s["research"] = copy.deepcopy(s["research"])
+        s["research"]["scope"].update(coverage="partial", omitted_files=[
+            {"path":"src/entrypoint.rs", "relevance":"relevant", "review_query_ids":[]}])
+        result = engine.affordances(s)
+        self.assertEqual(result["status"], "PARTIAL")
+        self.assertNotIn("render-mermaid", rels(s))
+
+    def test_partial_scope_never_claims_global_verified(self):
+        import copy
+        s = fixture(model="reviewed", artifacts={"mermaid":"valid", "structurizr":"valid"})
+        s["research"] = copy.deepcopy(s["research"])
+        s["research"]["queries"][0]["coverage_paths"] = ["src/unused.rs"]
+        s["research"]["scope"].update(coverage="partial", omitted_files=[
+            {"path":"src/unused.rs", "relevance":"irrelevant", "review_query_ids":["Q-1"]}])
+        self.assertNotEqual(engine.affordances(s)["status"], "VERIFIED")
 
     def test_ready_graph_leads_to_discovery(self):
         self.assertEqual(rels(fixture()), ['discover-model'])
