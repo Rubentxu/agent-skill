@@ -162,6 +162,52 @@ class AtlasTests(unittest.TestCase):
         with self.assertRaises(atlas.KnowledgeError):
             atlas.build(self.repo, home=self.home)
 
+
+    def test_semantic_categories_have_traceable_provenance(self):
+        (self.w / "evidence" / "queries.json").write_text(json.dumps([{"id": "Q-1"}]))
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-A", "kind": "entity", "status": "OBSERVED_CODE",
+             "category": "surface", "symbol_id": "Grpc::serve", "coverage": "partial",
+             "query_ids": ["Q-1"], "plane": "static"},
+            {"id": "C-B", "kind": "relation", "status": "OBSERVED_CODE", "category": "external",
+             "from_symbol": "Client::send", "to_symbol": "Server::accept",
+             "query_ids": ["Q-1"], "coverage": "unknown",
+             "attributes": {"technology": "gRPC"}}]))
+        output = atlas.build(self.repo, home=self.home)
+        content = Path(output["markdown"]).read_text()
+        self.assertIn("Superficies", content)
+        self.assertIn("Sistemas externos", content)
+        self.assertIn("Q-1", content)
+        self.assertIn("cobertura:partial", content)
+        self.assertIn("gRPC", content)
+
+    def test_intention_separate_and_cannot_justify_implemented_diagram(self):
+        c = self.w / "evidence" / "claims.json"
+        c.write_text(json.dumps([{"id": "I-1", "kind": "entity", "category": "intent",
+                                  "provenance": "CURATED_INTENT", "curator": "usuario",
+                                  "symbol_id": "Objetivo declarado", "plane": "intent"}]))
+        result = atlas.build(self.repo, home=self.home)
+        self.assertIn("NO demuestra implementacion", Path(result["markdown"]).read_text())
+        view = self.w / "lenses" / "c4" / "reports" / "bad.atlas.json"
+        view.write_text(json.dumps({"schema_version": 1, "label": "Falso",
+                                    "claim_ids": ["I-1"], "assets": ["lenses/c4/renders/context.svg"]}))
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+
+    def test_doc_intent_requires_separate_explicit_mode(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "I-2", "kind": "entity", "category": "intent",
+             "status": "DOC_INTENT", "symbol_id": "documentacion externa"}]))
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+
+    def test_legacy_implementation_without_query_is_downgraded(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-LEGACY", "kind": "entity", "symbol_id": "Legacy::entry",
+             "status": "OBSERVED_CODE"}]))
+        out = atlas.build(self.repo, home=self.home)
+        self.assertIn("UNKNOWN  sin query", Path(out["markdown"]).read_text())
+
     def test_sync_is_idempotent_with_unchanged_claim_ledger(self):
         (self.w / "evidence" / "claims.json").write_text(json.dumps([
             {"id": "C-5", "kind": "entity", "status": "observed", "symbol_id": "A"}]))
