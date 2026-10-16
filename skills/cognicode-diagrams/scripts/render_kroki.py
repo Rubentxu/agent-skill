@@ -74,8 +74,26 @@ class NoRedirect(HTTPRedirectHandler):
 
 def render(source_file: Path, output: Path, diagram_type: str, image_format: str,
            base_url: str = "http://127.0.0.1:8000", view_key: str | None = None,
-           timeout: float = 20.0) -> None:
+           timeout: float = 20.0, *, home: Path | None = None) -> None:
     base = local_base_url(base_url)
+    # Consume only derived, editable diagram sources; never open a target repo file.
+    owner_home = (Path.home() if home is None else home).expanduser().resolve(strict=True)
+    derived_root = owner_home / ".cognicode-diagrams" / "workspaces"
+    src = source_file.expanduser().absolute()
+    dest = output.expanduser().absolute()
+    if src.is_symlink() or src.resolve(strict=False) != src:
+        raise RenderError("proyector: fuente enlazada o fuera del workspace derivado")
+    if dest.is_symlink() or dest.resolve(strict=False) != dest:
+        raise RenderError("proyector: destino enlazado o fuera del workspace derivado")
+    if not src.is_relative_to(derived_root) or not dest.is_relative_to(derived_root):
+        raise RenderError("proyector: solo admite artefactos derivados en HOME")
+    src_rel = src.relative_to(derived_root).parts
+    dst_rel = dest.relative_to(derived_root).parts
+    if (len(src_rel) < 5 or len(dst_rel) < 5 or
+            src_rel[0] != dst_rel[0] or src_rel[1] != "lenses" or
+            dst_rel[1] != "lenses" or src_rel[2] != dst_rel[2] or
+            src_rel[3] != "sources" or dst_rel[3] != "renders"):
+        raise RenderError("proyector: origen sources/ y destino renders/ deben compartir lente y workspace")
     if source_file.is_symlink() or not source_file.is_file():
         raise RenderError("Fuente ausente o enlace simbólico: no seguir rutas inesperadas")
     if source_file.stat().st_size > MAX_INPUT:
