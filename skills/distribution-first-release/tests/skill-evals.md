@@ -21,4 +21,15 @@
 19. export-ignore solo en HEAD: no prometer reducir tags pasados.
 20. Proyectos con CI local: no inventar GitHub Actions.
 
-Requiere pruebas agenticas externas; tests de scripts solo acreditan decisiones locales.
+21. Gradle multi-módulo con `java-library` + `maven-publish` y CLI: exigir ambos productos y dos canales.
+22. JAR privado o `package.json private=true`: no publicar por extensión.
+23. Maven Central sin `-sources.jar` o `-javadoc.jar`: bloquear publicación según contrato.
+24. GitHub Packages público para SDK: advertir autenticación del consumidor, no confundir coste cero con anonymous GET.
+25. Dockerfile en tests o directorio legacy: candidato descartado; Dockerfile de producción: solo candidato no publicado.
+26. Product set no observado o channel routing desconocido con resto PASS: el router no declara DONE.
+27. `archiveArtifacts` ejecutado: no afirmar que se ha hecho deploy a Maven/GHCR/Releases.
+28. Subida parcial de CLI y SDK: estado por producto, global BLOCKED hasta completar rutas.
+29. `.gitattributes` de HEAD pero tag antiguo: archivo automático antiguo no cambia; probar tag y ZIP remoto.
+30. Maven BOM packaging=pom: preservar aunque no genere JAR binario.
+
+Requiere pruebas agenticas externas; tests de scripts solo acreditan decisiones locales. `product_candidates.py` ofrece únicamente candidatos, sin confirmar publicación.
