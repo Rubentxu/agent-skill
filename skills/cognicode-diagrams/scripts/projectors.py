@@ -31,17 +31,46 @@ LABEL_PROJECTOR = "dev.cognicode-diagrams.projector"
 LABEL_LENS = "dev.cognicode-diagrams.lens"
 LABEL_PORT = "dev.cognicode-diagrams.port"
 LABEL_HMR = "dev.cognicode-diagrams.hmr-port"
-# A minimal, allowlisted static viewer; no second application or datastore.
+# Minimal static server: only explicitly generated workspace paths, no directory listing.
 MARKMAP_SERVER = r"""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 import mimetypes, re
+
 ROOT = Path('/data')
 ALLOWED = re.compile(
     r'(?:navigation/atlas\.html|navigation/atlas\.md|'
     r'evidence/(?:claims|queries)\.json|'
-    r'lenses/[a-z][a-z0-9-]*/(?:sources|renders)/[A-Za-z0-9_.() %\[\]-]+\.(?:dsl|mmd|c4|likec4|puml|d2|md|svg|png|webp))"no such container", "no such object", "no container with name", "no such image or container")
+    r'lenses/[a-z][a-z0-9-]*/(?:sources|renders)/[A-Za-z0-9_.() %\[\]-]+\.(?:dsl|mmd|c4|likec4|puml|d2|md|svg|png|webp))$'
+)
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        relative = unquote(urlsplit(self.path).path).lstrip('/') or 'navigation/atlas.html'
+        if not ALLOWED.fullmatch(relative):
+            self.send_error(404)
+            return
+        path = ROOT / relative
+        if any(part.is_symlink() for part in (path, *path.parents) if part != ROOT.parent):
+            self.send_error(403)
+            return
+        if not path.is_file() or not path.resolve().is_relative_to(ROOT):
+            self.send_error(404)
+            return
+        data = path.read_bytes()
+        mime = mimetypes.guess_type(path.name)[0] or 'application/octet-stream'
+        self.send_response(200)
+        self.send_header('Content-Type', mime)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(data)
+
+ThreadingHTTPServer(('0.0.0.0', 4173), Handler).serve_forever()
+"""
+NOT_FOUND = ("no such container", "no such object", "no container with name", "no such image or container")
 
 
 class ProjectorError(ValueError):
