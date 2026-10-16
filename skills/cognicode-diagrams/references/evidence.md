@@ -1,27 +1,25 @@
-# Evidencias para cualquier lente
+# Evidencias exclusivamente de CogniCode
 
-Guardar el informe derivado únicamente en el [workspace externo](workspace.md) (`evidence/`, `lenses/<lente>/reports/`). Las referencias pueden apuntar al código fuente Git en modo lectura, pero no generar ficheros dentro de ese checkout.
+**Fuente arquitectónica única: respuestas de CogniCode CLI/MCP sobre código implementado.** No citar como prueba README/ADR/roadmaps/tests/manifiestos, ni aunque CogniCode los localice; no abrir por shell/GitHub/ruta. Los diagramas del usuario son `CURATED` para traducción, nunca prueba de implementación.
 
-La skill no crea una base de conocimiento nueva. CogniCode proporciona índices, resultados MCP/CLI y caches según su versión, mientras el agente compone una ficha derivada y efímera de afirmaciones arquitectónicas o de código para el objetivo solicitado.
+## Ledger derivado mínimo
 
-## Campos recomendados del handoff del agente
+Conservar en `~/.cognicode-diagrams/workspaces/<id>/evidence/` un `queries.json` y `claims.json` (o informe equivalente), con metadatos mínimos:
 
-- **Solicitud**: intención, lente, formatos, alcance (subrepositorio, componente, endpoint, requisito, etc.).
-- **Identidad**: workspace, ruta, Git HEAD, estado dirty + archivos relevantes cuando se conozcan, versión CLI/MCP, instantánea de comandos consultados y fecha de observación.
-- **Cobertura**: idiomas/providers soportados, número de símbolos/aristas si hay métricas, archivos omitidos y truncamiento. `partial` no equivale a 100 %.
-- **Afirmación**: id de entidad/relación, fuente rastreable (archivo/línea, ruta, ADR, UAT, log, traza), `OBSERVED|INFERRED|CURATED|UNKNOWN`, alcance y contradicciones.
-- **Límites**: qué **NO** demuestra la evidencia. `calls` no prueba un protocolo ni orden, un crate no prueba proceso desplegado; un test no acredita producción.
-- **Operaciones realizadas**: nombre de comando/tool real, parámetros, resultado/error. No reutilizar por similitud de nombres.
+- `query_id`, interfaz `cli|mcp`, versión y operación **descubierta**, argumentos/scope, resultado observado, error, cobertura y omisiones.
+- `basis`: workspace/revisión/dirty/snapshot **solo cuando CogniCode lo comunique**; `UNKNOWN` en caso contrario. No consultar Git por separado.
+- `claim_id`, tipo `entity|relation`, `symbol_ids` o arista, referencia archivo:línea **devuelta por CogniCode** y `query_ids` concretos.
+- `plane` = `static|runtime|deployment`; `status` = `OBSERVED_CODE|INFERRED|UNKNOWN`; limitación explícita y cobertura del claim.
+- `next_question` si falta un extremo, precisión, storage, protocolo o distinción entre biblioteca/proceso.
 
-## Handoff por lentes
+La misma consulta CLI y MCP al mismo backend no equivale a corroboración independiente. Código mostrado por CogniCode puede respaldar una afirmación **solo en el plano que realmente demuestra**. Una inferencia debe indicarse como tal, no etiquetarse `OBSERVED_CODE`.
 
-El modelo que el agente mantiene al interpretar o generar no es una nueva ontología genérica persistida. Cada lente define sus propios elementos y leyes; la ficha solo conserva identidad, evidencias, dudas y destinatarios de representación. Si existe un diagrama curado, conservarlo como entrada independiente de los hechos observados, no sobrescribirlo como producto de una inferencia.
+## Contrato de suficiencia
 
-## Casos que nunca acreditan preparación
+- Toda entidad y relación factual de un diagrama debe enlazar a claim y consulta(s). Sin ello, quitarla o representarla expresamente como hipótesis en informe, nunca como estructura implementada.
+- Grafo vacío, escaneo parcial, truncado, cobertura desconocida o símbolo no resuelto ⇒ no afirmar completitud.
+- Call graph solo ⇒ no inferir ejecutables, redes, protocolos, base de datos ni orden temporal.
+- Solicitud de más detalle ⇒ nueva consulta CogniCode con más precisión y registro adicional; no generar contenido supuesto.
+- CogniCode ausente o sin capacidad suficiente ⇒ `BLOCKED` o `PARTIAL`; se prohíbe abrir archivos objetivo por otra vía.
 
-- `build_graph` devolvió 0 pero nadie pudo consultar el grafo después.
-- La herramienta se anunció en documentación, pero `tools/list` del servidor actual no la contiene.
-- `graph full` emitió estado parcial por archivos omitidos; el agente lo redujo a `complete`.
-- Se usó el SHA de Git ignorando cambios no commiteados que afectan símbolos o despliegue.
-- Se interpretó la topología estática como historia de ejecución ordenada.
-- Se hizo una segunda consulta MCP del mismo grafo y se afirmó corroboración independiente.
+Para los límites de identidad y el significado de `VERIFIED`, consultar [investigation-contract.md](investigation-contract.md).
