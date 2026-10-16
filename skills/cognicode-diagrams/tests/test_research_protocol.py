@@ -196,5 +196,84 @@ class QuestionProtocolTests(unittest.TestCase):
 
 
 
+    def test_missing_coverage_report_requires_cognicode_check(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        del s["scope"]
+        self.assertEqual(decide(s)["action"], "assess-coverage")
+
+    def test_missing_omissions_inventory_never_accepts_partial_graph(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"].update(coverage="partial", omissions_complete=False)
+        self.assertEqual(decide(s)["action"], "assess-coverage")
+
+    def test_omission_unknown_triggers_targeted_structured_research(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"].update(
+            coverage="partial",
+            omitted_files=[{"path":"src/workers/runner.kt", "relevance":"unknown",
+                            "review_query_ids": []}])
+        verdict = decide(s)
+        self.assertEqual(verdict["action"], "assess-omissions")
+        self.assertIn("src/workers/runner.kt", verdict["missing"])
+
+    def test_relevant_omission_blocks_even_when_all_claims_have_symbols(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"].update(
+            coverage="partial",
+            omitted_files=[{"path":"src/workers/runner.kt", "relevance":"relevant",
+                            "review_query_ids":["Q-1"]}])
+        verdict = decide(s)
+        self.assertEqual(verdict["status"], "PARTIAL")
+        self.assertIsNone(verdict["action"])
+
+    def test_omission_marked_irrelevant_without_structured_evidence_is_not_accepted(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"].update(
+            coverage="partial",
+            omitted_files=[{"path":"src/unused.kt", "relevance":"irrelevant",
+                            "review_query_ids":["Q-1"]}])
+        self.assertEqual(decide(s)["status"], "PARTIAL")
+
+    def test_structured_review_can_mark_omitted_file_irrelevant_only_with_path(self):
+        s = state(queries=[query(coverage_paths=["src/unused.kt"])],
+                  claims=[entity()], diagram=["C-1"])
+        s["scope"].update(
+            coverage="partial",
+            omitted_files=[{"path":"src/unused.kt", "relevance":"irrelevant",
+                            "review_query_ids":["Q-1"]}])
+        verdict = decide(s)
+        self.assertEqual(verdict["status"], "EVIDENCE_READY")
+        self.assertIn("parcial", verdict["why"])
+
+    def test_rust_probe_never_certifies_kotlin_from_same_catalog_capability(self):
+        s = state(caps=[cap(probes={"rust": probe("usable")}, languages=["rust", "kotlin"])])
+        self.assertEqual(decide(s)["action"], "probe-capability")
+
+    def test_rust_probe_does_not_authorize_kotlin_query(self):
+        s = state(caps=[cap(probes={"rust": probe("usable")}, languages=["rust", "kotlin"])],
+                  queries=[query()], claims=[entity()], diagram=["C-1"])
+        self.assertEqual(decide(s)["status"], "BLOCKED")
+
+    def test_project_language_outside_observed_scope_cannot_certify(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"]["languages"] = ["rust"]
+        self.assertEqual(decide(s)["status"], "PARTIAL")
+
+    def test_contradictory_complete_and_skipped_files_rejected(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"]["omitted_files"] = [{"path":"src/fail.kt", "relevance":"unknown",
+                                        "review_query_ids":[]}]
+        with self.assertRaises(ResearchError):
+            decide(s)
+
+    def test_no_infinite_retry_after_structured_coverage_check(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"])
+        s["scope"].update(coverage="unknown", omissions_complete=False,
+                          review_query_ids=["Q-1"])
+        verdict = decide(s)
+        self.assertEqual(verdict["status"], "PARTIAL")
+        self.assertIsNone(verdict["action"])
+
+
 if __name__ == "__main__":
     unittest.main()
