@@ -6,7 +6,6 @@ selects the next admissible step, and refuses to certify ungrounded claims.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 # Semantic roles, NOT names of commands. Names come only from runtime discovery.
@@ -54,6 +53,82 @@ def _result(status: str, action: str | None, why: str, question_id: str | None =
             "capability": capability, "missing": missing or []}
 
 
+
+def _assess_scope(scope: Any, qid: str, language: str, by_query: dict,
+                  budget: int, attempts: int) -> dict:
+    """Fail closed on omitted files; never confuse a complete graph with complete evidence."""
+    if scope is None:
+        return _result("IN_PROGRESS", "assess-coverage",
+                       "falta informe de cobertura y ficheros omitidos obtenido mediante CogniCode", qid)
+    if not isinstance(scope, dict):
+        raise ResearchError("scope debe ser objeto")
+    if scope.get("source") != "cognicode":
+        return _result("BLOCKED", None, "cobertura no atribuida a CogniCode", qid)
+    _str(scope.get("report_id"), "scope.report_id")
+    languages = _list(scope.get("languages"), "scope.languages")
+    if language not in languages:
+        return _result("PARTIAL", None,
+                       "lenguaje de la pregunta no confirmado en el alcance analizado", qid,
+                       missing=[language])
+    coverage = scope.get("coverage")
+    if coverage not in COVERAGES:
+        raise ResearchError("scope.coverage inválida")
+    omissions_complete = scope.get("omissions_complete")
+    if type(omissions_complete) is not bool:
+        raise ResearchError("scope.omissions_complete debe ser booleano observado")
+    omitted = _list(scope.get("omitted_files"), "scope.omitted_files")
+    if any(not isinstance(item, dict) for item in omitted):
+        raise ResearchError("scope.omitted_files debe contener objetos")
+    _unique(omitted, "path", "scope.omitted_files")
+    if coverage == "complete" and omitted:
+        raise ResearchError("cobertura completa contradice ficheros omitidos")
+    if not omissions_complete or coverage == "unknown":
+        audit = _list(scope.get("review_query_ids", []), "scope.review_query_ids")
+        return _result("IN_PROGRESS" if not audit and attempts < budget else "PARTIAL",
+                       "assess-coverage" if not audit and attempts < budget else None,
+                       "CogniCode no ha permitido verificar exhaustivamente las omisiones", qid)
+    if coverage == "partial" and not omitted:
+        return _result("PARTIAL", None,
+                       "cobertura parcial sin inventario verificable de archivos omitidos", qid)
+
+    unresolved = []
+    to_review = []
+    for item in omitted:
+        path = _str(item.get("path"), "omission.path")
+        relevance = item.get("relevance")
+        if relevance not in {"relevant", "irrelevant", "unknown"}:
+            raise ResearchError("omission.relevance inválida")
+        audits = _list(item.get("review_query_ids", []), "omission.review_query_ids")
+        if relevance == "relevant":
+            unresolved.append(path)
+            continue
+        if not audits:
+            to_review.append(path)
+            continue
+        grounded_audit = any(
+            query_id in by_query and
+            by_query[query_id].get("mode") in STRUCTURED_MODES and
+            by_query[query_id].get("status") == "ok" and
+            path in by_query[query_id].get("coverage_paths", [])
+            for query_id in audits
+        )
+        if relevance == "unknown" or not grounded_audit:
+            unresolved.append(path)
+    if unresolved:
+        return _result("PARTIAL", None,
+                       "archivos omitidos relevantes/no verificables: no cerrar la vista como implementada",
+                       qid, missing=unresolved)
+    if to_review:
+        can_review = attempts < budget
+        return _result("IN_PROGRESS" if can_review else "PARTIAL",
+                       "assess-omissions" if can_review else None,
+                       "comprobar relevancia de archivos omitidos mediante consultas estructuradas de CogniCode",
+                       qid, missing=to_review)
+    return _result("EVIDENCE_READY", None,
+                   "claims respaldados; cobertura " + coverage +
+                   (" (omisiones justificadas, no cobertura global)" if omitted else ""),
+                   qid)
+
 def decide(research: dict | None) -> dict:
     """Select one justified next action; no guessed tools or unverifiable success."""
     if research is None:
@@ -97,7 +172,8 @@ def decide(research: dict | None) -> dict:
     if len(diagram_ids) != len(set(diagram_ids)) or any(not isinstance(x, str) for x in diagram_ids):
         raise ResearchError("diagram_claim_ids inválidos o duplicados")
 
-    # A tool may be advertised but unavailable on Kotlin; never infer global support.
+    # Each advertised tool has independent probes for the actual project languages.
+    # One successful Rust probe can never authorize Kotlin queries.
     cap_names = {c["name"] for c in caps}
     cap_by_name = {c["name"]: c for c in caps}
     for c in caps:
@@ -107,18 +183,21 @@ def decide(research: dict | None) -> dict:
             raise ResearchError("capability.languages inválido")
         if type(c.get("advertised")) is not bool or type(c.get("schema_observed")) is not bool:
             raise ResearchError("capability requiere advertised y schema_observed observados")
-        probe = c.get("probe")
-        if not isinstance(probe, dict) or probe.get("status") not in PROBE_STATES:
-            raise ResearchError("capability.probe.status inválido")
-        if probe["status"] != "untried":
-            _str(probe.get("query_id"), "probe.query_id")
-        if probe["status"] in {"usable", "partial"}:
-            _str(probe.get("symbol_id"), "probe.symbol_id")
-            _str(probe.get("location"), "probe.location")
-            if probe.get("coverage") not in COVERAGES:
-                raise ResearchError("probe.coverage inválida")
-            if probe.get("context") not in {"present", "missing", "unknown"} or probe.get("relations") not in {"present", "missing", "unknown"}:
-                raise ResearchError("probe.context/relations deben estar observados")
+        probes = c.get("probes")
+        if not isinstance(probes, dict) or set(probes) - set(languages):
+            raise ResearchError("capability.probes debe asociar sondeos solo a lenguajes anunciados")
+        for probe_language, probe in probes.items():
+            if not isinstance(probe, dict) or probe.get("status") not in PROBE_STATES:
+                raise ResearchError("probe.status inválido")
+            if probe["status"] != "untried":
+                _str(probe.get("query_id"), "probe.query_id")
+            if probe["status"] in {"usable", "partial"}:
+                _str(probe.get("symbol_id"), "probe.symbol_id")
+                _str(probe.get("location"), "probe.location")
+                if probe.get("coverage") not in COVERAGES:
+                    raise ResearchError("probe.coverage inválida")
+                if probe.get("context") not in {"present", "missing", "unknown"} or probe.get("relations") not in {"present", "missing", "unknown"}:
+                    raise ResearchError("probe.context/relations deben estar observados")
 
     for query in queries:
         if _str(query.get("question_id"), "query.question_id") != qid:
@@ -137,7 +216,7 @@ def decide(research: dict | None) -> dict:
             witness = cap_by_name[tool]
             if (not witness["advertised"] or not witness["schema_observed"] or
                     language not in witness["languages"] or
-                    witness["probe"]["status"] not in {"usable", "partial"}):
+                    witness["probes"].get(language, {}).get("status") not in {"usable", "partial"}):
                 return _result("BLOCKED", None,
                                "consulta sin esquema/prueba funcional para este lenguaje; no certificable",
                                qid, tool)
@@ -185,9 +264,8 @@ def decide(research: dict | None) -> dict:
         else:
             ungrounded.append(claim_id)
     if diagram_ids and not ungrounded:
-        return _result("EVIDENCE_READY", None,
-                       "cada afirmación factual tiene respuesta estructurada trazable; no implica cobertura total",
-                       qid)
+        return _assess_scope(research.get("scope"), qid, language, by_query, budget,
+                             sum(q["mode"] in STRUCTURED_MODES for q in queries))
 
     # Claims without references are not evidence; text search only locates candidates.
     if ungrounded:
@@ -213,7 +291,7 @@ def decide(research: dict | None) -> dict:
                        "sin capacidad estructurada comprobable para esta pregunta y lenguaje; no declarar lenguaje incompatible",
                        qid)
     for cap in candidates:
-        probe = cap["probe"]
+        probe = cap["probes"].get(language, {"status": "untried"})
         if probe["status"] == "untried":
             return _result("IN_PROGRESS", "probe-capability",
                            "probar sobre símbolo real identidad, ubicación, contexto, relaciones y cobertura",
