@@ -55,3 +55,7 @@ Fuentes oficiales: https://likec4.dev/tutorial/ ; https://likec4.dev/dsl/intro/ 
 ## Error frecuente: kinds no declarados
 
 Si se declara una `specification` explícita, declarar cada `element kind` usado, incluidos `actor`, `system`, `container`, `component` cuando aparezcan en el modelo. No suponer que un kind base está implícito al declarar otros. Validar contra la versión instalada, ver [ejemplo mínimo y diagnóstico](likec4-kinds.md).
+
+## Trazabilidad en el DSL
+
+LikeC4 permite `metadata { claim 'C-14'; query 'Q49'; plane 'static'; coverage 'partial' }` en elementos y relaciones; añadir solo valores **respaldados por CogniCode** y comprobar gramática en la versión instalada. Un `link` al atlas debe apuntar a una URL local realmente disponible: los ficheros de evidencia del workspace no están montados por el visor LikeC4 (solo `sources/`). Las propiedades `kind`, `technology`, `endpoint` y `order` se justifican una a una. Una vista dinámica representa un flujo declarado en código, no telemetría runtime salvo evidencia de ese plano. [Contrato](../visual-evidence.md). Fuentes: https://likec4.dev/dsl/model/ y https://likec4.dev/dsl/relationships/.

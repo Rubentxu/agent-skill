@@ -4,6 +4,22 @@
 
 **Contrato:** Markmap es un proyector de navegación, nunca una lente que analice código. CogniCode CLI/MCP es la única interfaz de exploración de código; el agente crea/contrasta los `.dsl`, `.mmd`, `.c4` y otros protocolos. Este proyector indexa ficheros derivados y, cuando existen, claims/queries y asociaciones explícitas entre vistas y evidencia. Transforma `atlas.md` a HTML; no infiere arquitectura. No ejecuta CogniCode, no monta Git ni consulta repositorios.
 
+## Visor local gestionado (opcional)
+
+Tras `atlas.py sync` y `render_markmap.py`, el mismo gestor que LikeC4 ofrece:
+
+```bash
+python3 scripts/projectors.py status --repo /raiz/proyecto --projector markmap --engine podman
+python3 scripts/projectors.py start --repo /raiz/proyecto --projector markmap --engine podman --port 4173
+python3 scripts/projectors.py status --repo /raiz/proyecto --projector markmap --engine podman --check-http
+python3 scripts/projectors.py stop --repo /raiz/proyecto --projector markmap --engine podman
+python3 scripts/projectors.py remove --repo /raiz/proyecto --projector markmap --engine podman
+```
+
+Visor en `http://127.0.0.1:4173/navigation/atlas.html`. `start` es explícito y se rechaza sin HTML gestionado por la skill. La imagen Python mínima sirve solo rutas permitidas, con montaje del workspace derivado **solo lectura**, puerto en loopback y sin listado de directorios; no monta el checkout. **Los ledgers de queries y claims quedan accesibles localmente al abrir sus enlaces: eliminar secretos de esos archivos.** El servidor no tiene autenticación multiusuario: no exponer fuera de loopback. El estado HTTP no equivale a revisión visual real. Usar `atlas.py check` antes de servir; si está obsoleto, sincronizar y renderizar de nuevo.
+
+Para renderizar con Podman rootless, `render_markmap.py` usa `--userns=keep-id`. Solo los artefactos generados de navegación se publican con modo 0644; no se hace chmod general de las evidencias ni del checkout.
+
 ## Preparación y ciclo completo
 
 1. Resolver `scripts/workspace.py inspect --repo /ruta/proyecto`; inicializar el workspace si hace falta. El contenido reside **solo** en `~/.cognicode-diagrams/workspaces/<repo>--<id>/`.

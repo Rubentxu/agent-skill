@@ -50,3 +50,7 @@ En el curso de la investigación se reutilizan claims y consultas CogniCode, lue
 ## Preflight 2026-10: C4 sin bloqueo por grafo
 
 La skill requiere [preflight por versión, lenguaje, catálogo y proceso MCP](references/session-preflight.md) y registra [evidencia de relaciones por referencias](references/evidence-reference-links.md) sin inventar `relation_id`. La navegación usa primero símbolos/referencias, después grafo en el **mismo proceso** solo si añade valor. Máximo 15 nodos por vista antes de dividir; [guía de kinds de LikeC4](references/formats/likec4-kinds.md). Los nuevos estados solo describen fixtures sintéticos: UAT real de agente+CogniCode sigue `NOT_RUN` hasta ejecutarla.
+
+## Contexto visual tipado
+
+La [política de procedencia](references/visual-evidence.md) separa categorías implementadas e intención, preserva queries/cobertura y permite metadata de LikeC4. El [visor local de Markmap](references/projectors/markmap.md) se gestiona por `projectors.py` con el ciclo `status/start/stop/remove`; no es obligatorio para construir el atlas ni se inicia automáticamente.
