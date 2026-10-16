@@ -99,6 +99,7 @@ def decide(research: dict | None) -> dict:
 
     # A tool may be advertised but unavailable on Kotlin; never infer global support.
     cap_names = {c["name"] for c in caps}
+    cap_by_name = {c["name"]: c for c in caps}
     for c in caps:
         _str(c.get("role"), "capability.role")
         languages = _list(c.get("languages"), "capability.languages")
@@ -132,6 +133,14 @@ def decide(research: dict | None) -> dict:
                            qid, tool)
         if query.get("mode") not in STRUCTURED_MODES | {"text_candidate"}:
             raise ResearchError("query.mode desconocido")
+        if query.get("mode") in STRUCTURED_MODES:
+            witness = cap_by_name[tool]
+            if (not witness["advertised"] or not witness["schema_observed"] or
+                    language not in witness["languages"] or
+                    witness["probe"]["status"] not in {"usable", "partial"}):
+                return _result("BLOCKED", None,
+                               "consulta sin esquema/prueba funcional para este lenguaje; no certificable",
+                               qid, tool)
         if query.get("status") not in QUERY_STATES or query.get("coverage") not in COVERAGES:
             raise ResearchError("query.status/coverage inválidos")
         if _str(query.get("target"), "query.target") != target:

@@ -96,3 +96,16 @@ A continuación de cada acción, observar si ha funcionado y actualizar **en la 
 - `UNSUPPORTED`: lente deshabilitada o salida semántica imposible para el formato solicitado.
 
 Para cambios de código o diagramas, no prometer equivalencia si el SHA o los archivos observados cambiaron desde el escaneo. En trabajos centrados exclusivamente en la traducción entre formatos, CogniCode puede no intervenir: identificar el alcance de esa validación.
+
+
+## Gate de investigación por pregunta (precede a dibujar)
+
+Para `intent=discover|create|review|update`, el estado incluye `research` con pregunta, catálogo observado, prueba por lenguaje, consultas y claims (ver [research-protocol.md](research-protocol.md)). Sin él, el router devuelve `formulate-question`; `graph_ready` y `claim_coverage=verified` no bastan.
+
+`
+formulate-question -> discover-capabilities -> probe-capability -> query-structured
+                    -> justify-claims (solo si falta evidencia)
+                    -> EVIDENCE_READY (sin más consultas) / PARTIAL (parar)
+`
+
+Son **acciones semánticas** que el agente implementa exclusivamente llamando a capacidades reales de CogniCode; no son nombres de comandos inventados. `probe-capability` prueba cada lenguaje sobre símbolo real. No seleccionar por conteo de herramientas. `read_file(raw)` como bypass bloquea la investigación; `search_content` solo puede ubicar candidatos, nunca fundar arquitectura. La proyección seguirá necesitando validación independiente de formato y plano.

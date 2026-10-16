@@ -1,6 +1,6 @@
 # Investigación activa y estructurada de CogniCode
 
-**Solo CogniCode CLI/MCP puede investigar código implementado.** No abrir archivos del checkout, documentación, tests, manifiestos, ADR o búsquedas externas. El problema no se resuelve con `read_file(raw)` y `search_content` cuando falla una herramienta estructurada.
+**Única interfaz para investigar código implementado: CogniCode CLI/MCP.** No abrir archivos del checkout, documentación, tests, manifiestos, ADR o búsquedas externas. El problema no se resuelve con `read_file(raw)` y `search_content` cuando falla una herramienta estructurada.
 
 1. Definir **una pregunta concreta**, lenguaje y símbolo/alcance. Descubrir `--help`/`capabilities` del CLI *cuando existan*, o `initialize` + `tools/list` paginado en MCP. Comprobar schema y permisos. Herramienta anunciada no equivale a operativa.
 2. Asociar nombres reales a roles de [research-protocol.md](research-protocol.md). Son roles de orientación, no comandos obligatorios. Probar una capacidad pertinente sobre un símbolo real: índice, identidad/ubicación, contexto, relaciones y cobertura por **capacidad + lenguaje**.

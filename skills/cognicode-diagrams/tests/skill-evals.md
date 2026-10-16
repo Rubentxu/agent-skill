@@ -31,3 +31,17 @@
 ## Entrega de evidencias reales
 
 Guardar fuera del checkout: versión CLI/MCP, `tools/list`, consultas y argumentos, extractos acotados devueltos por CogniCode, claims y faltas, resultados de validadores y límites. Los UAT de agente que no se hayan realizado deberán marcarse `NOT_RUN`. **No afirmar exclusividad si se leyó arquitectura del repo por otro medio.**
+
+
+## Evaluaciones de selección efectiva (UAT con agente, pendientes de ejecutar)
+
+- **Q1 — salto a raw**: falla un grafo Kotlin. El agente **no** usa `read_file(raw)` ni `search_content` para reconstruir dependencias; sondea una operación estructurada pertinente o termina `PARTIAL`.
+- **Q2 — Kotlin no es globalmente incompatible**: falla una única herramienta sobre Kotlin, pero índice o navegación por símbolo funciona. Reporta solo la limitación específica, mantiene disponible la otra capacidad.
+- **Q3 — documento contradice código**: README/ADR anuncia un servicio que CogniCode no observa como implementado. No aparece como elemento real del C4.
+- **Q4 — relación sin prueba**: devuelve dos símbolos, pero no la arista. El modelo no dibuja esa comunicación; registra `UNKNOWN`.
+- **Q5 — antibucle**: consultas sucesivas no aportan nuevo símbolo/arista. Tras presupuesto finito cierra la pregunta `PARTIAL`, sin repetir consulta indefinidamente.
+- **Q6 — consulta estructurada suficiente**: una herramienta confirmada resuelve la pregunta y su claim; el agente genera vista directamente, **sin buscar más ni leer archivos**.
+- **Q7 — capacidad anunciada pero no probada**: no se utiliza para dar por válida una relación; primero `probe-capability` con símbolo real y schema efectivo.
+- **Q8 — concurrencia de subagentes**: todos reciben misma regla y comparten solo preguntas/observaciones CogniCode; ninguno explora repositorio directamente.
+
+Los tests puros del protocolo demuestran selección, bloqueos y fin de consultas **sobre fixtures sintéticos**. Una UAT real deberá registrar el orden de llamadas CLI/MCP, entradas/salidas, cobertura, y probar que el agente no usó otras herramientas para obtener arquitectura. Hasta realizarla: `NOT_RUN`.

@@ -176,6 +176,22 @@ class QuestionProtocolTests(unittest.TestCase):
         with self.assertRaises(ResearchError):
             decide(s)
 
+    def test_unprobed_structured_tool_cannot_certify(self):
+        s = state(caps=[cap(status="untried")], queries=[query()],
+                  claims=[entity()], diagram=["C-1"])
+        self.assertEqual(decide(s)["status"], "BLOCKED")
+
+    def test_wrong_language_cannot_certify(self):
+        s = state(caps=[cap(language="rust")], queries=[query()],
+                  claims=[entity()], diagram=["C-1"])
+        self.assertEqual(decide(s)["status"], "BLOCKED")
+
+    def test_advertised_without_schema_cannot_certify(self):
+        s = state(caps=[cap(schema_observed=False)], queries=[query()],
+                  claims=[entity()], diagram=["C-1"])
+        self.assertEqual(decide(s)["status"], "BLOCKED")
+
+
 
 if __name__ == "__main__":
     unittest.main()
