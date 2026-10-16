@@ -36,6 +36,7 @@ LINKS = {
     "install-cognicode": "references/bootstrap.md",
     "scan-symbols": "references/scan.md",
     "build-graph": "references/scan.md",
+    "query-cognicode": "references/scan.md",
     "interpret-input": "references/interpret.md",
     "review-model": "references/evidence.md",
     "reconcile": "references/interpret.md",
@@ -131,7 +132,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
         if workspace != "ready":
             blockers = []
             if workspace == "unknown":
-                rel, why = "inspect-workspace", "resolver ubicación externa mediante git rev-parse sin escribir archivos"
+                rel, why = "inspect-workspace", "resolver la ruta explícita sin ejecutar Git ni leer el repositorio"
             elif workspace in {"absent", "incomplete"}:
                 rel, why = "init-workspace", "crear/completar directorios solo bajo ~/.cognicode-diagrams"
             else:
@@ -317,6 +318,14 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
             links.append({"rel": rel, "href": href or LINKS[rel], "requires_approval": requires_approval, "why": why})
 
     requires_code = intent in {"scan", "discover", "create", "review", "update"}
+    detail_requested = bool_field(state, "detail_requested")
+    evidence_insufficient = bool_field(state, "evidence_insufficient")
+    evidence_origin = enum({"evidence_origin": state.get("evidence_origin", "unknown")},
+                           "evidence_origin", {"unknown", "cognicode", "other"})
+    claim_coverage = enum({"claim_coverage": state.get("claim_coverage", "unknown")},
+                          "claim_coverage", {"unknown", "partial", "verified"})
+    untrusted_evidence = (requires_code and evidence in {"symbols_ready", "graph_ready", "partial"}
+                          and evidence_origin != "cognicode")
     usable = env in {"cli_ready", "mcp_ready", "both_ready"}
     if (intent == "setup" or requires_code) and env == "unknown":
         link("inspect-environment", "no hay medición real de CLI/MCP")
@@ -332,7 +341,13 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if needs_input and not has_input and model == "absent" and all(art.get(fmt, "absent") == "absent" for fmt in formats):
         blockers.append("no existe diagrama de entrada")
 
-    if requires_code and usable and (intent != "create" or model == "absent") and (intent not in {"review", "update"} or model != "absent"):
+    if untrusted_evidence:
+        blockers.append("evidencia arquitectónica ajena a CogniCode: no se admite como prueba")
+    if requires_code and not usable and env == "missing":
+        blockers.append("CogniCode no disponible: investigación bloqueada; sin exploración sustitutiva")
+    if requires_code and usable and (detail_requested or evidence_insufficient or untrusted_evidence):
+        link("query-cognicode", "nueva consulta a CogniCode; prohibido leer el repositorio")
+    if requires_code and usable and not (detail_requested or evidence_insufficient or untrusted_evidence) and (intent != "create" or model == "absent") and (intent not in {"review", "update"} or model != "absent"):
         if basis == "stale" or evidence in {"absent", "stale"}:
             link("scan-symbols", "escanear alcance vigente; evidencia ausente o caducada")
         elif evidence == "symbols_ready" and (lens["evidence"] in {"architecture", "flow"} or (intent == "scan" and scan_depth == "graph")):
@@ -344,13 +359,15 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
         elif intent in {"review", "update"} and model != "absent" and evidence == "graph_ready" and basis == "current" and not reconciled:
             link("reconcile", "contrastar diagrama existente con el código actual")
 
-    if model == "draft" and intent in {"discover", "create", "interpret", "translate", "review", "update"}:
+    if model == "draft" and not (detail_requested or evidence_insufficient or untrusted_evidence) and intent in {"discover", "create", "interpret", "translate", "review", "update"}:
         link("review-model", "revisar consistencia y límites de evidencia")
 
     can_render = intent in {"translate", "create", "update"} and model != "absent"
     if intent == "update" and (not reconciled or basis != "current"):
         can_render = False
     if intent == "create" and basis == "stale":
+        can_render = False
+    if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence):
         can_render = False
     if can_render:
         for fmt in formats:
@@ -365,10 +382,12 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
             blockers.append("faltan validadores locales: no declarar los diagramas como VALID")
 
     achieved = (intent == "setup" and usable) or (intent == "scan" and usable and evidence in {"symbols_ready", "graph_ready", "partial"} and basis == "current") or (intent in {"discover", "interpret"} and model != "absent") or (intent == "review" and reconciled) or (intent in {"create", "translate", "update", "validate"} and formats and all(art.get(fmt) in {"draft", "valid"} for fmt in formats))
+    if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence):
+        achieved = False
     if achieved:
         link("finish", "el objetivo solicitado está disponible; declarar límites y validaciones")
 
-    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
+    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
     # Los renderizadores de nuevas lentes/formatos se insertan sin modificar esta lista.
     links.sort(key=lambda l: (order.index(l["rel"]) if l["rel"] in order else order.index("validate") - 0.5))
     recommended = links[0]["rel"] if links else None
@@ -381,7 +400,9 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
         reviewed = (intent in {"setup", "scan"}) or model == "reviewed"
         evidence_ok = (intent in {"translate", "interpret", "setup", "scan"}) or (basis == "current" and evidence == "graph_ready")
         complete_evidence = evidence != "partial" if intent in {"scan", "discover", "create", "review", "update"} else True
-        status = "VERIFIED" if (syntax_ok or intent in {"setup", "scan", "discover", "interpret", "review"}) and reviewed and evidence_ok and complete_evidence and not blockers else "PARTIAL"
+        implementation_grounded = (not requires_code or
+                                   (evidence_origin == "cognicode" and claim_coverage == "verified"))
+        status = "VERIFIED" if (syntax_ok or intent in {"setup", "scan", "discover", "interpret", "review"}) and reviewed and evidence_ok and complete_evidence and implementation_grounded and not blockers else "PARTIAL"
 
     return {"status": status, "lens": lens_id, "recommended": recommended, "_links": links, "blockers": blockers}
 

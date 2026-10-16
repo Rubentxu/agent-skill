@@ -2,7 +2,7 @@
 """Inspect/create isolated per-Git-worktree assets under ~/.cognicode-diagrams.
 
 Never writes into the source Git worktree. Uses only standard library and
-read-only Git queries. This is not a CogniCode graph/index or persistence API.
+NO Git queries, repository file reads or architecture inference. Projectors use only derived assets.
 """
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ import hashlib
 import json
 import os
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -26,21 +25,20 @@ class WorkspaceError(ValueError):
     """Invalid repository, workspace or requested destination."""
 
 
-def git_repository(path: Path) -> Path:
-    """Resolve a Git checkout/worktree by querying Git without mutations."""
-    path = path.expanduser().resolve(strict=True)
-    if not path.is_dir():
-        raise WorkspaceError("la ruta de entrada no es un directorio")
+def supplied_repository_root(path: Path) -> Path:
+    """Use an explicit path as an opaque identity; never call Git or inspect files.
+
+    Caller must provide the root, not an arbitrary nested directory.
+    """
+    if path.is_symlink():
+        raise WorkspaceError("raíz de repositorio enlazada no permitida")
     try:
-        proc = subprocess.run(
-            ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=False, timeout=10,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise WorkspaceError(f"no se pudo consultar Git: {exc}") from exc
-    if proc.returncode or not proc.stdout.strip():
-        raise WorkspaceError("el directorio no pertenece a un worktree Git")
-    return Path(proc.stdout.strip()).resolve(strict=True)
+        root = path.expanduser().resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        raise WorkspaceError(f"ruta de repositorio inválida: {exc}") from exc
+    if not root.is_dir() or ".cognicode-diagrams" in root.parts:
+        raise WorkspaceError("proporcione la raíz explícita, fuera del workspace derivado")
+    return root
 
 
 def _no_symlinks(path: Path) -> None:
@@ -99,7 +97,7 @@ def _status(repo: Path, workspace: Path) -> str:
 
 
 def inspect(repo_dir: Path, *, home: Path | None = None) -> dict:
-    repo = git_repository(repo_dir)
+    repo = supplied_repository_root(repo_dir)
     path = workspace_path(repo, home=home)
     return {"repository": str(repo), "workspace": str(path), "status": _status(repo, path)}
 
