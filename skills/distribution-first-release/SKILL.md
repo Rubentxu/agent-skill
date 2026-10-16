@@ -5,12 +5,15 @@ description: "Orquesta releases de aplicaciones orientadas al consumidor: descub
 
 # Distribution-First Release — una entrada, lentes bajo demanda
 
-**Misión:** entregar al consumidor **artefactos instalables o ejecutables reales**, completos, verificables y pequeños, sin meter distribuciones compiladas, recibos voluminosos ni morralla en Git o en los assets públicos. No equivale a esconder el código fuente de un repositorio público.
+**Misión:** identificar y publicar **todos los productos reales** (ejecutables, librerías, SDK, plugins, imágenes) en el **canal nativo de cada consumidor**; nunca confundir GitHub source ZIP con entrega. Optimizar los source archives sin ocultar el código de un repositorio público y reutilizar PipelineK local como autoridad CI.
 
 ## Ontología
 
 - **Source tree**: código, tests y contratos permanentes, versionados en Git.
-- **Product artifact**: distribución instalable/ejecutable que el usuario consume, no el `git archive`.
+- **Product artifact**: distribución ejecutable, componente de librería o SDK instalable como dependencia por coordenadas, imagen OCI o plugin; nunca el `git archive`.
+- **Product portfolio**: inventario completo de artefactos públicamente consumibles por módulo, no solo producto principal.
+- **Distribution route**: canal específico y contrato de instalación (GitHub Releases, Maven Central/GitHub Packages/Nexus, GHCR, npm, PyPI, crates.io, etc.).
+- **Registry publication**: artefacto + metadata + identidad versionable + prueba de resolución remota; publicar un ZIP no equivale a subir una librería a Maven.
 - **Integrity artifact**: checksum, SBOM, firma, manifiesto o atestación exigidos por la autoridad del producto.
 - **Internal evidence**: logs, handoffs, inventarios, XML, trazas y probes: conservar en su autoridad, no publicarlos como paquete del usuario.
 - **Release asset**: archivo subido expresamente por el publicador; distinto del `Source code (zip/tar.gz)` creado automáticamente por GitHub.
@@ -19,20 +22,21 @@ description: "Orquesta releases de aplicaciones orientadas al consumidor: descub
 
 ## Router: observar → descubrir → actuar → reobservar
 
-1. Inspeccionar **tipo de producto**: `application | cli | library | sdk | container | plugin`, canales existentes, requisitos de instalación, política del repositorio (AGENTS/ADRs), CI/harness y consumidor real. **No aplicar una allowlist de aplicaciones a Maven Central, npm, crates.io u otros ecosistemas de librerías**: sus contratos pueden exigir source jars, POM, manifests, licencias o documentación.
-2. Descubrir la situación observada con [navegación](references/navigation.md) y [lens-registry.json](references/lens-registry.json). Seleccionar exclusivamente lentes `ready` cuya pregunta aporte valor; `planned` no se ejecuta. Helper opcional **puro**: `python3 scripts/affordances.py examples/session-release.json`. Si no está disponible, seguir el mismo algoritmo manualmente.
-3. Inspeccionar **tres inventarios distintos**: (a) ficheros grandes/versionados en Git; (b) contenido efectivo del paquete de distribución; (c) lista **completa** de assets de la release. No confundir presencia del tag o checksum correcto con completitud.
-4. Definir la **allowlist mínima** antes de publicar, desde especificación normativa: artefactos de producto por plataforma/arquitectura y metadatos obligatorios. Toda exclusión de SBOM, checksum, firma, licencia, NOTICE o manifiesto exige verificar consumidores y decisiones vigentes.
-5. Prevenir nuevo ruido Git: outputs compilados fuera del árbol versionado; `.gitignore` para **nuevos** archivos, `.gitattributes export-ignore` para próximos archives generados por `git archive`. `export-ignore` **no reduce historial ni suprime enlaces automáticos de GitHub**. Para archivos ya rastreados, `git rm --cached` solo previa verificación de copia autoritativa y aprobación.
-6. Construir UNA VEZ por revisión, comprobar identidad de producto, contenido/ABI/OS/arquitectura y dependencias; instalar/ejecutar **esos mismos bytes** en un entorno de consumidor limpio. Nada de pasar solo tests unitarios o simular ejecución por inspección del nombre.
-7. Verificar lista exacta de assets, hashes **de todos los binarios requeridos**, material normativo, firma/atestación cuando exista, digest del candidato, notas e instrucciones de actualización/rollback. Candidata publicada y certificación externa son estados distintos.
-8. Publicar por canal/permiso real. No subir ZIP de fuentes manuales, dumps de workspace, handoffs ni duplicados; no ocultar licencias ni requisitos legales. Revisar inventario remoto y descargar/instalar el asset público. Errores, skips, artefactos ausentes o stale → `BLOCKED/FAILED`.
-9. Solo proponer limpieza de historial mediante plan excepcional: **nunca reescribir tags/releases publicados ni force-push por defecto**. Tras cada acción, descubrir nuevas affordances y continuar.
+1. [Descubrir TODOS los productos publicables](references/lenses/product-discovery.md) por módulo desde los manifiestos y el build real, consumidores, contratos de versión, SDK, plugins y exclusiones explícitas. Helper local conservador opcional: `python3 scripts/product_candidates.py --repo /ruta/al/proyecto` (no compila, no certifica). **Nunca inferir producto público solo por extensión `.jar`**.
+2. [Enrutar producto → registro](references/lenses/registry-contracts.md): biblioteca/SDK JVM preferentemente Maven Central público; GitHub Packages/Nexus por contrato o mirror; binarios CLI en Releases; OCI en GHCR. Distinguir `-sources.jar` normativos del source ZIP GitHub. Inspeccionar autorización, cuotas, credenciales, formatos y permisos antes de seleccionar.
+3. Descubrir situación con [navegación](references/navigation.md) y [lens-registry.json](references/lens-registry.json). Seleccionar lentes `ready`. Router puro: `python3 scripts/affordances.py examples/session-release.json`. `product_set` y `route_set` deben ser completos antes de DONE, pero son afirmaciones del agente que requieren evidencia externa.
+4. Inspeccionar **cuatro inventarios distintos**: (a) Git versionado/historial; (b) paquetes locales reales; (c) assets de GitHub Releases; (d) publicaciones en registros externos POR coordenada/versión/digest. No confundir tag o checksum correcto con completitud.
+5. Definir allowlist mínima **por canal** desde especificación normativa: artefactos, plataformas, coordenadas y metadatos obligatorios. No eliminar POM, module metadata, fuentes/javadoc Maven, SBOM, checksum, firma, licencia o NOTICE exigidos.
+6. [Podar ZIP automático de GitHub](references/source-archive-policy.md): `.gitattributes export-ignore` por ruta contrastada y en tag para próximos source archives; `.gitignore` solo para ficheros no rastreados. `export-ignore` no reduce historial ni oculta código público. Nunca excluir runtime, licencias, wrappers o scripts requeridos; `git rm --cached` solo con aprobación y copia autoritativa.
+7. [Delegar el release gate y la publicación a PipelineK](references/lenses/publishing-pipelinek.md) cuando esté disponible. Reutilizar `pipelinek-local-ci`, sin inventar DSL ni duplicar CI en GitHub Actions. Construir UNA VEZ por revisión, verificar ABI/OS/dependencias y probar desde bytes de candidato en consumidor limpio.
+8. Verificar por producto lista exacta de assets de Releases y coordenadas publicadas en registros, hashes de binarios, firmas/atestaciones cuando correspondan, versionado, documentación de consumo y pruebas independientes. Publicación y certificación externa son estados distintos.
+9. Publicar por canal autorizado. Nunca subir manualmente source ZIP de workspace, dumps, handoffs o duplicados; sí fuentes empaquetadas exigidas por la norma del registro. Descargar desde Releases/registries remotos y resolver dependencias/instalar/pull; faltantes, errors o stale → `BLOCKED/FAILED`. Registrar éxito parcial por canal sin declararlo DONE global.
+10. Solo proponer limpieza de historial mediante plan excepcional: **nunca reescribir tags/releases publicados ni force-push por defecto**. Tras cada acción, descubrir nuevas affordances y continuar.
 
 ## Comportamiento seguro
 
 - **No borrar, cambiar historial, cambiar visibilidad, publicar, instalar ni hacer push sin autorización.** Los helpers son exclusivamente lectura y no crean workflows, catálogos normativos o estados de sesión.
-- GitHub incluye *automáticamente* source archives para releases de repos públicos: no existe una regla `AGENTS.md` para desactivarlos. Evitar **subir** ZIP de fuentes como asset no equivale a eliminar esos enlaces. Separar repositorio de distribución/privatizar código son decisiones distintas y explícitas.
+- GitHub genera automáticamente source archives mediante `git archive`: `.gitattributes export-ignore` en el tag puede podar su contenido; NO existe un ajuste en AGENTS para esconder los enlaces. Para esos archives, no se publica un segundo ZIP a mano. Ver [política](references/source-archive-policy.md).
 - No excluir del paquete licencias, NOTICE, módulos de runtime, plugin descriptors, schemas, service providers, resources o scripts necesarios. `-sources.jar` puede ser obligatorio/convencional en bibliotecas: clasificar por producto.
 - No usar Git LFS como solución automática a distribuciones por release: elegir Releases/registry/object storage; LFS solo para activos que DEBEN estar versionados.
 - No inventar una firma/SLSA level ni confundir hash sin autenticidad con procedencia criptográfica. Un SHA256SUMS generado del propio ZIP solo prueba integridad respecto a ese manifiesto.
@@ -44,6 +48,9 @@ description: "Orquesta releases de aplicaciones orientadas al consumidor: descub
 
 | Señal | Lente |
 |---|---|
+| Qué módulos, JAR, SDK y binarios son realmente productos | [product-discovery](references/lenses/product-discovery.md) |
+| Qué repositorio versionable necesita cada producto | [registry-contracts](references/lenses/registry-contracts.md) |
+| Automatizar publicación con CI local sin duplicar gates | [publishing-pipelinek](references/lenses/publishing-pipelinek.md) |
 | ZIP/JAR compilados en Git, checkout enorme | [git-hygiene](references/lenses/git-hygiene.md) |
 | Molestan los `Source code (zip/tar.gz)` | [source-archive-boundary](references/lenses/source-archive-boundary.md) |
 | Muchos assets/duplicados/SBOM mal ubicado | [asset-selection](references/lenses/asset-selection.md) |
@@ -56,4 +63,4 @@ description: "Orquesta releases de aplicaciones orientadas al consumidor: descub
 
 [Fuentes contrastadas](references/community-sources.md) · [Autodescubrimiento](references/extend-lenses.md) · [Delegación opcional](references/related-skills.md) · [Evals](tests/skill-evals.md)
 
-**Salida mínima:** producto/consumidor, revisión/tag, distribución y origen, allowlist, assets remotos, digest, comprobación de instalación, fuentes/ruido evitado, pruebas PASS/FAIL/NOT_RUN, certificador, riesgos y próxima acción. El helper no acredita una publicación.
+**Salida mínima:** TODOS los productos con módulo/consumidor/coordenadas/versiones, canal primario y mirrors obligatorios, revisión/tag, allowlist por canal, SHA/digest, assets/registries remotos, instalación real, exclusiones de archive, gates PASS/FAIL/NOT_RUN, certificador y siguiente acción. Un helper no acredita publicación.
