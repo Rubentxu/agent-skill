@@ -30,7 +30,7 @@ class ProductDiscoveryTests(unittest.TestCase):
             (root / "private" / "package.json").write_text('{"name":"internal","private":true,"main":"index.js"}')
             result = tool.discover(root)
             self.assertEqual([(p["name"], p["kind"]) for p in result["products"]],
-                             [("public-sdk", "library")])
+                             [("root", "library"), ("public-sdk", "library")])
             self.assertEqual(result["status"], "CANDIDATES_ONLY_NOT_CERTIFIED")
 
     def test_gradle_publish_and_application(self):
