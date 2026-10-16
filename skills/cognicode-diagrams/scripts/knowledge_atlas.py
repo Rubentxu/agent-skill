@@ -187,7 +187,7 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
                 provenance = c.get("provenance", c.get("status", "UNKNOWN"))
                 ids = c.get("query_ids", [])
                 # A legacy "observed" without resolvable queries is a *candidate*, never verified evidence.
-                effective = ("UNKNOWN (sin query)" if provenance in IMPLEMENTATION and (not ids or not qfile.is_file())
+                effective = ("UNKNOWN (sin query)" if provenance in IMPLEMENTATION | {"CODE_DOC"} and (not ids or not qfile.is_file())
                              else provenance)
                 plane = "intent" if category == "intent" else c.get("plane", "static")
                 coverage = c.get("coverage", "unknown")

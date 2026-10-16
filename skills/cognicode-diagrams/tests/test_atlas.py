@@ -194,6 +194,16 @@ class AtlasTests(unittest.TestCase):
         with self.assertRaises(atlas.KnowledgeError):
             atlas.build(self.repo, home=self.home)
 
+    def test_code_doc_without_cognicode_ledger_is_not_certified(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "I-DOC", "kind": "entity", "category": "intent",
+             "provenance": "CODE_DOC", "plane": "intent",
+             "symbol_id": "Service KDoc", "query_ids": ["Q-77"]}]))
+        r = atlas.build(self.repo, home=self.home)
+        content = Path(r["markdown"]).read_text()
+        self.assertIn("UNKNOWN  sin query", content)
+        self.assertIn("NO demuestra implementacion", content)
+
     def test_doc_intent_requires_separate_explicit_mode(self):
         (self.w / "evidence" / "claims.json").write_text(json.dumps([
             {"id": "I-2", "kind": "entity", "category": "intent",
