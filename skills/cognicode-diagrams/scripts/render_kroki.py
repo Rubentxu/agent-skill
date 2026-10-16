@@ -84,7 +84,7 @@ def render(source_file: Path, output: Path, diagram_type: str, image_format: str
     if src.is_symlink() or src.resolve(strict=False) != src:
         raise RenderError("proyector: fuente enlazada o fuera del workspace derivado")
     if dest.is_symlink() or dest.resolve(strict=False) != dest:
-        raise RenderError("proyector: destino enlazado o fuera del workspace derivado")
+        raise RenderError("proyector: enlace simbólico en destino o fuera del workspace derivado")
     if not src.is_relative_to(derived_root) or not dest.is_relative_to(derived_root):
         raise RenderError("proyector: solo admite artefactos derivados en HOME")
     src_rel = src.relative_to(derived_root).parts

@@ -336,7 +336,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
             blockers.append("CogniCode ausente; instalación no autorizada")
 
     needs_input = intent in {"interpret", "translate", "validate"}
-    if has_input and model == "absent" and intent in {"interpret", "translate", "review", "update", "validate"}:
+    if has_input and model == "absent" and intent in {"interpret", "translate", "review", "update", "validate"} and (not requires_code or usable):
         link("interpret-input", "existe diagrama; interpretar sin escaneo previo")
     if needs_input and not has_input and model == "absent" and all(art.get(fmt, "absent") == "absent" for fmt in formats):
         blockers.append("no existe diagrama de entrada")
@@ -367,7 +367,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
         can_render = False
     if intent == "create" and basis == "stale":
         can_render = False
-    if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence):
+    if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence or not usable):
         can_render = False
     if can_render:
         for fmt in formats:
@@ -382,7 +382,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
             blockers.append("faltan validadores locales: no declarar los diagramas como VALID")
 
     achieved = (intent == "setup" and usable) or (intent == "scan" and usable and evidence in {"symbols_ready", "graph_ready", "partial"} and basis == "current") or (intent in {"discover", "interpret"} and model != "absent") or (intent == "review" and reconciled) or (intent in {"create", "translate", "update", "validate"} and formats and all(art.get(fmt) in {"draft", "valid"} for fmt in formats))
-    if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence):
+    if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence or not usable):
         achieved = False
     if achieved:
         link("finish", "el objetivo solicitado está disponible; declarar límites y validaciones")
@@ -391,6 +391,8 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     # Los renderizadores de nuevas lentes/formatos se insertan sin modificar esta lista.
     links.sort(key=lambda l: (order.index(l["rel"]) if l["rel"] in order else order.index("validate") - 0.5))
     recommended = links[0]["rel"] if links else None
+    if requires_code and env == "missing":
+        links = [item for item in links if item["rel"] == "install-cognicode"]
     if not links:
         status = "BLOCKED" if blockers else "PARTIAL"
     elif any(l["rel"] != "finish" for l in links):
