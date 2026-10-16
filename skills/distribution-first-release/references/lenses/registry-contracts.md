@@ -19,13 +19,15 @@ Clasificar **producto** antes de elegir destino. GitHub Releases, registros de p
 
 **GitHub Packages Maven/Gradle:** GitHub indica que requiere autenticación para instalar incluso paquetes públicos. Su uso público gratuito **no equivale a consumo anónimo**. No afirmar que GitHub Packages reemplaza a Maven Central para SDK abiertos sin explicar configuración de credenciales. El registry Maven/Gradle está ligado al repositorio. Publicar multi-módulo desde Gradle/Maven siguiendo el `maven-publish` real.
 
+**Coste y elegibilidad de Maven Central (vigente 2026-10-01):** la publicación de código abierto comunitario ordinario puede mantenerse gratuita dentro de sus límites. Publisher Pro es obligatorio cuando los artefactos tienen naturaleza comercial o se superan umbrales aplicables sin exención. No prometer gratuidad automática para un SDK comercial, generado o ligado a servicios. Verificar Publisher Tier, volumen y clasificación antes de elegir canal. [Tiers y uso comercial](https://central.sonatype.org/news/20260908_publisher_tiers_commercial_use/) · [límites](https://central.sonatype.org/publish/maven-central-publishing-limits/).
+
 **Maven Central:** publicación habitual de JAR + POM con dependencias + `-sources.jar` + `-javadoc.jar` + firmas exigidas. Esos sources son **por módulo, preparados por el build**, no el ZIP completo de GitHub. Fuentes y documentación legítimas no son morralla. Central Portal usa su propio protocolo; no asumir que un `maven deploy` legacy a OSSRH todavía funciona.
 
 **GHCR:** imágenes OCI por nombre/tag/digest; publicar multiarch manifest/index cuando se declaró. Los assets ZIP no sustituyen pulls OCI.
 
 **Selección verificable:**
 
-1. Inspeccionar contrato y disponibilidad/credenciales del proveedor con fuentes oficiales vigentes. No asumir acceso al registro, namespace, dominio de Maven Central o cuenta.
+1. Inspeccionar contrato, coste/elegibilidad vigente, límites, condiciones comerciales y disponibilidad/credenciales del proveedor con fuentes oficiales vigentes. No asumir acceso al registro, namespace, dominio de Maven Central o cuenta.
 2. Declarar por producto `primary` y opcional `mirror`; no inventar obligación de duplicación. Definir coordenadas/identidad exactas y mecanismo de instalación.
 3. Comprobar `publishable`, versión/compatibilidad, metadatos, integridad, firma/SBOM si son normativos, dependencias y licencias.
 4. Realizar staging local sin subir; comprobar el conjunto publicado y permitir únicamente las entradas normativas. Hash de un ZIP no prueba que las coordenadas Maven existan.
