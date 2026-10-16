@@ -34,6 +34,10 @@ def inspect_jvm_zip(path: Path) -> list[str]:
             entries = zf.infolist()
             if not entries:
                 return [f"EMPTY_ZIP:{path.name}"]
+            actual_parts = [PurePosixPath(e.filename).parts for e in entries if not e.is_dir()]
+            common_root = actual_parts[0][0] if actual_parts and all(
+                len(parts) >= 2 and parts[0] == actual_parts[0][0] for parts in actual_parts
+            ) else None
             components = []
             for info in entries:
                 n = info.filename
@@ -45,10 +49,7 @@ def inspect_jvm_zip(path: Path) -> list[str]:
                 if filetype == stat.S_IFLNK:
                     issues.append(f"ZIP_SYMLINK:{n}")
                 # Strip a single archive root directory (Gradle distZip convention).
-                normalized = parts[1:] if len(parts) > 1 and all(
-                    len(PurePosixPath(x.filename).parts) > 1 and
-                    PurePosixPath(x.filename).parts[0] == parts[0] for x in entries
-                ) else parts
+                normalized = parts[1:] if common_root and parts[0] == common_root else parts
                 components.append(normalized)
                 if any(p.lower() in FORBIDDEN for p in normalized):
                     issues.append(f"SOURCE_OR_INTERNAL_PATH:{n}")
