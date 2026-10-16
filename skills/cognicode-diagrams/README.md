@@ -42,3 +42,7 @@ La lente `c4` está habilitada; `class`, `use-case` y `vertical-slice` están pl
 `python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py' -v`
 
 `tests/skill-evals.md` contiene casos de aceptación obligatorios (más detalle, insuficiencia, conflicto documento/código, ausencia de CogniCode, subagentes, aislamiento de proyectores). Los tests unitarios y mocks no equivalen a una UAT real con CogniCode.
+
+## Preflight 2026-10: C4 sin bloqueo por grafo
+
+La skill requiere [preflight por versión, lenguaje, catálogo y proceso MCP](references/session-preflight.md) y registra [evidencia de relaciones por referencias](references/evidence-reference-links.md) sin inventar `relation_id`. La navegación usa primero símbolos/referencias, después grafo en el **mismo proceso** solo si añade valor. Máximo 15 nodos por vista antes de dividir; [guía de kinds de LikeC4](references/formats/likec4-kinds.md). Los nuevos estados solo describen fixtures sintéticos: UAT real de agente+CogniCode sigue `NOT_RUN` hasta ejecutarla.

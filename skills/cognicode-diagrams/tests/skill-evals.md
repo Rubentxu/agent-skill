@@ -56,3 +56,16 @@ Los tests puros del protocolo demuestran selección, bloqueos y fin de consultas
 - **L6**: el CLI instalado no anuncia `doctor` ni `capabilities --json`. El agente descubre otras herramientas reales sin probar comandos imaginarios.
 
 Los tests del protocolo usan **fixtures sintéticos** y no verifican los parsers reales de Kotlin/Rust. Para certificar lenguajes hay que ejecutar UAT con CogniCode CLI/MCP instalado y conservar sus respuestas. Hasta entonces: `NOT_RUN`.
+
+## Q63–Q72: campaña de aceptación específica (NOT_RUN con agente real)
+
+- Q63–Q67: herramienta de grafo anunciada, sesión sin grafo ⇒ acción `build-graph` **en mismo MCP**; nunca `UNSUPPORTED` de lenguaje.
+- Q70–Q72: tras construirlo en el **mismo proceso**, con base/omisiones observadas, llamada pertinente produce evidencia usable; reiniciar sesión invalida esa garantía.
+- C4-Kotlin: registro del binario instalado no anuncia Kotlin ⇒ evitar C4 global; probar sí navegación de símbolos/refs y emitir `PARTIAL` si corresponde.
+- Catalog: una herramienta `requires_persistence` no prepara almacenamiento sin permiso; `stability=experimental` nunca equivale a certeza.
+- Reference: `find_usages` sin `relation_id` ⇒ `reference_link` respaldado por (query,index,path,line), jamás `graph_edge`. Alterar índice/línea o inventar extremos rechaza el claim.
+- Escalera: símbolo y referencia suficientes ⇒ no `build_graph`; fallos de grafo ⇒ contexto por símbolo o `PARTIAL` con presupuesto acotado.
+- Vista: 29 nodos ⇒ `split-view` en 2+ diagramas con evidencia compartida.
+- LikeC4: al faltar kind base, diagnosticar error, declarar los kinds usados y validar sintaxis sin tocar repositorio.
+
+Los nuevos unitarios solo cubren decisiones puras con fixtures; estas UAT de proceso real siguen `NOT_RUN` hasta prueba registrada.

@@ -17,19 +17,27 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 ## Protocolo de decisión, obligatorio antes de modelar
 
 1. **Pregunta concreta** con símbolo o ámbito, lenguaje y plano: ¿entrada ejecutable, responsabilidad, colaborador, interacción, almacenamiento o frontera?
-2. **Descubrimiento real**: ayuda/capabilities si el CLI instalado las admite o MCP `initialize` + `tools/list` paginado y schemas. **Anunciada ≠ funcional**.
-3. **Comprobación por lenguaje sobre símbolo real**: índice, identidad, ubicación, contexto, relación pertinente y cobertura/limitaciones. Guardar `probes[lenguaje]` por cada capacidad: un éxito de Rust no certifica Kotlin. El fallo del grafo general no significa «Kotlin incompatible».
-4. **Elección de una capacidad pertinente** según [research-protocol.md](references/research-protocol.md), sin invocarlas todas. Preferir respuestas estructuradas; usar lo ya obtenido si basta.
-5. **Evidencia y cobertura antes de dibujar**: cada elemento/arista vincula pregunta, consulta-respuesta CogniCode, símbolos, relación, plano y limitaciones. Comprobar con CogniCode los **archivos omitidos** y su relevancia para la vista; si son esenciales o desconocidos, `PARTIAL/UNKNOWN`. El agente interpreta pero no eleva inferencias a hechos.
-6. **Fin acotado**: si no hay progreso, probar otra capacidad estructurada relevante o cerrar pregunta `PARTIAL/UNKNOWN`. Más detalle = nueva pregunta y consultas concretas; jamás bucles sin valor.
+2. **Descubrimiento real**: ayuda/capabilities si el CLI instalado las admite o MCP `initialize` + `tools/list` paginado y schemas. **Anunciada ≠ funcional**. Leer obligatoriamente metadatos `requires_graph`, `requires_persistence`, `stability`, prerequisites y limitations por tool.
+3. **Preflight por lenguaje y sesión**, antes de prometer C4: contrastar registro de la versión instalada; comprobar identidad del proceso MCP y base del grafo. `No graph available` = precondición no satisfecha, **no** lenguaje/tool unsupported. [Procedimiento](references/session-preflight.md).
+4. **Comprobación por lenguaje sobre símbolo real**: índice, identidad, ubicación, contexto, relación pertinente y cobertura/limitaciones. Guardar `probes[lenguaje]` por cada capacidad: un éxito de Rust no certifica Kotlin. El fallo del grafo general no significa «Kotlin incompatible».
+5. **Elección de una capacidad pertinente** según [research-protocol.md](references/research-protocol.md), sin invocarlas todas. Preferir respuestas estructuradas; usar lo ya obtenido si basta.
+6. **Evidencia y cobertura antes de dibujar**: cada elemento/arista vincula pregunta, consulta-respuesta CogniCode, símbolos, relación, plano y limitaciones. Comprobar con CogniCode los **archivos omitidos** y su relevancia para la vista; si son esenciales o desconocidos, `PARTIAL/UNKNOWN`. El agente interpreta pero no eleva inferencias a hechos.
+7. **Fin acotado**: si no hay progreso, probar otra capacidad estructurada relevante o cerrar pregunta `PARTIAL/UNKNOWN`. Más detalle = nueva pregunta y consultas concretas; jamás bucles sin valor.
 
 `scripts/affordances.py` aplica las decisiones puras de `scripts/research_protocol.py`: un `graph_ready`/`claim_coverage=verified` declarado **no** permite saltarse el registro verificable de la pregunta. El helper no ejecuta CogniCode ni certifica autenticidad de sus respuestas.
 
 ## Navegación y salidas
 
-- Investigación: [protocolo](references/research-protocol.md) → [consulta](references/scan.md) → [trazabilidad](references/evidence.md) → [lente C4](references/lenses/c4.md) → formato elegido.
+- Investigación: [preflight de sesión](references/session-preflight.md) → [protocolo](references/research-protocol.md) → [consulta](references/scan.md) → [trazabilidad](references/evidence.md) → [lente C4](references/lenses/c4.md) → formato elegido.
 - [Registro de lentes](references/lens-registry.json): `c4` está `ready`; `class`, `use-case` y `vertical-slice` siguen `planned`. [Extensión](references/extend-lenses.md).
 - [Workspace externo](references/workspace.md), [validación](references/validate.md), [proyectores](references/projectors.md), [navegación](references/navigation.md) y [bootstrap autorizado](references/bootstrap.md). Traducción/preview/atlas **no** verifican arquitectura.
 - [Contrato vinculante](references/investigation-contract.md); [evaluaciones](tests/skill-evals.md) y [tests](tests/test_research_protocol.py).
 
 `VERIFIED` solo en el alcance realmente comprobado; de lo contrario `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Las pruebas puras no equivalen a UAT con un agente real y CogniCode conectado.
+
+## Antibloqueos operativos
+
+- Escalera: **símbolo → referencia → grafo en el mismo proceso (si es necesario) → contexto por símbolo → PARTIAL**. No ejecutar `build_graph` por rutina.
+- Una referencia de `find_usages` es `reference_link` con `query_id + index + path:line`, **no** una `graph_edge` con `relation_id` inventado. [Contrato](references/evidence-reference-links.md).
+- Límite de vista: **15 nodos**; más requiere división por componente/bounded context, no texto pequeño. [C4](references/lenses/c4.md).
+- Si el LikeC4 DSL falla por kinds, declarar los kinds base usados y validar en la versión local. [Guía](references/formats/likec4-kinds.md).

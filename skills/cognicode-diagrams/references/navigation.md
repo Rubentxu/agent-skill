@@ -113,3 +113,7 @@ Son **acciones semánticas** que el agente implementa exclusivamente llamando a 
 ## Preconditions del cierre arquitectónico
 
 `research.scope` exige el inventario de omisiones de CogniCode y la matriz `capabilities[].probes[lenguaje]`. Los enlaces `assess-coverage` y `assess-omissions` solicitan acciones del runtime descubierto, **no comandos inventados**. Con ficheros omitidos relevantes/indeterminados no se habilita la vista como implementada. Una vista acotada con omisiones justificadas conserva el estado `PARTIAL` si `scope.coverage=partial`.
+
+## Nuevas affordances del preflight
+
+`preflight-language` consulta soporte en el runtime instalado antes de C4; `inspect-session` identifica grafo/proceso; `build-graph` se ofrece por requisito real `requires_graph`, nunca por ausencia global de capacidades; `plan-view` obliga a registrar cantidad de nodos y `split-view` evita diagramas ilegibles. El helper sigue siendo puro, no conecta a CogniCode.

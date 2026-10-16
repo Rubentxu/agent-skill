@@ -51,3 +51,7 @@ podman run --rm -v "$SOURCES:/data:ro,z" likec4/likec4:latest validate
 Si la imagen necesita cachés escribibles, usar un directorio de validación desechable **dentro de `~/.cognicode-diagrams/`**, nunca en Git. No desactivar validación por fallos no explicados. Abrir la interfaz local con [el proyector LikeC4](../projectors/likec4.md) para revisión visual. `validate PASS` verifica el DSL, NO la fidelidad de los límites y relaciones al código.
 
 Fuentes oficiales: https://likec4.dev/tutorial/ ; https://likec4.dev/dsl/intro/ ; https://likec4.dev/tooling/cli/.
+
+## Error frecuente: kinds no declarados
+
+Si se declara una `specification` explícita, declarar cada `element kind` usado, incluidos `actor`, `system`, `container`, `component` cuando aparezcan en el modelo. No suponer que un kind base está implícito al declarar otros. Validar contra la versión instalada, ver [ejemplo mínimo y diagnóstico](likec4-kinds.md).
