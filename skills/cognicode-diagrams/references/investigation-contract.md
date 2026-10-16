@@ -47,3 +47,10 @@ Guardar, de forma limitada y sin secretos, un ledger con `query_id`, interface, 
 ## Separación de certificaciones
 
 `FORMAT_VALID`: archivo aceptado por validador. `RENDERED`: imagen generada. `VISUALLY_REVIEWED`: agente inspeccionó salida. `IMPLEMENTATION_GROUNDED`: **todas las afirmaciones factuales** de esa vista tienen prueba CogniCode, identidad vigente y cobertura declarada. Ninguno implica los otros.
+
+
+## Precedencia entre capacidades estructuradas y texto
+
+**Exclusividad de CogniCode no significa autorizar cualquier tool CogniCode como analizador.** Antes de llamar, elegir por pregunta una capacidad estructurada anunciada y comprobarla sobre un símbolo real del lenguaje; `read_file(raw)`/`search_content` no son reemplazos válidos. La búsqueda textual solo localiza candidatos, confirmados por operaciones de símbolos/relaciones. La prueba de compatibilidad se registra por herramienta + lenguaje, no a nivel global.
+
+El agente y sus subagentes deben producir [estado de decisión y claims](research-protocol.md); sin prueba no hay arquitectura implementada. Al hallar suficiente evidencia se detienen. Sin mejora, terminan la pregunta `PARTIAL/UNKNOWN` tras presupuesto finito. Una autorización explícita de investigación textual alternativa se gestiona **fuera** de esta skill y nunca se certifica como arquitectura estructural verificada.

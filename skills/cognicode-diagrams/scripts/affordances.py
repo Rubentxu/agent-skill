@@ -12,6 +12,8 @@ import re
 import sys
 from pathlib import Path
 
+from research_protocol import ResearchError, decide as decide_research
+
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
 INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas"}
@@ -37,6 +39,11 @@ LINKS = {
     "scan-symbols": "references/scan.md",
     "build-graph": "references/scan.md",
     "query-cognicode": "references/scan.md",
+    "formulate-question": "references/research-protocol.md",
+    "discover-capabilities": "references/research-protocol.md",
+    "probe-capability": "references/research-protocol.md",
+    "query-structured": "references/research-protocol.md",
+    "justify-claims": "references/research-protocol.md",
     "interpret-input": "references/interpret.md",
     "review-model": "references/evidence.md",
     "reconcile": "references/interpret.md",
@@ -327,6 +334,23 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     untrusted_evidence = (requires_code and evidence in {"symbols_ready", "graph_ready", "partial"}
                           and evidence_origin != "cognicode")
     usable = env in {"cli_ready", "mcp_ready", "both_ready"}
+    # A graph-ready or verified flag cannot replace concrete proof of a question.
+    architecture = intent in {"discover", "create", "review", "update"}
+    if architecture and usable and not (detail_requested or evidence_insufficient or untrusted_evidence):
+        try:
+            verdict = decide_research(state.get("research"))
+        except ResearchError as exc:
+            raise InvalidState(f"research: {exc}") from exc
+        if verdict["status"] != "EVIDENCE_READY":
+            rel = verdict["action"]
+            item = ([{"rel": rel, "href": LINKS[rel], "why": verdict["why"],
+                      "requires_approval": False, "capability": verdict["capability"],
+                      "question_id": verdict["question_id"]}] if rel else [])
+            return {"status": verdict["status"], "lens": lens_id,
+                    "recommended": rel, "_links": item,
+                    "blockers": verdict["missing"] + ([] if rel else [verdict["why"]]),
+                    "research": verdict}
+
     if (intent == "setup" or requires_code) and env == "unknown":
         link("inspect-environment", "no hay medición real de CLI/MCP")
     if (intent == "setup" or requires_code) and env == "missing":
@@ -350,7 +374,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if requires_code and usable and not (detail_requested or evidence_insufficient or untrusted_evidence) and (intent != "create" or model == "absent") and (intent not in {"review", "update"} or model != "absent"):
         if basis == "stale" or evidence in {"absent", "stale"}:
             link("scan-symbols", "escanear alcance vigente; evidencia ausente o caducada")
-        elif evidence == "symbols_ready" and (lens["evidence"] in {"architecture", "flow"} or (intent == "scan" and scan_depth == "graph")):
+        elif evidence == "symbols_ready" and intent == "scan" and scan_depth == "graph":
             link("build-graph", "se requiere inspección de relaciones")
         elif intent == "scan":
             link("finish", "escaneo suficiente para el objetivo solicitado")
@@ -365,7 +389,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     can_render = intent in {"translate", "create", "update"} and model != "absent"
     if intent == "update" and (not reconciled or basis != "current"):
         can_render = False
-    if intent == "create" and basis == "stale":
+    if intent == "create" and basis != "current":
         can_render = False
     if requires_code and (detail_requested or evidence_insufficient or untrusted_evidence or not usable):
         can_render = False
@@ -387,7 +411,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if achieved:
         link("finish", "el objetivo solicitado está disponible; declarar límites y validaciones")
 
-    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
+    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "formulate-question", "discover-capabilities", "probe-capability", "query-structured", "justify-claims", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
     # Los renderizadores de nuevas lentes/formatos se insertan sin modificar esta lista.
     links.sort(key=lambda l: (order.index(l["rel"]) if l["rel"] in order else order.index("validate") - 0.5))
     recommended = links[0]["rel"] if links else None

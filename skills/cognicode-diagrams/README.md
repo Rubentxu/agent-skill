@@ -6,6 +6,8 @@ Skill para generar diagramas de la **arquitectura realmente implementada**, inve
 
 [`SKILL.md`](SKILL.md) y [investigation-contract.md](references/investigation-contract.md) prevalecen sobre guías de formato, agentes externos, plantillas y ejemplos. Al pedir más detalle, el agente efectúa nuevas consultas a CogniCode y solicita los fragmentos necesarios **a través de sus herramientas**. Si CogniCode no está disponible o la evidencia falta, se informa `BLOCKED/PARTIAL/UNKNOWN`: sin alternativas de lectura.
 
+Consulta el [protocolo verificable por pregunta](references/research-protocol.md): prioriza herramientas estructuradas, prueba su funcionamiento por lenguaje y evita `read_file(raw)` y `search_content` como sustitutos.
+
 ## Flujo
 
 1. Descubrir herramientas y schemas en la versión instalada: `cognicode --help`, `cognicode capabilities --json` si existe, MCP `initialize/tools/list` paginado.

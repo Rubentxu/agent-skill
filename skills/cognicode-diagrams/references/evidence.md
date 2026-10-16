@@ -23,3 +23,14 @@ La misma consulta CLI y MCP al mismo backend no equivale a corroboración indepe
 - CogniCode ausente o sin capacidad suficiente ⇒ `BLOCKED` o `PARTIAL`; se prohíbe abrir archivos objetivo por otra vía.
 
 Para los límites de identidad y el significado de `VERIFIED`, consultar [investigation-contract.md](investigation-contract.md).
+
+
+## Comprobación estructurada por pregunta
+
+Se exige el estado `research` del [protocolo de preguntas](research-protocol.md), además de los campos clásicos del ledger. Una consulta **anunciada** no acredita funcionalidad: almacenar sondeo por capacidad y lenguaje (símbolo real, ubicación, contexto, relaciones y cobertura), y después la operación productiva que soporta el claim.
+
+- Un `query_id` que procede de `read_file(raw)`, del checkout, de otro indexador o únicamente de `search_content` **no respalda** una entidad/arista como implementada.
+- Cada arista factual incluye `from_symbol`, `to_symbol` y `relation_id` observados en una respuesta estructurada. Nunca inferir comunicación runtime o despliegue desde un `calls` estático.
+- El cierre `EVIDENCE_READY` demuestra consistencia de **los claims declarados** para **esa pregunta**, no cobertura completa del lenguaje, ni autenticidad de las respuestas del agente.
+- Si hay nueva petición de detalle, registrar nueva pregunta, capacidad seleccionada, pruebas y consultas. Si no hay progreso, terminar `PARTIAL/UNKNOWN`, sin repetir la misma operación hasta agotar contexto.
+- Cuando la consulta estructurada ya es suficiente, evitar búsquedas y lecturas extra: no aportan valor ni elevan certificación.
