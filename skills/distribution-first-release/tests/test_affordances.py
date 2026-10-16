@@ -19,7 +19,8 @@ spec.loader.exec_module(router)
 def state(**changes):
     result = dict(
         intent="release", product="cli", inventory="ready", basis="current",
-        signals=["release"], git_artifacts="clean", archive_confusion=False,
+        signals=["release"], product_set="complete", route_set="complete",
+        git_artifacts="clean", archive_confusion=False,
         asset_set="complete", package="passed", consumer="passed",
         integrity="passed", publication="not_run"
     )
@@ -33,9 +34,9 @@ class RegistryTests(unittest.TestCase):
         self.assertGreaterEqual(sum(x["status"] == "ready" for x in c.values()), 9)
 
     def test_planned_not_offered(self):
-        self.assertEqual(router.read_catalog()["registry-contracts"]["status"], "planned")
+        self.assertEqual(router.read_catalog()["native-packaging"]["status"], "planned")
         ids = [x["id"] for x in router.affordances(state(signals=["package"]))["lenses"]]
-        self.assertNotIn("registry-contracts", ids)
+        self.assertNotIn("native-packaging", ids)
 
     def test_every_action_path_exists_and_safe(self):
         for rel in router.ACTIONS.values():
@@ -62,6 +63,26 @@ class NavigationTests(unittest.TestCase):
 
     def test_unknown_product(self):
         self.assertEqual(self.action(product="unknown"), "inspect-product")
+
+    def test_missing_product_inventory_blocks_done(self):
+        r = router.affordances(state(product_set="unknown", publication="passed"))
+        self.assertEqual((r["recommended"], r["status"]), ("inventory-products", "READY"))
+
+    def test_incomplete_product_portfolio_fails(self):
+        r = router.affordances(state(product_set="incomplete", publication="passed"))
+        self.assertEqual((r["recommended"], r["status"]), ("inventory-products", "FAILED"))
+
+    def test_unrouted_channel_blocks_done(self):
+        r = router.affordances(state(route_set="unknown", publication="passed"))
+        self.assertEqual((r["recommended"], r["status"]), ("route-channels", "READY"))
+
+    def test_incomplete_route_fails(self):
+        r = router.affordances(state(route_set="incomplete", publication="passed"))
+        self.assertEqual((r["recommended"], r["status"]), ("route-channels", "FAILED"))
+
+    def test_registry_lens_ready(self):
+        r = router.affordances(state(signals=["registry"]))
+        self.assertIn("registry-contracts", [x["id"] for x in r["lenses"]])
 
     def test_unknown_inventory(self):
         self.assertEqual(self.action(inventory="unknown"), "inspect-product")
