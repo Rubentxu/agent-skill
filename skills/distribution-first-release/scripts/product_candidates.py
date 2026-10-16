@@ -57,10 +57,12 @@ def inspect(directory: Path, relative: Path, names: set[str]) -> tuple[list[dict
                 root = ElementTree.fromstring(raw)
                 packaging = root.findtext("{*}packaging", default="jar")
                 artifact = root.findtext("{*}artifactId") or directory.name
-                if packaging == "pom":
-                    continue  # Parent/aggregator, not a standalone JAR.
+                # POM packaging may be a BOM or public parent; retain as a candidate.
                 kind = "plugin" if packaging == "maven-plugin" else "library"
-                result.append(product(relative, kind, artifact, f"{loc}/pom.xml: packaging={packaging}"))
+                evidence = f"{loc}/pom.xml: packaging={packaging}"
+                if packaging == "pom":
+                    evidence += " (BOM/parent/aggregator; confirm publishing intent)"
+                result.append(product(relative, kind, artifact, evidence))
             elif filename in {"build.gradle", "build.gradle.kts"}:
                 # Heuristic only: Gradle plugins and conventions may come from elsewhere.
                 if re.search(r"\bmaven-publish\b", raw):
