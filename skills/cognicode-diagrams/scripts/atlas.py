@@ -2,7 +2,7 @@
 """Create a navigable Markdown atlas from existing diagram artifacts only.
 
 NEVER reads the Git working tree content; NEVER runs CogniCode or projectors.
-The atlas is a derived index, not an architecture model or knowledge base.
+The atlas is a derived knowledge navigation projection, not another analysis engine.
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from workspace import WorkspaceError, VALID_LENS, inspect as inspect_workspace
+from knowledge_atlas import KnowledgeError, fingerprints as knowledge_fingerprints, project as project_knowledge
 
 IMAGE_EXT = {".svg", ".png", ".webp"}
 SOURCE_EXT = {".dsl", ".mmd", ".puml", ".c4", ".likec4", ".d2", ".md"}
@@ -156,8 +157,9 @@ def build(repo: Path, *, home: Path | None = None, inspect_viewers: bool = False
     if nav.is_symlink() or (nav.exists() and not nav.is_dir()):
         raise AtlasError("directorio navigation inseguro")
     catalog = assets(workspace)
-    if not catalog:
-        raise AtlasError("no hay diagramas en lenses/*/{sources,renders}; generar primero con el agente")
+    knowledge_lines, knowledge_hashes, claim_count, view_count = project_knowledge(workspace, catalog, _href, _label)
+    if not catalog and not claim_count:
+        raise AtlasError("no hay diagramas ni claims CogniCode; registrar evidencia primero")
     links = discover_viewers(repo, list(catalog), engine, home) if inspect_viewers else {}
     if nav.exists() and not _inside(nav, workspace):
         raise AtlasError("directorio de navegación fuera del workspace")
@@ -166,6 +168,7 @@ def build(repo: Path, *, home: Path | None = None, inspect_viewers: bool = False
     lines = [MARKER, "# Atlas de " + _label(Path(info["repository"]).name), "", 
              "Mapa de **artefactos existentes**, no prueba de fidelidad arquitectónica.",
              "Los enlaces a visores interactivos solo funcionan mientras sus servicios locales sigan activos.", ""]
+    lines.extend(knowledge_lines)
     metadata = {}
     for lens, listing in catalog.items():
         lines += ["## " + _label(lens), ""]
@@ -199,13 +202,15 @@ def build(repo: Path, *, home: Path | None = None, inspect_viewers: bool = False
             raise AtlasError(f"archivo preexistente ajeno a esta skill: {dest}")
     manifest = {"generator": "cognicode-diagrams-atlas", "schema_version": 1, "repository": info["repository"],
                 "workspace": str(workspace), "artifacts": metadata,
+                "knowledge_inputs": knowledge_hashes,
                 "markdown_sha256": hashlib.sha256(result.encode("utf-8")).hexdigest(),
                 "viewer_links": links, "semantic_certification": "not_claimed"}
     _write_owned(md, result, MARKER)
     _manifest_write(manifest_path, manifest)
     return {"status": "ATLAS_SOURCE_READY", "markdown": str(md), "manifest": str(manifest_path),
             "lenses": list(catalog), "artifacts": sum(len(x["sources"]) + len(x["renders"]) for x in catalog.values()),
-            "viewer_links": sum(map(len, links.values()))}
+            "viewer_links": sum(map(len, links.values())),
+            "claims": claim_count, "linked_views": view_count}
 
 
 def check(repo: Path, *, home: Path | None = None) -> dict:
@@ -232,14 +237,16 @@ def check(repo: Path, *, home: Path | None = None) -> dict:
                       for p in entries["sources"] + entries["renders"]}
                for lens, entries in observed.items()}
     digest = hashlib.sha256(source.read_bytes()).hexdigest()
-    current_status = "CURRENT" if expected == current and digest == data.get("markdown_sha256") else "STALE"
+    current_status = ("CURRENT" if expected == current and
+                      data.get("knowledge_inputs", {}) == knowledge_fingerprints(workspace) and
+                      digest == data.get("markdown_sha256") else "STALE")
     return {"status": current_status, "markdown": str(source), "manifest": str(manifest),
             "note": "CURRENT significa actualizado con los artefactos locales; no prueba semántica"}
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("build", "check"))
+    parser.add_argument("action", choices=("build", "sync", "check"))
     parser.add_argument("--repo", required=True, type=Path)
     parser.add_argument("--engine", choices=("podman", "docker"))
     parser.add_argument("--viewers", action="store_true", help="Inspecciona visores propios con HTTP en localhost; sin arranque")
@@ -250,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
             args.repo, inspect_viewers=args.viewers, engine=args.engine, embed_images=not args.no_images)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
-    except (AtlasError, WorkspaceError, OSError, ValueError) as exc:
+    except (AtlasError, KnowledgeError, WorkspaceError, OSError, ValueError) as exc:
         print(json.dumps({"status": "BLOCKED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
 

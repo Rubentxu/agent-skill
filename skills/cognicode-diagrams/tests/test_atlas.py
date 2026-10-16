@@ -102,6 +102,75 @@ class AtlasTests(unittest.TestCase):
         self.assertEqual(data['semantic_certification'],'not_claimed')
         self.assertEqual(data['generator'],'cognicode-diagrams-atlas')
 
+
+    def test_sync_creates_navigable_knowledge_without_any_diagram(self):
+        self.s.unlink()
+        self.r.unlink()
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-1", "kind": "entity", "status": "OBSERVED_CODE",
+             "symbol_id": "A::handler", "query_ids": ["Q-1"]}]))
+        (self.w / "evidence" / "queries.json").write_text(json.dumps([{"id": "Q-1"}]))
+        result = atlas.build(self.repo, home=self.home)
+        self.assertEqual(result["claims"], 1)
+        content = Path(result["markdown"]).read_text()
+        self.assertIn("A::handler", content)
+        self.assertIn("claims.json", content)
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_new_claim_or_view_invalidates_atlas_and_rebuilds(self):
+        atlas.build(self.repo, home=self.home)
+        c = self.w / "evidence" / "claims.json"
+        c.write_text(json.dumps([{"id": "C-2", "kind": "relation", "status": "observed",
+                                  "from_symbol": "A::run", "to_symbol": "B::save",
+                                  "relation_source": "reference_link"}]))
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
+        atlas.build(self.repo, home=self.home)
+        report = self.w / "lenses" / "c4" / "reports" / "context.atlas.json"
+        report.write_text(json.dumps({
+            "schema_version": 1, "label": "Contexto",
+            "claim_ids": ["C-2"],
+            "assets": ["lenses/c4/sources/workspace.dsl", "lenses/c4/renders/context.svg"]}))
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
+        result = atlas.build(self.repo, home=self.home)
+        self.assertIn("B::save", Path(result["markdown"]).read_text())
+        self.assertIn("context.svg", Path(result["markdown"]).read_text())
+        self.assertEqual(result["linked_views"], 1)
+
+    def test_view_claim_and_asset_must_be_real_and_local(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-3", "kind": "entity", "status": "observed", "symbol_id": "A"}]))
+        report = self.w / "lenses" / "c4" / "reports" / "x.atlas.json"
+        report.write_text(json.dumps({"schema_version": 1, "label": "X",
+                                      "claim_ids": ["invented"],
+                                      "assets": ["lenses/c4/renders/context.svg"]}))
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+        report.write_text(json.dumps({"schema_version": 1, "label": "X",
+                                      "claim_ids": ["C-3"], "assets": ["../../secret"]}))
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+
+    def test_evidence_symlink_and_unknown_query_rejected(self):
+        p = self.w / "evidence" / "claims.json"
+        p.symlink_to(self.repo / ".git" / "HEAD")
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+        p.unlink()
+        p.write_text(json.dumps([{"id": "C-4", "kind": "entity", "status": "observed",
+                                  "symbol_id": "A", "query_ids": ["Q-404"]}]))
+        (self.w / "evidence" / "queries.json").write_text("[]")
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+
+    def test_sync_is_idempotent_with_unchanged_claim_ledger(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-5", "kind": "entity", "status": "observed", "symbol_id": "A"}]))
+        result = atlas.build(self.repo, home=self.home)
+        md = Path(result["markdown"])
+        before = md.stat().st_mtime_ns
+        atlas.build(self.repo, home=self.home)
+        self.assertEqual(md.stat().st_mtime_ns, before)
+
     def test_html_render_requires_current_atlas(self):
         with self.assertRaises(render_markmap.RenderError):
             render_markmap.render(self.repo,home=self.home)

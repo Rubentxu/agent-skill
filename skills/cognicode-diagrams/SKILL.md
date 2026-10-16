@@ -35,6 +35,13 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 
 `VERIFIED` solo en el alcance realmente comprobado; de lo contrario `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Las pruebas puras no equivalen a UAT con un agente real y CogniCode conectado.
 
+## Atlas incremental y visual thinking (obligatorio)
+
+- **Durante** la investigación, consolidar claims/queries CogniCode en el ledger externo y sincronizar el atlas **tras cada observación útil**, antes de crear diagramas: `python3 scripts/atlas.py sync --repo <raiz>`.
+- **Cada vista nueva** vincula `claim_ids` con sus fuentes y renders reales en `lenses/<lens>/reports/<vista>.atlas.json`; sincronizar de nuevo. Reutilizar todos los recursos generados sin duplicar ni reinterpretar conocimiento.
+- En Agent Teams un integrador único consolida el ledger y actualiza el atlas mientras otros agentes investigan/renderizan vistas independientes. No hay escrituras simultáneas al mismo ledger ni una base de datos añadida.
+- Renderizar HTML Markmap al revisar visualmente o al cerrar un bloque, **no en cada consulta**. El atlas ofrece navegación `símbolo → claim → evidencia → proyecciones`; no sustituye el grafo CogniCode ni certifica frescura del código. [Contrato operativo](references/knowledge-atlas.md).
+
 ## Antibloqueos operativos
 
 - Escalera: **símbolo → referencia → grafo en el mismo proceso (si es necesario) → contexto por símbolo → PARTIAL**. No ejecutar `build_graph` por rutina.
