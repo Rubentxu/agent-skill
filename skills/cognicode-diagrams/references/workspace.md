@@ -6,12 +6,12 @@
 
 `~/.cognicode-diagrams/workspaces/<nombre>--<hash-ruta>/` contiene solo `workspace.json` (identidad opaca), `evidence/` (respuestas/claims CogniCode), `inputs/` (diagramas aportados), `lenses/<lens>/sources/`, `renders/`, `reports/`, `sessions/`, `exports/` y `navigation/` cuando hay atlas.
 
-`
+```bash
 python3 scripts/workspace.py inspect --repo /ruta/explicita/a/raiz
 python3 scripts/workspace.py init --repo /ruta/explicita/a/raiz
 python3 scripts/workspace.py init-lens --repo /ruta/explicita/a/raiz --lens c4
 python3 scripts/workspace.py path --repo /ruta/explicita/a/raiz --relative lenses/c4/sources/context.mmd
-`
+```
 
 El script solo realiza comprobaciones sobre la **ruta suministrada** (`is_dir`, `resolve`) y sobre sus propios directorios/manifiestos en HOME. No puede verificar que un directorio es realmente la raíz de Git sin violar la exclusividad; el agente debe aportar la raíz indicada por el usuario o CogniCode. Para una subcarpeta, volver a proporcionar esa raíz explícita.
 

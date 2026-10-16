@@ -1,5 +1,7 @@
 # Structurizr Local — visor interactivo C4, no modelador autoritativo
 
+> **Entrada exclusivamente derivada del workspace en HOME.** No leer, buscar, montar ni inspeccionar el checkout, tampoco mediante Git; `--repo` es un identificador de ruta explícita. [Contrato](../investigation-contract.md).
+
 El agente genera `workspace.dsl` desde CogniCode con la lente C4. Structurizr Local **solo interpreta ese DSL y muestra las vistas**; no recibe el checkout, ni ejecuta análisis de código, ni puede cambiar afirmaciones arquitectónicas por sí mismo.
 
 ## Inicio con Podman (recomendado)

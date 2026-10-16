@@ -1,6 +1,6 @@
 # `render-mermaid` — generador/lector Mermaid C4 especializado
 
-Crear Mermaid C4 desde el modelo semántico elaborado por el agente, no transformar mecánicamente un call graph. En `C4Context`, presentar actores, sistema y sistemas externos; en `C4Container`, límites del sistema, contenedores realmente desplegables y relaciones; en `C4Component`, componentes de un contenedor elegido. Preferir vistas acotadas y legibles, no un diagrama inmanejable del monorepo.
+Crear Mermaid C4 desde el modelo semántico elaborado por el agente con **consultas y referencias de código devueltas por CogniCode CLI/MCP**, nunca por lectura directa ni documentos, no transformar mecánicamente un call graph. En `C4Context`, presentar actores, sistema y sistemas externos; en `C4Container`, límites del sistema, contenedores realmente desplegables y relaciones; en `C4Component`, componentes de un contenedor elegido. Preferir vistas acotadas y legibles, no un diagrama inmanejable del monorepo.
 
 - Cabeceras: `C4Context`, `C4Container`, `C4Component`, `C4Dynamic` únicamente con comportamiento ordenado verificado.
 - Nodos: `Person`, `System`, `System_Ext`, `System_Boundary`, `Container`, `ContainerDb`, `Component`, `Rel` y variantes admitidas por el motor Mermaid instalado. Revisar la compatibilidad antes de añadir sintaxis poco soportada.

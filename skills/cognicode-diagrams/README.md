@@ -18,11 +18,11 @@ Skill para generar diagramas de la **arquitectura realmente implementada**, inve
 
 El usuario proporciona **la raíz exacta** del checkout en `--repo`. `scripts/workspace.py` solo usa esa ruta como identidad, no ejecuta Git ni lee su contenido. Todos los artefactos se almacenan bajo `~/.cognicode-diagrams/workspaces/<nombre>--<hash>/`. Los proyectores Kroki, LikeC4, Structurizr y Markmap consumen solo esos artefactos, jamás montan o inspeccionan el repositorio.
 
-`
+```bash
 python3 scripts/workspace.py inspect --repo /ruta/exacta/a/raiz
 python3 scripts/workspace.py init --repo /ruta/exacta/a/raiz
 python3 scripts/workspace.py init-lens --repo /ruta/exacta/a/raiz --lens c4
-`
+```
 
 ## Lentes y formatos
 
