@@ -15,6 +15,10 @@ python3 scripts/workspace.py path --repo /ruta/explicita/a/raiz --relative lense
 
 El script solo realiza comprobaciones sobre la **ruta suministrada** (`is_dir`, `resolve`) y sobre sus propios directorios/manifiestos en HOME. No puede verificar que un directorio es realmente la raíz de Git sin violar la exclusividad; el agente debe aportar la raíz indicada por el usuario o CogniCode. Para una subcarpeta, volver a proporcionar esa raíz explícita.
 
+## Concurrencia controlada del atlas
+
+Los agentes pueden crear diagramas y `reports/<vista>.atlas.json` independientes en paralelo. Un único integrador consolida `evidence/claims.json` y `queries.json`, después ejecuta `atlas.py sync` para incorporar cada aportación al mapa. No lanzar dos regeneraciones concurrentes del mismo atlas ni mantener varias autoridades semánticas. Ver [atlas incremental](knowledge-atlas.md).
+
 ## Invariantes
 
 - No escribir en el checkout ni crear artefactos auxiliares dentro de él. `init` es idempotente; no reemplazar `workspace.json` ajeno.

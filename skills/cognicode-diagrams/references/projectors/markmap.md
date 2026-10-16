@@ -2,16 +2,18 @@
 
 > **Entrada exclusivamente derivada del workspace en HOME.** No leer, buscar, montar ni inspeccionar el checkout, tampoco mediante Git; `--repo` es un identificador de ruta explícita. [Contrato](../investigation-contract.md).
 
-**Contrato:** Markmap es un proyector de navegación, nunca una lente que analice código. CogniCode CLI/MCP es la única interfaz de exploración de código; el agente crea/contrasta los `.dsl`, `.mmd`, `.c4` y otros protocolos. Este proyector solo indexa ficheros ya presentes y transforma `atlas.md` a HTML. No ejecuta CogniCode, no monta Git ni consulta repositorios.
+**Contrato:** Markmap es un proyector de navegación, nunca una lente que analice código. CogniCode CLI/MCP es la única interfaz de exploración de código; el agente crea/contrasta los `.dsl`, `.mmd`, `.c4` y otros protocolos. Este proyector indexa ficheros derivados y, cuando existen, claims/queries y asociaciones explícitas entre vistas y evidencia. Transforma `atlas.md` a HTML; no infiere arquitectura. No ejecuta CogniCode, no monta Git ni consulta repositorios.
 
 ## Preparación y ciclo completo
 
 1. Resolver `scripts/workspace.py inspect --repo /ruta/proyecto`; inicializar el workspace si hace falta. El contenido reside **solo** en `~/.cognicode-diagrams/workspaces/<repo>--<id>/`.
 2. Pedir a las lentes sus diagramas y, si procede, renderizarlos con Kroki. No generar entidades ni relaciones nuevas desde las imágenes.
-3. Generar el índice desde los ficheros existentes:
+3. **Sincronizar durante la investigación**, después de cada observación útil y después de cada nueva proyección. Registrar `lenses/<lens>/reports/<vista>.atlas.json` con claims concretos; un integrador único coordina la escritura del ledger. [Guía incremental](../knowledge-atlas.md).
+
+4. Generar el índice desde los ficheros existentes:
 
    ```bash
-   python3 scripts/atlas.py build --repo /ruta/proyecto
+   python3 scripts/atlas.py sync --repo /ruta/proyecto
    python3 scripts/atlas.py check --repo /ruta/proyecto
    ```
 

@@ -57,6 +57,16 @@ Los tests puros del protocolo demuestran selección, bloqueos y fin de consultas
 
 Los tests del protocolo usan **fixtures sintéticos** y no verifican los parsers reales de Kotlin/Rust. Para certificar lenguajes hay que ejecutar UAT con CogniCode CLI/MCP instalado y conservar sus respuestas. Hasta entonces: `NOT_RUN`.
 
+## K1–K5: atlas incremental (UAT de agente real: NOT_RUN)
+
+- K1: el agente descubre símbolos con CogniCode y `atlas.py sync` genera navegación **antes** de cualquier render.
+- K2: dos Agent Teams entregan vistas diferentes; el integrador agrega claims y manifiestos por vista sin colisiones.
+- K3: claim o SVG nuevo ⇒ `STALE`; sincronización ⇒ `CURRENT` local, sin afirmar vigencia del código.
+- K4: claim falso, manifest con path externo o symlink ⇒ rechazo; cero lectura de checkout.
+- K5: la investigación y proyecciones actualizan Markdown incrementalmente; HTML Markmap solo al revisar o cerrar el bloque.
+
+Estos escenarios no están certificados con un agente real por añadir esta documentación.
+
 ## Q63–Q72: campaña de aceptación específica (NOT_RUN con agente real)
 
 - Q63–Q67: herramienta de grafo anunciada, sesión sin grafo ⇒ acción `build-graph` **en mismo MCP**; nunca `UNSUPPORTED` de lenguaje.

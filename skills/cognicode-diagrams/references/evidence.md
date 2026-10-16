@@ -2,6 +2,10 @@
 
 **Fuente arquitectónica única: respuestas de CogniCode CLI/MCP sobre código implementado.** No citar como prueba README/ADR/roadmaps/tests/manifiestos, ni aunque CogniCode los localice; no abrir por shell/GitHub/ruta. Los diagramas del usuario son `CURATED` para traducción, nunca prueba de implementación.
 
+## Utilización inmediata de las evidencias
+
+Tras registrar cada observación útil, sincronizar el [atlas incremental](knowledge-atlas.md). Solo `claim_ids` respaldados por CogniCode se enlazan a renders y vistas; una imagen no añade prueba arquitectónica. Guardar fuentes en workspace externo, nunca en checkout.
+
 ## Ledger derivado mínimo
 
 Conservar en `~/.cognicode-diagrams/workspaces/<id>/evidence/` un `queries.json` y `claims.json` (o informe equivalente), con metadatos mínimos:

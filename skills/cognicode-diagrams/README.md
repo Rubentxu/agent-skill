@@ -43,6 +43,10 @@ La lente `c4` está habilitada; `class`, `use-case` y `vertical-slice` están pl
 
 `tests/skill-evals.md` contiene casos de aceptación obligatorios (más detalle, insuficiencia, conflicto documento/código, ausencia de CogniCode, subagentes, aislamiento de proyectores). Los tests unitarios y mocks no equivalen a una UAT real con CogniCode.
 
+## Atlas de conocimiento incremental
+
+En el curso de la investigación se reutilizan claims y consultas CogniCode, luego se enlaza cada diagrama a sus afirmaciones con `reports/<vista>.atlas.json` y se ejecuta `atlas.py sync`. Markmap ofrece contexto visual navegable sin base de datos ni analizadores nuevos. [Procedimiento](references/knowledge-atlas.md).
+
 ## Preflight 2026-10: C4 sin bloqueo por grafo
 
 La skill requiere [preflight por versión, lenguaje, catálogo y proceso MCP](references/session-preflight.md) y registra [evidencia de relaciones por referencias](references/evidence-reference-links.md) sin inventar `relation_id`. La navegación usa primero símbolos/referencias, después grafo en el **mismo proceso** solo si añade valor. Máximo 15 nodos por vista antes de dividir; [guía de kinds de LikeC4](references/formats/likec4-kinds.md). Los nuevos estados solo describen fixtures sintéticos: UAT real de agente+CogniCode sigue `NOT_RUN` hasta ejecutarla.
