@@ -15,4 +15,4 @@
 
 **Salida:** por producto, gate que lo creó, path/digest de staging, canal, comando real, resultado de upload, URI/coordenada remota, prueba consumer y estado. Estado global = agregación verificable de productos obligatorios.
 
-[PipelineK local CI](../../../pipelinek-local-ci/SKILL.md) · [Migración CI](../../../pipelinek-local-ci/references/03-migration-hosted-ci.md).
+PipelineK local CI: `skills/pipelinek-local-ci/SKILL.md` · Migración CI: `skills/pipelinek-local-ci/references/03-migration-hosted-ci.md`.
