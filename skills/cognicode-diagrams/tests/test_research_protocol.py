@@ -39,7 +39,8 @@ def query(name="index", mode="structured", **kw):
 def state(kind="responsibilities", caps=None, queries=None, claims=None, diagram=None, **kw):
     s = {
         "catalog": "observed",
-        "language_registry": {"source": "cognicode", "version": "synthetic-1", "support": "supported"},
+        "language_registry": {"source": "cognicode", "version": "synthetic-1", "language": "kotlin",
+                              "support": "supported"},
         "session": {"id": "mcp-1", "transport": "mcp", "graph_state": "absent",
                     "graph_owner": None, "graph_basis": None, "persistence": "absent"},
         "view": {"node_count": 2, "max_nodes": 15},
@@ -281,7 +282,7 @@ class QuestionProtocolTests(unittest.TestCase):
 
     def test_runtime_language_preflight_before_global_c4(self):
         s = state(language_registry={"source": "cognicode", "version": "v0.101.17",
-                                     "support": "not_listed"})
+                                     "language": "kotlin", "support": "not_listed"})
         self.assertEqual(decide(s)["status"], "PARTIAL")
         self.assertIn("C4 global", decide(s)["why"])
 
@@ -311,6 +312,21 @@ class QuestionProtocolTests(unittest.TestCase):
         result = decide(s)
         self.assertEqual(result["action"], "build-graph")
         self.assertNotEqual(result["status"], "UNSUPPORTED")
+
+    def test_after_failed_graph_build_do_not_retry_indefinitely(self):
+        s = state("interaction", caps=[
+            cap("graph", "subgraph", "failed", requires_graph=True),
+            cap("code", "symbol_context")
+        ])
+        s["session"].update(graph_state="failed", graph_attempts=1)
+        self.assertEqual(decide(s)["capability"], "code")
+        self.assertEqual(decide(s)["action"], "query-structured")
+
+    def test_language_preflight_is_bound_to_exact_language(self):
+        s = state()
+        s["language_registry"]["language"] = "rust"
+        with self.assertRaises(ResearchError):
+            decide(s)
 
     def test_catalog_metadata_missing_is_not_silently_guessed(self):
         s = state(caps=[cap()])

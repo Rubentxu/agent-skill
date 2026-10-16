@@ -105,7 +105,8 @@
     "language_registry": {
       "source": "cognicode",
       "version": "synthetic-1",
-      "support": "supported"
+      "support": "supported",
+      "language": "rust"
     },
     "session": {
       "id": "mcp-1",
@@ -113,7 +114,8 @@
       "graph_state": "absent",
       "graph_owner": null,
       "graph_basis": null,
-      "persistence": "absent"
+      "persistence": "absent",
+      "graph_attempts": 0
     },
     "view": {
       "node_count": 2,

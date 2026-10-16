@@ -167,6 +167,8 @@ def decide(research: dict | None) -> dict:
     if not isinstance(registry, dict) or registry.get("source") != "cognicode":
         raise ResearchError("language_registry debe proceder de CogniCode instalado")
     _str(registry.get("version"), "language_registry.version")
+    if _str(registry.get("language"), "language_registry.language") != language:
+        raise ResearchError("language_registry.language no coincide con la pregunta")
     support = registry.get("support")
     if support not in LANGUAGE_SUPPORT:
         raise ResearchError("language_registry.support invalido")
@@ -184,8 +186,11 @@ def decide(research: dict | None) -> dict:
     session_id = _str(session.get("id"), "session.id")
     if session.get("transport") not in {"mcp", "cli"}:
         raise ResearchError("session.transport invalido")
-    if session.get("graph_state") not in {"absent", "current", "stale", "unknown"}:
+    if session.get("graph_state") not in {"absent", "current", "stale", "unknown", "failed"}:
         raise ResearchError("session.graph_state invalido")
+    graph_attempts = session.get("graph_attempts", 0)
+    if type(graph_attempts) is not int or graph_attempts < 0:
+        raise ResearchError("session.graph_attempts invalido")
     if session.get("persistence") not in {"ready", "absent", "unknown"}:
         raise ResearchError("session.persistence invalido")
     graph_current = (session["graph_state"] == "current" and
@@ -389,6 +394,8 @@ def decide(research: dict | None) -> dict:
         if cap["requires_persistence"] and session["persistence"] != "ready":
             continue  # No inicializar persistencia sin permiso; probar otro camino estructurado.
         if cap["requires_graph"] and not graph_current:
+            if graph_attempts >= 1 or session["graph_state"] == "failed":
+                continue  # Anti-loop: un intento de build fallido basta; seguir con contexto/partial.
             if session["graph_state"] == "unknown":
                 return _result("IN_PROGRESS", "inspect-session",
                                "averiguar el estado del grafo en el proceso MCP actual", qid, cap["name"])
