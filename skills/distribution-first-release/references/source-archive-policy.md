@@ -11,14 +11,14 @@
 Ejemplo para un repo donde estos paths estén demostrados como ajenos a los **snapshots de fuente para consumidor**:
 
 ```gitattributes
-/docs/ export-ignore
-/test-harness/ export-ignore
-/tests/ export-ignore
-/legacy/ export-ignore
-/.github/ export-ignore
+docs/** export-ignore
+test-harness/** export-ignore
+tests/** export-ignore
+legacy/** export-ignore
+.github/** export-ignore
 ```
 
-Es una **propuesta**, no plantilla de ejecución automática. Preservar código productivo, LICENSE, NOTICE, esquema/runtime resources, build scripts, wrapper, generación de código y submódulos de distribución necesarios para reconstruir/consumir la fuente. Un `docs/` con documentación requerida o `test-harness/` que genere fuentes productivas NO se excluye a ciegas. `/src/test/` se evalúa por módulo y consumidores. Los patrones `/foo/` anclan a raíz; comprobar rutas anidadas concretas.
+Es una **propuesta**, no plantilla de ejecución automática. Preservar código productivo, LICENSE, NOTICE, esquema/runtime resources, build scripts, wrapper, generación de código y submódulos de distribución necesarios para reconstruir/consumir la fuente. Un `docs/` con documentación requerida o `test-harness/` que genere fuentes productivas NO se excluye a ciegas. `/src/test/` se evalúa por módulo y consumidores. Los patrones `foo/**` relativos al `.gitattributes` de raíz afectan a los archivos de ese directorio; comprobar expresamente paths anidados y usar reglas lo más estrechas posible.
 
 Comprobar desde el commit/tag del candidato:
 
