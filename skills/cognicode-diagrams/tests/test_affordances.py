@@ -3,6 +3,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 
 SKILL = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL / 'scripts' / 'affordances.py'
@@ -17,6 +18,7 @@ def fixture(**changes):
         'workspace': 'ready', 'intent': 'create', 'lens': 'c4', 'formats': ['mermaid','structurizr'],
         'environment': 'both_ready', 'evidence': 'graph_ready', 'basis': 'current',
         'evidence_origin': 'cognicode', 'claim_coverage': 'verified',
+        'research': {"catalog":"observed","question":{"id":"RQ-1","text":"Cuál es la responsabilidad implementada?","kind":"responsibilities","language":"rust","target":"module::run"},"capabilities":[{"name":"query_symbol_index","role":"symbol_index","languages":["rust"],"advertised":True,"schema_observed":True,"probe":{"status":"usable","query_id":"P-1","symbol_id":"module::run","location":"src/main.rs:12","context":"present","relations":"unknown","coverage":"partial"}}],"queries":[{"id":"Q-1","question_id":"RQ-1","target":"module::run","capability":"query_symbol_index","mode":"structured","status":"ok","coverage":"partial","observation_plane":"static","symbol_ids":["module::run"],"relation_ids":[]}],"claims":[{"id":"C-1","question_id":"RQ-1","kind":"entity","status":"observed","plane":"static","symbol_id":"module::run","query_ids":["Q-1"]}],"diagram_claim_ids":["C-1"]},
         'model': 'absent', 'has_input_diagram': False, 'reconciled': False,
         'artifacts': {'mermaid':'absent','structurizr':'absent'},
         'validators': {'mermaid':'available','structurizr':'available'},
@@ -89,6 +91,16 @@ class StrictInvestigationTests(unittest.TestCase):
 
 
 class RoutingTests(unittest.TestCase):
+    def test_no_question_no_architectural_model(self):
+        x = fixture(model="reviewed", research=None)
+        result = engine.affordances(x)
+        self.assertEqual(result["recommended"], "formulate-question")
+        self.assertNotIn("render-mermaid", rels(x))
+
+    def test_grounded_question_can_render(self):
+        x = fixture(model="reviewed", artifacts={"mermaid":"valid", "structurizr":"valid"})
+        self.assertEqual(engine.affordances(x)["status"], "VERIFIED")
+
     def test_ready_graph_leads_to_discovery(self):
         self.assertEqual(rels(fixture()), ['discover-model'])
 
@@ -124,7 +136,7 @@ class RoutingTests(unittest.TestCase):
         self.assertIn('scan-symbols', rels(fixture(environment='cli_ready',evidence='absent')))
 
     def test_index_not_graph_requires_graph(self):
-        self.assertIn('build-graph', rels(fixture(evidence='symbols_ready')))
+        self.assertIn('discover-model', rels(fixture(evidence='symbols_ready')))
 
     def test_stale_blocks_render(self):
         x = fixture(intent='update',model='reviewed', basis='stale', evidence='stale')

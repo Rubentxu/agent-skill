@@ -19,6 +19,7 @@ QUESTION_ROLES: dict[str, tuple[str, ...]] = {
 }
 STRUCTURED_MODES = {"structured", "symbol_context"}
 DENIED_MODES = {"raw", "repository_read", "external_indexer"}
+TEXT_ONLY_TOOLS = {"read_file", "search_content"}
 PROBE_STATES = {"untried", "usable", "partial", "failed", "unsupported"}
 QUERY_STATES = {"ok", "partial", "failed", "unsupported"}
 COVERAGES = {"complete", "partial", "unknown"}
@@ -124,7 +125,8 @@ def decide(research: dict | None) -> dict:
         tool = _str(query.get("capability"), "query.capability")
         if tool not in cap_names:
             raise ResearchError("consulta a capacidad no descubierta: " + tool)
-        if query.get("mode") in DENIED_MODES:
+        if (query.get("mode") in DENIED_MODES or tool == "read_file" or
+                (tool == "search_content" and query.get("mode") != "text_candidate")):
             return _result("BLOCKED", None,
                            "se utilizó lectura raw/directa u otro indexador: no puede acreditarse exclusividad",
                            qid, tool)
@@ -194,7 +196,7 @@ def decide(research: dict | None) -> dict:
     roles = QUESTION_ROLES[kind]
     candidates = sorted(
         (c for c in caps if c["role"] in roles and language in c["languages"] and
-         c["advertised"] and c["schema_observed"]),
+         c["advertised"] and c["schema_observed"] and c["name"] not in TEXT_ONLY_TOOLS),
         key=lambda c: (roles.index(c["role"]), c["name"]),
     )
     if not candidates:
