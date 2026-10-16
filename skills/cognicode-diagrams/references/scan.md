@@ -1,28 +1,12 @@
-# Investigación activa por CogniCode — no inspección directa
+# Investigación activa y estructurada de CogniCode
 
-**Única superficie autorizada para conocer arquitectura del checkout objetivo: CogniCode CLI/MCP.** Leer antes [investigation-contract.md](investigation-contract.md). No usar Git, shell, grep, scripts propios, GitHub, manifiestos, IaC, README, ADR, tests, documentación ni otros agentes para investigar arquitectura. Aunque CogniCode devuelva documentos, **no usarlos como prueba de código implementado**.
+**Solo CogniCode CLI/MCP puede investigar código implementado.** No abrir archivos del checkout, documentación, tests, manifiestos, ADR o búsquedas externas. El problema no se resuelve con `read_file(raw)` y `search_content` cuando falla una herramienta estructurada.
 
-## Descubrimiento primero
+1. Definir **una pregunta concreta**, lenguaje y símbolo/alcance. Descubrir `--help`/`capabilities` del CLI *cuando existan*, o `initialize` + `tools/list` paginado en MCP. Comprobar schema y permisos. Herramienta anunciada no equivale a operativa.
+2. Asociar nombres reales a roles de [research-protocol.md](research-protocol.md). Son roles de orientación, no comandos obligatorios. Probar una capacidad pertinente sobre un símbolo real: índice, identidad/ubicación, contexto, relaciones y cobertura por **capacidad + lenguaje**.
+3. Consultar con la operación estructurada más directa. Para leer contexto elegir función de código **por símbolo**, no lectura arbitraria de archivos. `search_content` solo produce candidatos, que necesitan confirmación estructurada.
+4. Si falla el grafo o la herramienta elegida, preservar el fallo acotado; otra capacidad del mismo lenguaje puede funcionar. No declarar Kotlin entero `unsupported` por una prueba aislada.
+5. Contrastar entidades y **cada extremo/arista** mediante resultados y fragmentos devueltos por CogniCode. `calls` prueba topología estática, no un proceso separado o comunicación runtime. Registrar `query_id`, claim y cobertura en [evidence.md](evidence.md).
+6. Terminar si hay suficiente evidencia para responder; si no hay nueva prueba ni otra capacidad viable, cerrar `PARTIAL/UNKNOWN` sin bucles, sin documentos, sin otra herramienta.
 
-- CLI: ejecutar el binario **CogniCode** instalado con `--help` y `capabilities --json` si se anuncia; consultar ayudas específicas para esquemas/flags. No inventar `index`, `graph` o `inspect` por recordarlos de otra versión.
-- MCP: `initialize` y `tools/list`, recorriendo `next_cursor` hasta completar el catálogo. Usar los esquemas y permisos anunciados; si `tools/list` declara algo no ejecutable, anotar incidencia y no fabricar un fallback.
-- Anotar versiones, perfil, límites, permisos y alcance. Si no hay CLI/MCP operativo → `BLOCKED` sin lectura alternativa.
-
-## Bucle de preguntas y consultas
-
-1. **Entradas**: ¿qué símbolos constituyen `main`, handlers HTTP, comandos, workers o consumidores de eventos? Consultar índices y código mediante CogniCode.
-2. **Responsabilidades**: ¿qué tipos, servicios y dependencias implementan cada capacidad? Navegar a símbolos, leer fragmentos por CogniCode y corroborar nombre frente a comportamiento.
-3. **Relaciones**: ¿quién invoca a quién, importa qué, persiste dónde? Pedir subgrafos acotados, dependencias, referencias y ambos extremos. Separar `calls/imports` estáticos de ejecución.
-4. **Fronteras**: ¿qué demuestra que un ejecutable es un proceso separado, que existe una comunicación runtime, un protocolo o un almacén externo? Pedir evidencias de **código de implementación** por CogniCode; si no responde, `UNKNOWN`.
-5. **Profundizar**: petición de «más detalle» o ambigüedad → realizar **nuevas consultas** sobre componentes/símbolos/aristas específicos, no solo ampliar el diagrama.
-6. **Verificar**: para cada hallazgo registrar herramienta+argumentos+respuesta+referencia+límites. Las ausencias se formulan como «no observado dentro del alcance», no como «no existe».
-
-Un escaneo general o `build_graph` es solo preparación. `status=complete`, contadores y `skipped_files` no demuestran que la vista C1/C2/C3 sea correcta; un grafo de llamadas no establece topología desplegada. Ante errores parciales, registrar brechas y seguir con consultas acotadas cuando sea posible.
-
-## Coste mínimo
-
-Empezar con consultas de panorama/índice anunciadas, profundizar solo en las zonas necesarias, y construir el grafo cuando una relación lo exija. No escanear indiscriminadamente todo el monorepo. Reutilizar cache de CogniCode solo si la identidad/alcance son verificables; no construir índices alternativos.
-
-## Handoff
-
-Guardar bajo `workspace/evidence/` únicamente el ledger de consultas y claims con cobertura/ambigüedades; usar [evidence.md](evidence.md) y [plantilla](../assets/READINESS-template.md). Los artefactos derivados no son fuentes independientes del código.
+No ejecutar `analyze .` ni construir todo el grafo por rutina. El coste y la profundidad los gobierna la pregunta. Para «más detalle», nueva pregunta sobre el componente requerido, no un dibujo más grande a partir del mismo reporte.

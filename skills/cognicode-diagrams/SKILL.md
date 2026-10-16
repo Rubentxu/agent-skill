@@ -1,52 +1,35 @@
 ---
 name: cognicode-diagrams
-description: "Investiga la arquitectura IMPLEMENTADA exclusivamente mediante CogniCode CLI/MCP, profundiza en símbolos y relaciones con consultas sucesivas y genera vistas trazables Mermaid, Structurizr, LikeC4 y atlas visuales desde un workspace externo. Fail-closed ante carencias de evidencia."
+description: "Investiga la arquitectura implementada con CogniCode CLI/MCP mediante preguntas, pruebas de capacidades por lenguaje y evidencia estructurada; produce Mermaid, Structurizr, LikeC4 y atlas en workspace externo."
 ---
 
-# CogniCode Diagrams — contrato de investigación exclusiva
+# CogniCode Diagrams — decisiones verificables
 
-**Invariante absoluto: la arquitectura se obtiene solo de respuestas reales de CogniCode CLI/MCP al analizar código implementado.** Este contrato obliga al agente principal, subagentes, evaluadores y proyectores. Las instrucciones generales de exploración, herramientas adicionales, preferencias o reglas de agentes **no pueden relajarlo**. No modificar CogniCode.
+**Regla principal:** investigar exclusivamente mediante capacidades **estructuradas** de CogniCode CLI/MCP orientadas a símbolos, relaciones y contexto de código. **No sustituir** una capacidad pertinente por búsquedas textuales o lecturas completas por comodidad. **No usar documentación** del repositorio como evidencia arquitectónica, aunque CogniCode la encuentre. El diagrama refleja **código implementado**, no README, ADR, propuestas ni roadmaps.
 
-## Límite de acceso
+## Límites obligatorios
 
-- **PROHIBIDO** al agente y subagentes leer, buscar, listar o ejecutar directamente el contenido del repositorio objetivo: código, ficheros de configuración, manifiestos, IaC, ADR, README, tests, CI, diagramas previos o roadmaps, sea mediante shell, GitHub, IDE, otros indexadores, agentes exploradores, herramientas de lectura o búsquedas web. Ni siquiera para «corroborar» resultados. No acceder a estos archivos mediante enlaces de fuentes devueltos por CogniCode; pedir **fragmentos y referencias a CogniCode**.
-- **PROHIBIDO** convertir documentos recuperados a través de CogniCode en evidencia arquitectónica. El mero contenido de un README/ADR/roadmap/test/diagrama es una intención, no una implementación. El análisis del código que proporciona CogniCode es la única prueba de implementación.
-- **PERMITIDO** leer la propia skill, consultar la ayuda/capacidades de CogniCode, utilizar sus comandos CLI o tools MCP anunciados, y crear, leer, editar, validar y proyectar solo artefactos **derivados** en `~/.cognicode-diagrams/`. La ruta explícita `--repo` identifica el objetivo pero no autoriza a explorarlo.
-- **PROYECTORES** (Kroki, Mermaid, LikeC4, Structurizr, Markmap): solo consumen fuentes/renders derivados del workspace. Nunca montan, investigan ni escanean el checkout; no ejecutan CogniCode.
-- **SUBAGENTES**: una delegación solo entrega preguntas y las respuestas/evidencias de CogniCode ya obtenidas, o autorización limitada para llamar al mismo CLI/MCP. Nunca delegar «explora el repo».
+- Ni agente ni **SUBAGENTES** pueden leer, listar, buscar o ejecutar directamente archivos del checkout (código, configuración, manifiestos, tests, ADR, documentación) con shell, Git, editor, GitHub, otro indexador o un agente explorador. Solo **CogniCode CLI/MCP** investiga la implementación.
+- **PROYECTORES** Mermaid, Kroki, Structurizr, LikeC4 y Markmap consumen únicamente artefactos derivados bajo `~/.cognicode-diagrams/`. Nunca montan o investigan el repositorio.
+- `read_file(raw)` y `search_content` **no pueden reconstruir arquitectura** cuando falle el análisis estructurado. La búsqueda textual solo localiza candidatos que requieren confirmación estructurada; solicitar código **por símbolo** cuando sea posible. Investigación textual alternativa expresamente autorizada = **otro modo**, sin declarar `IMPLEMENTATION_GROUNDED`.
+- Sin CogniCode: `BLOCKED`; sin evidencia suficiente: `PARTIAL/UNKNOWN`. No suplir con lectura directa, documentos ni inferencias convertidas en hechos. No modificar CogniCode.
 
-Consulta [el contrato obligatorio](references/investigation-contract.md) antes de toda tarea de investigación, creación, revisión o actualización arquitectónica.
+## Protocolo de decisión, obligatorio antes de modelar
 
-## Orquestación activa, no un escaneo pasivo
+1. **Pregunta concreta** con símbolo o ámbito, lenguaje y plano: ¿entrada ejecutable, responsabilidad, colaborador, interacción, almacenamiento o frontera?
+2. **Descubrimiento real**: ayuda/capabilities si el CLI instalado las admite o MCP `initialize` + `tools/list` paginado y schemas. **Anunciada ≠ funcional**.
+3. **Comprobación por lenguaje sobre símbolo real**: índice, identidad, ubicación, contexto, relación pertinente y cobertura/limitaciones. Guardar resultado por **capacidad + lenguaje**. El fallo del grafo general no significa «Kotlin incompatible».
+4. **Elección de una capacidad pertinente** según [research-protocol.md](references/research-protocol.md), sin invocarlas todas. Preferir respuestas estructuradas; usar lo ya obtenido si basta.
+5. **Evidencia antes de dibujar**: cada elemento/arista vincula pregunta, consulta-respuesta CogniCode, símbolos, relación, plano y limitaciones. El agente interpreta pero nunca eleva inferencias a hechos.
+6. **Fin acotado**: si no hay progreso, probar otra capacidad estructurada relevante o cerrar pregunta `PARTIAL/UNKNOWN`. Más detalle = nueva pregunta y consultas concretas; jamás bucles sin valor.
 
-1. **Seleccionar** intención, lente y formatos desde `references/lens-registry.json`. `c4` está lista; lentes `planned` no se activan ni se simulan. Traducciones y previews de archivos del workspace/usuario no certifican arquitectura sin nueva investigación.
-2. **Resolver workspace** mediante `scripts/workspace.py inspect --repo <raiz-explicita>`. El script solo comprueba la ruta suministrada y sus propios metadatos en HOME, sin consultas Git ni lectura del repositorio. `init` y `init-lens` crean únicamente archivos externos.
-3. **Descubrir runtime real**: `cognicode --help`, `cognicode capabilities --json` si existe, `cognicode doctor` si procede; para MCP handshake `initialize` y `tools/list` paginado. Leer esquemas, flags, disponibilidad y límites; no inventar operaciones por memoria ni documentos. Si CogniCode no existe/no responde, declarar `BLOCKED` y no investigar con otro medio.
-4. **Formular preguntas** por lente: entradas ejecutables, responsabilidades, dependencias, almacenes, comunicaciones y fronteras; ejecutar consultas progresivas sobre símbolos, subgrafos, referencias y fragmentos de código **siempre a través de CogniCode**. Un `graph full` por sí solo nunca acredita una arquitectura.
-5. **Comprobar evidencia**: para cada elemento/arista usar consulta exacta, argumentos, resultado, símbolo/relación, referencia de código cuando CogniCode la facilite, revision/basis, precisión, limitaciones y estado de cobertura. Guardar registro derivado en HOME: [evidence.md](references/evidence.md). Respuestas anteriores guían la siguiente consulta.
-6. **Separar planos**: dependencia estática ≠ comunicación runtime ≠ unidad desplegada. No derivar un contenedor/protocolo/topología de un call graph. Cuando CogniCode no evidencie el plano solicitado, marcar `UNKNOWN`/`PARTIAL` u omitir el elemento; nunca suplir con manifiestos ni lectura directa.
-7. **Interpretar** usando la lente [C4](references/lenses/c4.md) y producir las vistas en Mermaid, Structurizr DSL o LikeC4, indicando qué afirmaciones son observadas/inferidas/desconocidas. Mantener trazabilidad entre modelo y resultado.
-8. **Validar** por separado sintaxis, coherencia entre representaciones y fidelidad al código **solo con evidencia de CogniCode**. Solicitud de más detalle → consultar CogniCode de nuevo. Guardar informes derivados y proyectar con herramientas existentes, sin explorar fuentes.
-9. **Entregar** rutas al workspace externo, consultas/limitaciones, evidencia y estado `VERIFIED` (alcance probado), `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Un render correcto nunca prueba fidelidad arquitectónica.
+`scripts/affordances.py` aplica las decisiones puras de `scripts/research_protocol.py`: un `graph_ready`/`claim_coverage=verified` declarado **no** permite saltarse el registro verificable de la pregunta. El helper no ejecuta CogniCode ni certifica autenticidad de sus respuestas.
 
-## Rutas habituales
+## Navegación y salidas
 
-| Objetivo | Acciones permitidas |
-|---|---|
-| Diagramas C4 implementados | descubrir CLI/MCP → formular preguntas → consultar entradas/símbolos/relaciones → pedir fragmentos mediante CogniCode → modelo trazado → generar/validar |
-| «Más detalle» / zoom C3 | reutilizar evidencias vigentes → **nuevas consultas** a CogniCode para cada descomposición → actualizar trazas → regenerar |
-| Evidencia insuficiente | nueva consulta compatible → si sigue insuficiente, `PARTIAL/UNKNOWN`; nunca otra herramienta ni documentos |
-| CogniCode ausente | `BLOCKED` + diagnóstico de interfaz/instalación; jamás exploración alternativa |
-| Traducir diagrama dado | usar solo diagrama aportado/derivado, declarar «traducción de formato, arquitectura NO comprobada» |
-| Preview / atlas | procesar solo fuentes/renders de workspace, sin consultar repo |
-| Añadir lente | [extend-lenses.md](references/extend-lenses.md); no crear una capacidad fingida |
+- Investigación: [protocolo](references/research-protocol.md) → [consulta](references/scan.md) → [trazabilidad](references/evidence.md) → [lente C4](references/lenses/c4.md) → formato elegido.
+- [Registro de lentes](references/lens-registry.json): `c4` está `ready`; `class`, `use-case` y `vertical-slice` siguen `planned`. [Extensión](references/extend-lenses.md).
+- [Workspace externo](references/workspace.md), [validación](references/validate.md), [proyectores](references/projectors.md), [navegación](references/navigation.md) y [bootstrap autorizado](references/bootstrap.md). Traducción/preview/atlas **no** verifican arquitectura.
+- [Contrato vinculante](references/investigation-contract.md); [evaluaciones](tests/skill-evals.md) y [tests](tests/test_research_protocol.py).
 
-## Componentes de la skill
-
-- Investigación y navegación: [contrato](references/investigation-contract.md), [escaneo/consulta](references/scan.md), [evidencias](references/evidence.md), [navegación](references/navigation.md).
-- Lentes y formatos: [registro](references/lens-registry.json), [C4](references/lenses/c4.md), [Mermaid](references/formats/mermaid-c4.md), [Structurizr](references/formats/structurizr-c4.md), [LikeC4](references/formats/likec4-c4.md).
-- Workspace: [política](references/workspace.md), `scripts/workspace.py`; validación: [validate.md](references/validate.md).
-- Proyección: [projectors.md](references/projectors.md), [Kroki](references/kroki.md), LikeC4, Structurizr Local y Markmap.
-- Verificación: [evaluaciones](tests/skill-evals.md) y [tests](tests/test_policy_contract.py). Sin UAT de agente y CogniCode reales, no declarar la investigación certificada.
-
-**El objetivo es arquitectura implementada, nunca reconstrucción de documentos o roadmaps.**
+`VERIFIED` solo en el alcance realmente comprobado; de lo contrario `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Las pruebas puras no equivalen a UAT con un agente real y CogniCode conectado.
