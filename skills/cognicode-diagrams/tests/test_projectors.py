@@ -58,6 +58,33 @@ class ProjectorTests(unittest.TestCase):
         with self.assertRaises(engine.ProjectorError):
             engine.params(self.repo,'structurizr',home=self.home)
 
+    def test_markmap_projector_uses_readonly_external_workspace(self):
+        p = engine.params(self.repo, "markmap", home=self.home)
+        self.assertEqual(p["source"], str(self.external))
+        nav = self.external / "navigation"
+        nav.mkdir(exist_ok=True)
+        (nav / "atlas.html").write_text("<!-- cognicode-diagrams markmap -->\n<html></html>")
+        engine.verify_sources(p)
+        commands = []
+        def fake(_engine, args, **kwargs):
+            commands.append(args)
+            return subprocess.CompletedProcess(args, 0, "cid", "")
+        with patch.object(engine, "existing", return_value=None), \
+             patch.object(engine, "run_engine", side_effect=fake), \
+             patch.object(engine, "status", return_value={"status": "running_unverified"}):
+            engine.start("podman", p, port=4173, hmr_port=24678)
+        cmd = commands[0]
+        self.assertIn("127.0.0.1:4173:4173", cmd)
+        self.assertIn(p["source"] + ":/data:ro,z", cmd)
+        self.assertIn("--read-only", cmd)
+        self.assertIn("--cap-drop", cmd)
+        self.assertNotIn(str(self.repo), " ".join(x for x in cmd if x != engine.MARKMAP_SERVER))
+
+    def test_markmap_requires_previously_generated_html(self):
+        p = engine.params(self.repo, "markmap", home=self.home)
+        with self.assertRaises(engine.ProjectorError):
+            engine.verify_sources(p)
+
     def test_default_engine_prefers_podman(self):
         with patch.object(engine.shutil,'which', side_effect=lambda x: '/usr/bin/'+x):
             self.assertEqual(engine.engine_binary(None),'podman')

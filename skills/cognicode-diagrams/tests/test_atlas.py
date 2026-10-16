@@ -221,6 +221,11 @@ class AtlasTests(unittest.TestCase):
         with self.assertRaises(render_markmap.RenderError):
             render_markmap.render(self.repo,home=self.home)
 
+    def test_generated_atlas_has_world_readable_static_mode(self):
+        r = atlas.build(self.repo, home=self.home)
+        self.assertEqual(Path(r["markdown"]).stat().st_mode & 0o777, 0o644)
+        self.assertEqual(Path(r["manifest"]).stat().st_mode & 0o777, 0o644)
+
     def test_html_render_native_fake_markmap_and_no_network(self):
         atlas.build(self.repo,home=self.home)
         fake=subprocess.CompletedProcess(args=['markmap'],returncode=0,stdout='',stderr='')
@@ -231,6 +236,7 @@ class AtlasTests(unittest.TestCase):
             r=render_markmap.render(self.repo,home=self.home,engine='native')
         self.assertEqual(r['status'],'RENDERED_NOT_VISUALLY_REVIEWED')
         self.assertTrue(Path(r['html']).read_text().startswith('<!-- cognicode-diagrams markmap -->'))
+        self.assertEqual(Path(r['html']).stat().st_mode & 0o777, 0o644)
 
     def test_html_failure_preserves_existing(self):
         atlas.build(self.repo,home=self.home)
@@ -245,6 +251,7 @@ class AtlasTests(unittest.TestCase):
             self.assertIn('--network',cmd)
             self.assertEqual(cmd[cmd.index('--network')+1],'none')
             self.assertIn(f'{self.w}:/data:ro,z',cmd)
+            self.assertIn('--userns=keep-id', cmd)
             self.assertNotIn(str(self.repo), ' '.join(cmd))
             fname=cmd[-1].split('/')[-1]
             (self.w/'navigation'/fname).write_text('<html><script>hi</script></html>')
