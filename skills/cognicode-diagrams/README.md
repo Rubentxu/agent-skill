@@ -10,7 +10,7 @@ Consulta el [protocolo verificable por pregunta](references/research-protocol.md
 
 ## Flujo
 
-1. Descubrir herramientas y schemas en la versión instalada: `cognicode --help`, `cognicode capabilities --json` si existe, MCP `initialize/tools/list` paginado.
+1. Descubrir exclusivamente la ayuda y los subcomandos disponibles en el CLI realmente instalado, o MCP `initialize` + `tools/list` paginado. No asumir `doctor` ni `capabilities --json`.
 2. Resolver workspace externo y formular preguntas arquitectónicas.
 3. Consultar sucesivamente símbolos, entradas y relaciones con CogniCode, solicitando fragmentos mediante su interfaz.
 4. Registrar cada entidad y relación con consulta/símbolo/referencia/limitación, diferenciando plano estático, runtime y despliegue.

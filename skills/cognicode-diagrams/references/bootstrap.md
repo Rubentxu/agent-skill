@@ -1,18 +1,11 @@
-# Diagnóstico de CogniCode sin fallback de investigación
+# Descubrir CogniCode sin suponer subcomandos
 
-Solo se permite inspeccionar la disponibilidad de **CogniCode CLI/MCP** y su ayuda real. No revisar el checkout mediante Git, shell, Github ni otra utilidad. `command -v` / `type -a` sirven únicamente para localizar los binarios de CogniCode, no para extraer arquitectura.
+No existen comandos CLI obligatorios codificados en esta skill aparte de **consultar la ayuda real del ejecutable identificado**. La versión instalada decide si ofrece `capabilities`, `doctor`, `graph` u otra operación: **no invocar subcomandos heredados que no estén anunciados**.
 
-`
-command -v cognicode
-command -v cognicode-mcp
-command -v cogh
-cognicode --help
-cognicode capabilities --json
-cognicode doctor
-`
+1. Identificar la interfaz CogniCode CLI/MCP proporcionada por el usuario, sin leer archivos del checkout.
+2. Solicitar ayuda/versiones con los flags que admita esa instalación. En MCP usar `initialize` y `tools/list` paginado con schemas efectivos.
+3. Elegir una capacidad estructurada observada y probarla sobre un símbolo real **para el lenguaje del proyecto**. Registrar identidad, ubicación, contexto, relaciones, cobertura y omisiones.
+4. Si la herramienta anunciada falla, anotar la limitación de esa capacidad y lenguaje, sin declarar incompatible todo Kotlin/Rust. Probar otra capacidad estructurada pertinente.
+5. Si ninguna interfaz está disponible, `BLOCKED`. No suplir la carencia con shell, Git, documentos, indexadores externos ni lectura raw.
 
-Las tres últimas órdenes solo deben ejecutarse si existen y la versión observada las admite. Descubrir los esquemas MCP mediante `initialize/tools/list` reales y paginar. Una documentación de instalación no acredita soporte runtime.
-
-Instalación/actualización solo con permiso explícito, siguiendo el mecanismo de distribución de CogniCode correspondiente a la plataforma. **No abrir ni interpretar archivos internos del repo para compensar la falta del binario.** Si CogniCode no está disponible, marcar `BLOCKED`, indicar qué falta y cómo instalar/configurar; nunca buscar por otra vía.
-
-La skill no instala, altera ni reconstruye CogniCode; sus proyectores tampoco lo invocan. [Contrato](investigation-contract.md).
+Instalar o modificar CogniCode exige consentimiento. Los proyectores no lo sustituyen y solo reciben artefactos derivados de HOME.
