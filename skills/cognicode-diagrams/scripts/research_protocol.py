@@ -125,7 +125,7 @@ def _assess_scope(scope: Any, qid: str, language: str, by_query: dict,
                        "comprobar relevancia de archivos omitidos mediante consultas estructuradas de CogniCode",
                        qid, missing=to_review)
     return _result("EVIDENCE_READY", None,
-                   "claims respaldados; cobertura " + coverage +
+                   "claims respaldados; cobertura " + ("parcial" if coverage == "partial" else coverage) +
                    (" (omisiones justificadas, no cobertura global)" if omitted else ""),
                    qid)
 
