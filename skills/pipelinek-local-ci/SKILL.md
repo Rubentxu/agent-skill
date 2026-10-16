@@ -21,6 +21,7 @@ PipelineK debe convertirse en la **autoridad local ejecutable** de CI del reposi
 | `run` | Usar PipelineK como gate del trabajo del agente | `02-agentic-loop.md`, `05-events-and-troubleshooting.md` |
 | `migrate` | Sustituir Jenkins/GitHub Actions/GitLab CI | `03-migration-hosted-ci.md`, `06-jenkins-familiar-dsl.md` |
 | `diagnose` | Fallo de DSL, ejecución, toolchain, shim o evento | `04-version-resolution.md`, `05-events-and-troubleshooting.md` |
+| `publish` | Ejecutar packaging y publicación por canal de productos confirmados | `09-artifact-publishing.md`, y `distribution-first-release` si está disponible |
 
 Si el usuario no nombra modo, infiérelo por intención. Una adopción desde cero normalmente ejecuta `bootstrap → scaffold → run`.
 
@@ -34,8 +35,9 @@ Si el usuario no nombra modo, infiérelo por intención. Una adopción desde cer
 6. **Estado fuera del repo.** Journal/control-root bajo XDG state salvo política explícita del proyecto.
 7. **No duplicar política.** Si PipelineK es autoridad CI, un workflow remoto puede ser trigger/matrix/distribución, pero no una segunda definición divergente de tests/gates.
 8. **No rebajar gates para obtener verde.** Clasifica el fallo y corrige causa o contrato.
-9. **Credenciales no se imprimen.** Usa bindings soportados y comandos que consuman variables sin volcarlas.
-10. **Jenkins-familiar ≠ Jenkins mágico.** Mantén nombres/patrones familiares donde tengan semántica real; fail-closed para lo aún no soportado.
+9. **Distribución multi-producto.** `pipelinek-local-ci` ejecuta gates; `distribution-first-release` decide productos y destinos. `archiveArtifacts` conserva artefactos locales, no equivale a Maven Central, GitHub Packages, GHCR ni Github Releases. Publicar solo tras autorización, sin duplicar gates remotos.
+10. **Credenciales no se imprimen.** Usa bindings soportados y comandos que consuman variables sin volcarlas.
+11. **Jenkins-familiar ≠ Jenkins mágico.** Mantén nombres/patrones familiares donde tengan semántica real; fail-closed para lo aún no soportado.
 
 ## Flujo por defecto
 
@@ -63,7 +65,11 @@ Una feature Jenkins-familiar que no valida o cuya semántica no está soportada 
 
 Usa `02-agentic-loop.md`: tests afectados primero durante desarrollo; pipeline completa en frontera de integración/release según política del repo.
 
-### 6. Cerrar con evidencia
+### 6. Publicar cuando el objetivo sea distribución
+
+Usa [`09-artifact-publishing.md`](references/09-artifact-publishing.md): identifica los productos mediante `distribution-first-release`, valida rutas/tareas reales, ejecuta gates una sola vez, solicita autorización para subir y verifica cada producto desde el canal remoto. No crea automáticamente Actions ni declarará DONE desde un `archiveArtifacts` local.
+
+### 7. Cerrar con evidencia
 
 Reporta: HEAD, path real de PipelineK, versión, pipeline, comando, exit, `RunFinished.outcome`, primer fallo causal, stages realmente ejecutados y skips/bloqueos.
 
@@ -79,3 +85,4 @@ Reporta: HEAD, path real de PipelineK, versión, pipeline, comando, exit, `RunFi
 - [ ] No se dejó estado operativo dentro del repo sin política explícita.
 - [ ] Si se sustituyó CI alojado, las responsabilidades remotas restantes están delimitadas.
 - [ ] La superficie Jenkins-familiar usada figura como soportada o fue validada explícitamente.
+- [ ] Si hubo `publish`, todos los productos/canales obligatorios constan publicados y consumibles desde remoto; si no, estado parcial y bloqueo explícito.
