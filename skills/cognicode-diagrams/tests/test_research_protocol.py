@@ -21,7 +21,7 @@ def probe(state="usable", **overrides):
 
 def cap(name="index", role="symbol_index", status="usable", language="kotlin", **kw):
     d = {"name": name, "role": role, "languages": [language], "advertised": True,
-         "schema_observed": True, "probe": probe(status)}
+         "schema_observed": True, "probes": {language: probe(status)}}
     d.update(kw)
     return d
 
@@ -45,6 +45,9 @@ def state(kind="responsibilities", caps=None, queries=None, claims=None, diagram
         "claims": [] if claims is None else claims,
         "diagram_claim_ids": [] if diagram is None else diagram,
         "max_queries": 4,
+        "scope": {"source": "cognicode", "report_id": "COV-1",
+                  "languages": ["kotlin"], "coverage": "complete",
+                  "omissions_complete": True, "omitted_files": []},
     }
     s.update(kw)
     return s
@@ -172,7 +175,7 @@ class QuestionProtocolTests(unittest.TestCase):
             decide(s)
 
     def test_missing_provenance_fields_fail_closed(self):
-        s = state(caps=[cap(probe={"status": "usable"})])
+        s = state(caps=[cap(probes={"kotlin": {"status": "usable"}})])
         with self.assertRaises(ResearchError):
             decide(s)
 
