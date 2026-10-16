@@ -76,7 +76,7 @@ def inspect(directory: Path, relative: Path, names: set[str]) -> tuple[list[dict
                 pkg = data.get("package", {})
                 if not isinstance(pkg, dict) or not pkg or pkg.get("publish") is False or pkg.get("publish") == []:
                     continue
-                kind = "cli" if "bin" in data or ("src/main.rs" in names) else "library"
+                kind = "cli" if "bin" in data or (directory / "src" / "main.rs").is_file() else "library"
                 result.append(product(relative, kind, str(pkg.get("name", directory.name)), f"{loc}/Cargo.toml: publish allowed"))
             elif filename == "package.json":
                 data = json.loads(raw)
