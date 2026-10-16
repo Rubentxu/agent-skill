@@ -42,6 +42,16 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 - En Agent Teams un integrador único consolida el ledger y actualiza el atlas mientras otros agentes investigan/renderizan vistas independientes. No hay escrituras simultáneas al mismo ledger ni una base de datos añadida.
 - Renderizar HTML Markmap al revisar visualmente o al cerrar un bloque, **no en cada consulta**. El atlas ofrece navegación `símbolo → claim → evidencia → proyecciones`; no sustituye el grafo CogniCode ni certifica frescura del código. [Contrato operativo](references/knowledge-atlas.md).
 
+## Procedencia visual, taxonomía y vistas honestas
+
+La skill clasifica **solo conceptos respaldados** mediante `claim.category`: `system`, `module`, `surface`, `external`, `store`, `signal`, `coverage`, `glossary` o `symbol`. Estas categorías son opt-in, **no** nuevas consultas obligatorias ni inferencias a partir de archivos/renderers. Para cada entidad se conserva `claim_id`, `query_ids`, `plane=static|runtime|deployment` y `coverage=complete|partial|unknown`; un antiguo `observed` sin consulta acreditada queda como `UNKNOWN`.
+
+La rama `intent` solo acepta `CODE_DOC` (docstring/KDoc extraído mediante CogniCode) o `CURATED_INTENT` (usuario/curador identificado). `DOC_INTENT` por lectura directa de documentación del checkout no se permite. La intención no justifica una vista `plane=implementation`; para vista curada usar `plane=intent`. El HTML de Markmap o un diagrama LikeC4 válido tampoco certifican arquitectura.
+
+Las propiedades de relación `kind`, `technology`, `endpoint` y `order` se añaden solo desde resultados CogniCode, no por nombres de símbolos. Una composición declarada (`Mono.when`, `then`) podrá explicarse como **orden declarado en código**, no como comportamiento runtime observado. `find_usages` sigue siendo `reference_link`, no arista de grafo.
+
+[Contrato y ejemplo LikeC4](references/visual-evidence.md). El agente incorpora automáticamente al atlas cada nueva consulta/vista **con valor**, pero no vuelve a escanear para completar ramas ni crea vistas redundantes.
+
 ## Antibloqueos operativos
 
 - Escalera: **símbolo → referencia → grafo en el mismo proceso (si es necesario) → contexto por símbolo → PARTIAL**. No ejecutar `build_graph` por rutina.

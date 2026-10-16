@@ -162,6 +162,62 @@ class AtlasTests(unittest.TestCase):
         with self.assertRaises(atlas.KnowledgeError):
             atlas.build(self.repo, home=self.home)
 
+
+    def test_semantic_categories_have_traceable_provenance(self):
+        (self.w / "evidence" / "queries.json").write_text(json.dumps([{"id": "Q-1"}]))
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-A", "kind": "entity", "status": "OBSERVED_CODE",
+             "category": "surface", "symbol_id": "Grpc::serve", "coverage": "partial",
+             "query_ids": ["Q-1"], "plane": "static"},
+            {"id": "C-B", "kind": "relation", "status": "OBSERVED_CODE", "category": "external",
+             "from_symbol": "Client::send", "to_symbol": "Server::accept",
+             "query_ids": ["Q-1"], "coverage": "unknown",
+             "attributes": {"technology": "gRPC"}}]))
+        output = atlas.build(self.repo, home=self.home)
+        content = Path(output["markdown"]).read_text()
+        self.assertIn("Superficies", content)
+        self.assertIn("Sistemas externos", content)
+        self.assertIn("Q-1", content)
+        self.assertIn("cobertura:partial", content)
+        self.assertIn("gRPC", content)
+
+    def test_intention_separate_and_cannot_justify_implemented_diagram(self):
+        c = self.w / "evidence" / "claims.json"
+        c.write_text(json.dumps([{"id": "I-1", "kind": "entity", "category": "intent",
+                                  "provenance": "CURATED_INTENT", "curator": "usuario",
+                                  "symbol_id": "Objetivo declarado", "plane": "intent"}]))
+        result = atlas.build(self.repo, home=self.home)
+        self.assertIn("NO demuestra implementacion", Path(result["markdown"]).read_text())
+        view = self.w / "lenses" / "c4" / "reports" / "bad.atlas.json"
+        view.write_text(json.dumps({"schema_version": 1, "label": "Falso",
+                                    "claim_ids": ["I-1"], "assets": ["lenses/c4/renders/context.svg"]}))
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+
+    def test_code_doc_without_cognicode_ledger_is_not_certified(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "I-DOC", "kind": "entity", "category": "intent",
+             "provenance": "CODE_DOC", "plane": "intent",
+             "symbol_id": "Service KDoc", "query_ids": ["Q-77"]}]))
+        r = atlas.build(self.repo, home=self.home)
+        content = Path(r["markdown"]).read_text()
+        self.assertIn("UNKNOWN  sin query", content)
+        self.assertIn("NO demuestra implementacion", content)
+
+    def test_doc_intent_requires_separate_explicit_mode(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "I-2", "kind": "entity", "category": "intent",
+             "status": "DOC_INTENT", "symbol_id": "documentacion externa"}]))
+        with self.assertRaises(atlas.KnowledgeError):
+            atlas.build(self.repo, home=self.home)
+
+    def test_legacy_implementation_without_query_is_downgraded(self):
+        (self.w / "evidence" / "claims.json").write_text(json.dumps([
+            {"id": "C-LEGACY", "kind": "entity", "symbol_id": "Legacy::entry",
+             "status": "OBSERVED_CODE"}]))
+        out = atlas.build(self.repo, home=self.home)
+        self.assertIn("UNKNOWN  sin query", Path(out["markdown"]).read_text())
+
     def test_sync_is_idempotent_with_unchanged_claim_ledger(self):
         (self.w / "evidence" / "claims.json").write_text(json.dumps([
             {"id": "C-5", "kind": "entity", "status": "observed", "symbol_id": "A"}]))
@@ -175,6 +231,11 @@ class AtlasTests(unittest.TestCase):
         with self.assertRaises(render_markmap.RenderError):
             render_markmap.render(self.repo,home=self.home)
 
+    def test_generated_atlas_has_world_readable_static_mode(self):
+        r = atlas.build(self.repo, home=self.home)
+        self.assertEqual(Path(r["markdown"]).stat().st_mode & 0o777, 0o644)
+        self.assertEqual(Path(r["manifest"]).stat().st_mode & 0o777, 0o644)
+
     def test_html_render_native_fake_markmap_and_no_network(self):
         atlas.build(self.repo,home=self.home)
         fake=subprocess.CompletedProcess(args=['markmap'],returncode=0,stdout='',stderr='')
@@ -185,6 +246,7 @@ class AtlasTests(unittest.TestCase):
             r=render_markmap.render(self.repo,home=self.home,engine='native')
         self.assertEqual(r['status'],'RENDERED_NOT_VISUALLY_REVIEWED')
         self.assertTrue(Path(r['html']).read_text().startswith('<!-- cognicode-diagrams markmap -->'))
+        self.assertEqual(Path(r['html']).stat().st_mode & 0o777, 0o644)
 
     def test_html_failure_preserves_existing(self):
         atlas.build(self.repo,home=self.home)
@@ -199,6 +261,7 @@ class AtlasTests(unittest.TestCase):
             self.assertIn('--network',cmd)
             self.assertEqual(cmd[cmd.index('--network')+1],'none')
             self.assertIn(f'{self.w}:/data:ro,z',cmd)
+            self.assertIn('--userns=keep-id', cmd)
             self.assertNotIn(str(self.repo), ' '.join(cmd))
             fname=cmd[-1].split('/')[-1]
             (self.w/'navigation'/fname).write_text('<html><script>hi</script></html>')

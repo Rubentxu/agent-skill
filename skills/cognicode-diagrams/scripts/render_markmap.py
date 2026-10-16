@@ -69,6 +69,7 @@ def render(repo: Path, *, engine: str = "podman", image: str = CONTAINER_IMAGE,
             # supporting browser assets were not cached. Network opt-in is explicit.
             cmd = [binary, "run", "--rm", "--security-opt", "no-new-privileges",
                    "--network", "bridge" if allow_asset_network else "none",
+                   *(['--userns=keep-id'] if engine == 'podman' else []),
                    "--user", f"{os.getuid()}:{os.getgid()}",
                    "-v", f"{workspace}:/data:ro,z",
                    "-v", f"{nav}:/data/navigation:rw,z",
@@ -83,6 +84,7 @@ def render(repo: Path, *, engine: str = "podman", image: str = CONTAINER_IMAGE,
         if "<html" not in html.lower() or "</html>" not in html.lower() or "<script" not in html.lower():
             raise RenderError("Markmap no devolvió un HTML interactivo válido")
         temp.write_text("<!-- cognicode-diagrams markmap -->\n" + html, encoding="utf-8")
+        os.chmod(temp, 0o644)
         os.replace(temp, output)
         return {"status": "RENDERED_NOT_VISUALLY_REVIEWED", "html": str(output),
                 "source": str(nav / "atlas.md"), "engine": engine,

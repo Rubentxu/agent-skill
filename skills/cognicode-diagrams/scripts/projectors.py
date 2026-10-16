@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manage LikeC4 and Structurizr LOCAL viewers for one external diagram workspace.
+"""Manage LikeC4, Structurizr and Markmap LOCAL viewers for one external diagram workspace.
 
 The script never mounts the Git worktree, invokes CogniCode, analyzes source, or
 creates architecture diagrams. No container starts implicitly: `start` is explicit.
@@ -24,12 +24,52 @@ from workspace import WorkspaceError, VALID_LENS, inspect as inspect_workspace
 PROJECTORS = {
     "likec4": {"image": "likec4/likec4:latest", "container_port": 5173, "port": 5173},
     "structurizr": {"image": "structurizr/structurizr:2026.09.19", "container_port": 8080, "port": 8080},
+    "markmap": {"image": "python:3.12-alpine", "container_port": 4173, "port": 4173},
 }
 LABEL_WORKSPACE = "dev.cognicode-diagrams.workspace"
 LABEL_PROJECTOR = "dev.cognicode-diagrams.projector"
 LABEL_LENS = "dev.cognicode-diagrams.lens"
 LABEL_PORT = "dev.cognicode-diagrams.port"
 LABEL_HMR = "dev.cognicode-diagrams.hmr-port"
+# Minimal static server: only explicitly generated workspace paths, no directory listing.
+MARKMAP_SERVER = r"""
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+import mimetypes, re
+
+ROOT = Path('/data')
+ALLOWED = re.compile(
+    r'(?:navigation/atlas\.html|navigation/atlas\.md|'
+    r'evidence/(?:claims|queries)\.json|'
+    r'lenses/[a-z][a-z0-9-]*/(?:sources|renders)/[A-Za-z0-9_.() %\[\]-]+\.(?:dsl|mmd|c4|likec4|puml|d2|md|svg|png|webp))$'
+)
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        relative = unquote(urlsplit(self.path).path).lstrip('/') or 'navigation/atlas.html'
+        if not ALLOWED.fullmatch(relative):
+            self.send_error(404)
+            return
+        path = ROOT / relative
+        if any(part.is_symlink() for part in (path, *path.parents) if part != ROOT.parent):
+            self.send_error(403)
+            return
+        if not path.is_file() or not path.resolve().is_relative_to(ROOT):
+            self.send_error(404)
+            return
+        data = path.read_bytes()
+        mime = mimetypes.guess_type(path.name)[0] or 'application/octet-stream'
+        self.send_response(200)
+        self.send_header('Content-Type', mime)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(data)
+
+ThreadingHTTPServer(('0.0.0.0', 4173), Handler).serve_forever()
+"""
 NOT_FOUND = ("no such container", "no such object", "no container with name", "no such image or container")
 
 
@@ -73,9 +113,9 @@ def params(repo: Path, projector: str, *, lens: str = "c4", home: Path | None = 
     if info["status"] != "ready":
         raise ProjectorError("workspace externo no preparado; ejecutar scripts/workspace.py init")
     workspace = Path(info["workspace"])
-    source = workspace / "lenses" / lens / "sources"
+    source = workspace if projector == "markmap" else workspace / "lenses" / lens / "sources"
     if source.is_symlink() or not source.is_dir() or source.resolve() != source:
-        raise ProjectorError("falta directorio sources o incluye ruta enlazada; ejecutar init-lens")
+        raise ProjectorError("carpeta derivada insegura o inexistente")
     if source.is_relative_to(Path(info["repository"])):
         raise ProjectorError("prohibido montar directorios del repositorio Git")
     suffix = workspace.name.rsplit("--", 1)[-1]
@@ -92,7 +132,13 @@ def params(repo: Path, projector: str, *, lens: str = "c4", home: Path | None = 
 
 def verify_sources(p: dict) -> None:
     src = Path(p["source"])
-    if p["projector"] == "structurizr":
+    if p["projector"] == "markmap":
+        html = src / "navigation" / "atlas.html"
+        if html.is_symlink() or not html.is_file():
+            raise ProjectorError("primero renderizar navigation/atlas.html")
+        if not html.read_text(encoding="utf-8").startswith("<!-- cognicode-diagrams markmap -->"):
+            raise ProjectorError("HTML Markmap sin marca de procedencia valida")
+    elif p["projector"] == "structurizr":
         model = src / "workspace.dsl"
         if model.is_symlink() or not model.is_file():
             raise ProjectorError("falta lenses/<lente>/sources/workspace.dsl (fuente creada por el agente)")
@@ -116,7 +162,7 @@ def existing(engine: str, p: dict) -> dict | None:
             raise ProjectorError("existe contenedor con el mismo nombre pero no pertenece a este workspace")
         if LABEL_PORT not in labels:
             raise ProjectorError("contenedor propio sin contrato de puerto")
-        target = "/data" if p["projector"] == "likec4" else "/usr/local/structurizr"
+        target = "/data" if p["projector"] in {"likec4", "markmap"} else "/usr/local/structurizr"
         mounts = meta.get("Mounts")
         if not isinstance(mounts, list) or len(mounts) != 1 or any(
             m.get("Source") != p["source"] or m.get("Destination") != target
@@ -159,8 +205,9 @@ def status(engine: str, p: dict, *, check_http: bool = False) -> dict:
         if check_http:
             port = port_number(int(metadata["labels"].get(LABEL_PORT, PROJECTORS[p["projector"]]["port"])))
             state = "ready" if http_ready(port) else "running_unverified"
-    return {**p, "engine": engine, "status": state,
-            "url": None if metadata is None else f"http://127.0.0.1:{metadata['labels'].get(LABEL_PORT)}/"}
+    root = None if metadata is None else f"http://127.0.0.1:{metadata['labels'].get(LABEL_PORT)}/"
+    url = root + "navigation/atlas.html" if root and p["projector"] == "markmap" else root
+    return {**p, "engine": engine, "status": state, "url": url}
 
 
 def start(engine: str, p: dict, *, port: int, hmr_port: int) -> dict:
@@ -185,8 +232,11 @@ def start(engine: str, p: dict, *, port: int, hmr_port: int) -> dict:
                 "--label", f"{LABEL_LENS}={p['lens']}",
                 "--label", f"{LABEL_PORT}={port}",
                 "-p", f"127.0.0.1:{port}:{PROJECTORS[p['projector']]['container_port']}",
-                "-v", f"{p['source']}:{'/data' if p['projector'] == 'likec4' else '/usr/local/structurizr'}:z"]
-        if p["projector"] == "likec4":
+                "-v", f"{p['source']}:{'/data' if p['projector'] in {'likec4', 'markmap'} else '/usr/local/structurizr'}:{'ro,z' if p['projector'] == 'markmap' else 'z'}"]
+        if p["projector"] == "markmap":
+            args.extend(["--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+                         "--pids-limit", "64", p["image"], "python3", "-u", "-c", MARKMAP_SERVER])
+        elif p["projector"] == "likec4":
             args.extend(["--label", f"{LABEL_HMR}={hmr_port}",
                          "-p", f"127.0.0.1:{hmr_port}:24678", p["image"],
                          "serve", "--listen", "0.0.0.0", "--port", "5173", "--hmr-port", "24678"])
@@ -221,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("action", choices=("status", "start", "stop", "remove"))
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--projector", required=True, choices=tuple(PROJECTORS))
-    parser.add_argument("--lens", default="c4", help="Lente cuyos artefactos se proyectarán")
+    parser.add_argument("--lens", default="c4", help="Lente (markmap sirve el atlas completo)")
     parser.add_argument("--engine", choices=("podman", "docker"), help="Por defecto prioriza Podman")
     parser.add_argument("--port", type=int)
     parser.add_argument("--hmr-port", type=int, default=24678)

@@ -42,3 +42,7 @@ Se exige el estado `research` del [protocolo de preguntas](research-protocol.md)
 ## Evidencia sobre ficheros omitidos
 
 Guardar `scope.report_id`, `scope.languages`, `scope.coverage`, `scope.omissions_complete` y por cada fichero excluido la ruta **devuelta por CogniCode**, la relevancia para la pregunta y las consultas estructuradas que fundamentan esa decisión. `omitted_files=[]` solo es concluyente cuando el propio análisis informa una lista completa. La identidad de símbolo y la verificación por lenguaje son requisitos distintos de la cobertura. No atribuir a Kotlin un probe observado únicamente en Rust.
+
+## Procedencia del mapa
+
+El atlas usa los campos opcionales `category`, `provenance`, `plane`, `coverage` y `attributes` sin alterar la autoridad de las observaciones CogniCode. `CODE_DOC` no prueba funcionalidad; `CURATED_INTENT` requiere curador; `DOC_INTENT` no está autorizado. No añadir una arista ni runtime desde un mero render. [Reglas](visual-evidence.md).

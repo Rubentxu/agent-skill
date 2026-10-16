@@ -10,6 +10,18 @@ from pathlib import Path
 
 MAX_INPUT = 8 * 1024 * 1024
 MAX_CLAIMS = 250
+# These are presentation lenses, NEVER inferred by parsing a filename/DSL/image.
+CATEGORY_LABELS = {
+    "system": "Sistema", "module": "Modulos", "surface": "Superficies",
+    "external": "Sistemas externos", "store": "Almacenes",
+    "signal": "Senales observadas", "coverage": "Cobertura",
+    "glossary": "Glosario", "symbol": "Simbolos",
+    "intent": "Intencion (NO implementacion)",
+}
+IMPLEMENTATION = {"OBSERVED_CODE", "observed"}
+INTENT = {"CODE_DOC", "CURATED_INTENT"}
+UNCERTAIN = {"INFERRED", "inferred", "UNKNOWN", "unknown"}
+
 
 
 class KnowledgeError(ValueError):
@@ -93,10 +105,27 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             raise KnowledgeError("duplicate or absent claim ID")
         if c.get("kind", "entity") not in {"entity", "relation"}:
             raise KnowledgeError("unknown claim kind")
-        if c.get("status", "UNKNOWN") not in {"OBSERVED_CODE", "observed", "INFERRED", "inferred", "UNKNOWN", "unknown"}:
-            raise KnowledgeError("unknown claim status")
-        if not isinstance(c.get("query_ids", []), list):
+        provenance = c.get("provenance", c.get("status", "UNKNOWN"))
+        if provenance not in IMPLEMENTATION | INTENT | UNCERTAIN:
+            raise KnowledgeError("unsupported claim provenance (DOC_INTENT requires separate authorized mode)")
+        category = c.get("category", "symbol")
+        if category not in CATEGORY_LABELS:
+            raise KnowledgeError("unknown concept category; classify only from CogniCode evidence")
+        if (category == "intent") != (provenance in INTENT):
+            raise KnowledgeError("intent and implemented architectural concepts cannot share a category")
+        ids = c.get("query_ids", [])
+        if not isinstance(ids, list) or any(not isinstance(q, str) or not q for q in ids):
             raise KnowledgeError("invalid claim query references")
+        if provenance == "CURATED_INTENT" and (ids or not isinstance(c.get("curator"), str) or not c["curator"]):
+            raise KnowledgeError("curated intent needs curator, never fabricated CogniCode queries")
+        if provenance == "CODE_DOC" and not ids:
+            raise KnowledgeError("CODE_DOC intent requires CogniCode query IDs")
+        if c.get("plane", "static") not in {"static", "runtime", "deployment", "intent"}:
+            raise KnowledgeError("unknown claim evidence plane")
+        if category == "intent" and c.get("plane", "intent") != "intent":
+            raise KnowledgeError("intent cannot claim implementation plane")
+        if c.get("coverage", "unknown") not in {"complete", "partial", "unknown"}:
+            raise KnowledgeError("unsupported evidence coverage")
         claims[cid] = c
 
     if qfile.is_file():
@@ -126,6 +155,11 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
         allowed = {str(a.relative_to(workspace)) for k in ("sources", "renders") for a in catalog[lens][k]}
         if any(not isinstance(cid, str) or cid not in claims for cid in ids):
             raise KnowledgeError("view references missing claim")
+        plane = view.get("plane", "implementation")
+        if plane not in {"implementation", "intent"}:
+            raise KnowledgeError("view has unknown plane")
+        if any((claims[cid].get("category", "symbol") == "intent") != (plane == "intent") for cid in ids):
+            raise KnowledgeError("intent-only claim cannot justify an implementation diagram")
         if any(not isinstance(a, str) or a not in allowed for a in assets):
             raise KnowledgeError("view references ungenerated/external asset")
         for cid in ids:
@@ -141,20 +175,42 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
         symbol = c.get("symbol_id") or c.get("from_symbol") or "Sin simbolo"
         if not isinstance(symbol, str):
             raise KnowledgeError("invalid symbol")
-        groups.setdefault(symbol, []).append((cid, c))
-    for symbol, members in sorted(groups.items()):
-        lines.extend(["### " + label(symbol), ""])
-        for cid, c in members:
-            relation = c.get("to_symbol") if c.get("kind") == "relation" else None
-            source = "referencia" if c.get("relation_source") == "reference_link" else c.get("kind", "entity")
-            name = f"{cid} · {source}" + (f" → {relation}" if isinstance(relation, str) else "")
-            lines.append(f"- {label(name)} [{label(c.get('status', 'UNKNOWN'))}]")
-            lines.append(f"  - [Claim]({href(ledger, workspace / 'navigation')})")
-            if qfile.is_file() and c.get("query_ids"):
-                lines.append(f"  - [Consultas]({href(qfile, workspace / 'navigation')})")
-            for view_name, artifacts in by_claim.get(cid, []):
-                lines.append("  - " + label(view_name))
-                for p in artifacts:
-                    lines.append(f"    - [{label(p.name)}]({href(p, workspace / 'navigation')})")
-        lines.append("")
+        groups.setdefault(c.get("category", "symbol"), {}).setdefault(symbol, []).append((cid, c))
+    for category, by_symbol in sorted(groups.items(), key=lambda item: list(CATEGORY_LABELS).index(item[0])):
+        lines.extend(["### " + CATEGORY_LABELS[category], ""])
+        for symbol, members in sorted(by_symbol.items()):
+            lines.extend(["#### " + label(symbol), ""])
+            for cid, c in members:
+                relation = c.get("to_symbol") if c.get("kind") == "relation" else None
+                source = "referencia" if c.get("relation_source") == "reference_link" else c.get("kind", "entity")
+                name = f"{cid} · {source}" + (f" → {relation}" if isinstance(relation, str) else "")
+                provenance = c.get("provenance", c.get("status", "UNKNOWN"))
+                ids = c.get("query_ids", [])
+                # A legacy "observed" without resolvable queries is a *candidate*, never verified evidence.
+                effective = ("UNKNOWN (sin query)" if provenance in IMPLEMENTATION | {"CODE_DOC"} and (not ids or not qfile.is_file())
+                             else provenance)
+                plane = "intent" if category == "intent" else c.get("plane", "static")
+                coverage = c.get("coverage", "unknown")
+                lines.append(f"- {label(name)} [{label(effective)} · {label(plane)} · cobertura:{label(coverage)}]")
+                lines.append(f"  - [Claim]({href(ledger, workspace / 'navigation')})")
+                if qfile.is_file() and ids:
+                    lines.append(f"  - [Consultas: {label(', '.join(ids))}]({href(qfile, workspace / 'navigation')})")
+                if category == "intent":
+                    lines.append("  - NO demuestra implementacion")
+                if c.get("kind") == "relation" and category != "intent":
+                    # Detail is explicitly supplied by CogniCode observations; never infer HTTP or runtime.
+                    attributes = c.get("attributes", {})
+                    if not isinstance(attributes, dict):
+                        raise KnowledgeError("relation.attributes invalid")
+                    for key in ("kind", "technology", "endpoint", "order"):
+                        value = attributes.get(key)
+                        if value is not None:
+                            if not isinstance(value, str):
+                                raise KnowledgeError("relation attribute must be text")
+                            lines.append(f"  - {key}: {label(value)} (declarado en codigo, no runtime)")
+                for view_name, artifacts in by_claim.get(cid, []):
+                    lines.append("  - " + label(view_name))
+                    for p in artifacts:
+                        lines.append(f"    - [{label(p.name)}]({href(p, workspace / 'navigation')})")
+            lines.append("")
     return lines, digests, len(claims), bound

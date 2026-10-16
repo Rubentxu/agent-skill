@@ -79,3 +79,13 @@ Estos escenarios no están certificados con un agente real por añadir esta docu
 - LikeC4: al faltar kind base, diagnosticar error, declarar los kinds usados y validar sintaxis sin tocar repositorio.
 
 Los nuevos unitarios solo cubren decisiones puras con fixtures; estas UAT de proceso real siguen `NOT_RUN` hasta prueba registrada.
+
+## V1–V5: visor y procedencia (UAT de agente real NOT_RUN)
+
+- V1: elemento/relación LikeC4 con metadata claim/query/plane validada y enlaces navegables reales.
+- V2: CODE_DOC o CURATED_INTENT nunca fundamenta vista de implementación; DOC_INTENT prohibido.
+- V3: Markmap local responde en loopback y rechaza traversal, symlink, listados y archivos fuera de la allowlist.
+- V4: Podman rootless respeta keep-id y render Markdown/HTML con permisos correctos.
+- V5: categorías solo con evidencias; cobertura/ausencias e inferencias siguen visibles y no se declaran completas.
+
+Estas verificaciones con un agente y navegador reales no se consideran ejecutadas por tener tests puros.

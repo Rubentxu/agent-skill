@@ -18,3 +18,7 @@ Los proyectores **solo** leen fuentes y renders creados por el agente bajo `~/.c
 - `HTTP_READY`, `FORMAT_VALID`, `RENDERED` y `VISUALLY_REVIEWED` no implican `IMPLEMENTATION_GROUNDED`. Este último solo se obtiene mediante claims de CogniCode previos y actuales.
 
 Procedimientos existentes: [Kroki](kroki.md), [LikeC4](projectors/likec4.md), [Structurizr Local](projectors/structurizr-local.md), [Markmap](projectors/markmap.md).
+
+## Markmap local
+
+`projectors.py status/start/stop/remove --projector markmap` sirve el HTML y artefactos derivados con allowlist de rutas, montaje RO y host `127.0.0.1`. No inicia nada durante `atlas.py sync` y no reemplaza el proyector HTML offline. [Operación](projectors/markmap.md).

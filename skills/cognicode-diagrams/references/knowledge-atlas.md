@@ -37,3 +37,7 @@ Solo archivos **derivados** bajo `~/.cognicode-diagrams/workspaces/<id>/`; nada 
 Sin DB, sin daemon, sin segundo MCP, sin inferencia a partir de nombres de ficheros, sin indexar imágenes. Probar con fixtures pequeños y conservar solo contratos críticos: idempotencia, stale al añadir evidencia, vista→claim→asset, rechazo de falso claim/enlaces externos. UAT de agente y render real se ejecutan en el ciclo y se retiran tras guardar recibo, si no cubren nueva garantía permanente.
 
 [Markmap](projectors/markmap.md) · [evidencia](evidence.md) · [workspace](workspace.md)
+
+## Semántica tipada
+
+Cada rama procede de `claim.category` explícito, no de los nombres de archivo. El atlas muestra `query_ids`, `plane`, `coverage`, `provenance`, y únicamente los atributos de relación observados. `CODE_DOC`/`CURATED_INTENT` se ubican en intención; la asociación de una vista de implementación a un claim de intención se rechaza. Véase [contrato de procedencia](visual-evidence.md).

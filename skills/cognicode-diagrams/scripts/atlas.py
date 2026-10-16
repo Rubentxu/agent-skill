@@ -82,6 +82,7 @@ def _write_owned(path: Path, content: str, marker: str) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(content)
+        os.chmod(temp, 0o644)
         os.replace(temp, path)
     finally:
         if os.path.exists(temp):
@@ -98,6 +99,7 @@ def _manifest_write(path: Path, data: dict) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(content)
+        os.chmod(temp, 0o644)
         os.replace(temp, path)
     finally:
         if os.path.exists(temp):
