@@ -1,6 +1,6 @@
 # PipelineK local: empaquetado y publicación por canal
 
-**Responsabilidades separadas:** [distribution-first-release](../../../distribution-first-release/SKILL.md) descubre y gobierna productos/canales; esta skill ejecuta una pipeline local **real** con los comandos que el repositorio ya soporta. No inventar DSL de publish ni crear un segundo CI en GitHub Actions.
+**Responsabilidades separadas:** `distribution-first-release` (`skills/distribution-first-release/SKILL.md`) descubre y gobierna productos/canales; esta skill ejecuta una pipeline local **real** con los comandos que el repositorio ya soporta. No inventar DSL de publish ni crear un segundo CI en GitHub Actions.
 
 ## Algoritmo
 
@@ -29,4 +29,4 @@ PipelineK: verify affected → release gate → package once → stage → verif
 
 **No copiar este esquema como pipeline.kts.** El agente debe inspeccionar la DSL instalada, escribir el fichero operativo fuera del repo si esa es la política, pasar `pipelinek validate` y ejecutar positivos/negativos reales. Un stage remoto ligero no reejecuta la matriz de CI.
 
-[Versiones y bootstrap](04-version-resolution.md) · [Autoría DSL](01-pipeline-authoring.md) · [Gates](02-agentic-loop.md) · [Decisión de destinos](../../../distribution-first-release/references/lenses/registry-contracts.md).
+[Versiones y bootstrap](04-version-resolution.md) · [Autoría DSL](01-pipeline-authoring.md) · [Gates](02-agentic-loop.md) · Decisión de destinos: `skills/distribution-first-release/references/lenses/registry-contracts.md`.
