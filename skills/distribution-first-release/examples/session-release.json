@@ -1,0 +1,22 @@
+{
+  "intent": "release",
+  "product": "cli",
+  "inventory": "ready",
+  "basis": "current",
+  "risk": "high",
+  "signals": [
+    "release",
+    "consumer",
+    "integrity"
+  ],
+  "git_artifacts": "clean",
+  "archive_confusion": false,
+  "asset_set": "complete",
+  "package": "passed",
+  "consumer": "not_run",
+  "integrity": "not_run",
+  "publication": "not_run",
+  "available_skills": [
+    "delivery-first-testing"
+  ]
+}

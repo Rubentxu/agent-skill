@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "lenses": [
+    {
+      "id": "git-hygiene",
+      "status": "ready",
+      "question": "¿Se están versionando outputs compilados y copias de release?",
+      "playbook": "references/lenses/git-hygiene.md",
+      "intents": [
+        "audit",
+        "prepare",
+        "cleanup",
+        "release"
+      ],
+      "signals": [
+        "git"
+      ]
+    },
+    {
+      "id": "source-archive-boundary",
+      "status": "ready",
+      "question": "¿Qué es generado automáticamente y qué se puede excluir del source archive?",
+      "playbook": "references/lenses/source-archive-boundary.md",
+      "intents": [
+        "audit",
+        "prepare",
+        "release",
+        "cleanup"
+      ],
+      "signals": [
+        "archive"
+      ]
+    },
+    {
+      "id": "asset-selection",
+      "status": "ready",
+      "question": "¿Cuál es el conjunto mínimo completo de assets del consumidor?",
+      "playbook": "references/lenses/asset-selection.md",
+      "intents": [
+        "audit",
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "release"
+      ]
+    },
+    {
+      "id": "package-composition",
+      "status": "ready",
+      "question": "¿El paquete contiene solo lo necesario y sigue siendo ejecutable?",
+      "playbook": "references/lenses/package-composition.md",
+      "intents": [
+        "prepare",
+        "release",
+        "audit"
+      ],
+      "signals": [
+        "package"
+      ]
+    },
+    {
+      "id": "consumer-verification",
+      "status": "ready",
+      "question": "¿Puede instalarlo y usarlo alguien desde bytes publicados?",
+      "playbook": "references/lenses/consumer-verification.md",
+      "intents": [
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "consumer"
+      ]
+    },
+    {
+      "id": "integrity-provenance",
+      "status": "ready",
+      "question": "¿Versiones, digests, SBOM y procedencia corresponden al mismo artefacto?",
+      "playbook": "references/lenses/integrity-provenance.md",
+      "intents": [
+        "prepare",
+        "release",
+        "audit"
+      ],
+      "signals": [
+        "integrity"
+      ]
+    },
+    {
+      "id": "evidence-separation",
+      "status": "ready",
+      "question": "¿Los recibos viven en su autoridad, no en el release bundle?",
+      "playbook": "references/lenses/evidence-separation.md",
+      "intents": [
+        "audit",
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "evidence"
+      ]
+    },
+    {
+      "id": "release-publication",
+      "status": "ready",
+      "question": "¿El release remoto está completo, inmutable y diferenciadamente certificado?",
+      "playbook": "references/lenses/release-publication.md",
+      "intents": [
+        "release",
+        "audit"
+      ],
+      "signals": [
+        "release"
+      ]
+    },
+    {
+      "id": "history-remediation",
+      "status": "ready",
+      "question": "¿Puede reducirse Git sin violar tags ni reescribir historial?",
+      "playbook": "references/lenses/history-remediation.md",
+      "intents": [
+        "cleanup",
+        "audit"
+      ],
+      "signals": [
+        "history"
+      ]
+    },
+    {
+      "id": "registry-contracts",
+      "status": "planned",
+      "question": "¿Publicación de paquetes fuente/metadatos requerida por cada registry?",
+      "playbook": "references/extend-lenses.md",
+      "intents": [
+        "prepare",
+        "release"
+      ],
+      "signals": [
+        "package"
+      ]
+    },
+    {
+      "id": "native-packaging",
+      "status": "planned",
+      "question": "¿Conviene producir instaladores nativos/autocontenidos?",
+      "playbook": "references/extend-lenses.md",
+      "intents": [
+        "prepare"
+      ],
+      "signals": [
+        "consumer"
+      ]
+    }
+  ]
+}

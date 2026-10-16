@@ -1,0 +1,17 @@
+{
+  "intent": "release",
+  "product": "application",
+  "inventory": "ready",
+  "basis": "current",
+  "risk": "critical",
+  "signals": [
+    "release"
+  ],
+  "git_artifacts": "clean",
+  "archive_confusion": false,
+  "asset_set": "incomplete",
+  "package": "passed",
+  "consumer": "passed",
+  "integrity": "passed",
+  "publication": "not_run"
+}
