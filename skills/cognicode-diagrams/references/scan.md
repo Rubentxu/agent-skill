@@ -14,3 +14,7 @@ No ejecutar `analyze .` ni construir todo el grafo por rutina. El coste y la pro
 ## Comprobación de cobertura antes de C4
 
 Antes de representar una vista, preguntar a CogniCode qué lenguajes ha analizado y qué ficheros ha omitido. Un grafo parcial con `skipped_files` no demuestra que la parte omitida sea irrelevante. Evaluar cada omisión para la **pregunta** y pedir una consulta estructurada acotada cuando sea posible. Si no hay capacidad que aporte esta evidencia, declarar `PARTIAL/UNKNOWN`; nunca examinar manualmente archivos no indexados ni deducir procesos/relaciones a partir de nombres.
+
+## Orden de alternativas y error NO_GRAPH_AVAILABLE
+
+Antes de invocar relaciones, inspeccionar catálogo (graph/persistence/stability), soporte por lenguaje y sesión en [preflight](session-preflight.md). Aplicar `índice/símbolo → find_usages/find_references → build_graph en mismo proceso → contexto por símbolo → PARTIAL`. Un `No graph available` debe resolverse como precondición, no como resultado negativo sobre Kotlin. No anunciar C4 completo si el registro instalado no declara soporte suficiente.

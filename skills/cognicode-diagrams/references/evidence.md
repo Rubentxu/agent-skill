@@ -30,7 +30,7 @@ Para los límites de identidad y el significado de `VERIFIED`, consultar [invest
 Se exige el estado `research` del [protocolo de preguntas](research-protocol.md), además de los campos clásicos del ledger. Una consulta **anunciada** no acredita funcionalidad: almacenar sondeo por capacidad y lenguaje (símbolo real, ubicación, contexto, relaciones y cobertura), y después la operación productiva que soporta el claim.
 
 - Un `query_id` que procede de `read_file(raw)`, del checkout, de otro indexador o únicamente de `search_content` **no respalda** una entidad/arista como implementada.
-- Cada arista factual incluye `from_symbol`, `to_symbol` y `relation_id` observados en una respuesta estructurada. Nunca inferir comunicación runtime o despliegue desde un `calls` estático.
+- Cada arista `graph_edge` factual incluye `from_symbol`, `to_symbol` y `relation_id` observado. Una relación `reference_link` usa **query_id + índice + archivo:línea**, no relation_id; consultar [contrato de referencias](evidence-reference-links.md). Ninguna acredita comunicación runtime/despliegue por sí misma.
 - El cierre `EVIDENCE_READY` demuestra consistencia de **los claims declarados** para **esa pregunta**, no cobertura completa del lenguaje, ni autenticidad de las respuestas del agente.
 - Si hay nueva petición de detalle, registrar nueva pregunta, capacidad seleccionada, pruebas y consultas. Si no hay progreso, terminar `PARTIAL/UNKNOWN`, sin repetir la misma operación hasta agotar contexto.
 - Cuando la consulta estructurada ya es suficiente, evitar búsquedas y lecturas extra: no aportan valor ni elevan certificación.

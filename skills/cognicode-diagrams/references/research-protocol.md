@@ -67,3 +67,11 @@ El estado `research` requiere `scope`: `source=cognicode`, `report_id`, `languag
 - Si `scope.coverage=partial` y los omitidos son justificadamente irrelevantes, se puede generar una **vista acotada**, pero no etiquetarla como verificación global. `VERIFIED` exige cobertura `complete`.
 
 La prueba de la capacidad se guarda en `capabilities[].probes[language]` sobre un símbolo real; la disponibilidad anunciada no equivale a prueba para cada lenguaje. Probar solo las capacidades pertinentes a la pregunta y detener las consultas cuando haya evidencia suficiente. Las pruebas puras del router no ejecutan los parsers Kotlin/Rust; UAT real con CogniCode sigue `NOT_RUN`.
+
+## Contrato ampliado — sesión, catálogo y referencias (obligatorio)
+
+Consultar [preflight por sesión y lenguaje](session-preflight.md) antes de C4. La tabla inicial es ontología, **no es un inventario de requisitos**: cada tool observada incorpora `requires_graph:boolean`, `requires_persistence:boolean`, `stability:stable|experimental|deprecated`, y `prerequisites`/limitaciones si se anuncian. El router puro exige `language_registry`, `session` y, para cierre, `view.node_count/max_nodes`.
+
+Una relación tiene `relation_source=graph_edge|reference_link`. Solo `graph_edge` requiere `relation_id`; `reference_link` exige `query_id + index + path:line` y símbolos corroborados; ver [evidencia por referencias](evidence-reference-links.md). La ausencia de grafo se repara con `build-graph` en el mismo proceso o se evita con referencia, nunca se etiqueta `UNSUPPORTED`. La escalera es `symbol_index → references → graph/session → symbol_context → PARTIAL`, con corte temprano por suficiencia de evidencia.
+
+Si `language_registry.support != supported`, un C4 global pasa a `PARTIAL`; se puede realizar un alcance acotado con `view_scope=bounded` pero su evidencia y cobertura siguen siendo limitadas. Si el grafo está marcado `current` sin `graph_owner == session.id` y base observada, no se acepta como listo. `reference_hits` se indexan desde **cero** según orden preservado de resultados; una tool que no preserve orden debe aportar identificador estable y adaptar el contrato explícitamente, nunca asignar índices al azar.

@@ -54,7 +54,10 @@
             "relations": "unknown",
             "coverage": "partial"
           }
-        }
+        },
+        "requires_graph": false,
+        "requires_persistence": false,
+        "stability": "stable"
       }
     ],
     "queries": [
@@ -98,6 +101,23 @@
       "coverage": "complete",
       "omissions_complete": true,
       "omitted_files": []
+    },
+    "language_registry": {
+      "source": "cognicode",
+      "version": "synthetic-1",
+      "support": "supported"
+    },
+    "session": {
+      "id": "mcp-1",
+      "transport": "mcp",
+      "graph_state": "absent",
+      "graph_owner": null,
+      "graph_basis": null,
+      "persistence": "absent"
+    },
+    "view": {
+      "node_count": 2,
+      "max_nodes": 15
     }
   }
 }

@@ -12,8 +12,8 @@ from typing import Any
 QUESTION_ROLES: dict[str, tuple[str, ...]] = {
     "responsibilities": ("symbol_index", "intent_search", "symbol_context"),
     "understand_symbol": ("symbol_context", "members", "type_references"),
-    "collaborators": ("references", "implementors", "call_hierarchy"),
-    "interaction": ("subgraph", "trace_path"),
+    "collaborators": ("symbol_index", "references", "implementors", "call_hierarchy", "symbol_context"),
+    "interaction": ("symbol_index", "references", "subgraph", "trace_path", "symbol_context"),
     "view_grouping": ("communities", "graph_query"),
 }
 STRUCTURED_MODES = {"structured", "symbol_context"}
@@ -23,6 +23,8 @@ PROBE_STATES = {"untried", "usable", "partial", "failed", "unsupported"}
 QUERY_STATES = {"ok", "partial", "failed", "unsupported"}
 COVERAGES = {"complete", "partial", "unknown"}
 PLANES = {"static", "runtime", "deployment"}
+STABILITIES = {"stable", "experimental", "deprecated"}
+LANGUAGE_SUPPORT = {"supported", "partial", "unsupported", "not_listed", "unknown"}
 
 
 class ResearchError(ValueError):
@@ -156,6 +158,40 @@ def decide(research: dict | None) -> dict:
         return _result("IN_PROGRESS", "discover-capabilities",
                        "descubrir herramientas y esquemas del runtime real", qid)
 
+    # Runtime contract: catalog support is scoped to an installed CogniCode
+    # version. A reference graph cannot be silently reused across MCP processes.
+    registry = research.get("language_registry")
+    if registry is None:
+        return _result("IN_PROGRESS", "preflight-language",
+                       "consultar el registro de lenguajes de la version instalada antes de prometer C4", qid)
+    if not isinstance(registry, dict) or registry.get("source") != "cognicode":
+        raise ResearchError("language_registry debe proceder de CogniCode instalado")
+    _str(registry.get("version"), "language_registry.version")
+    support = registry.get("support")
+    if support not in LANGUAGE_SUPPORT:
+        raise ResearchError("language_registry.support invalido")
+    if support != "supported" and research.get("view_scope", "global") != "bounded":
+        return _result("PARTIAL", None,
+                       "C4 global no acreditable para lenguaje " + language +
+                       " (" + support + "); ofrecer vista acotada tras sondas reales", qid)
+
+    session = research.get("session")
+    if session is None:
+        return _result("IN_PROGRESS", "inspect-session",
+                       "identificar el mismo proceso/sesion que ejecutara las consultas", qid)
+    if not isinstance(session, dict):
+        raise ResearchError("session debe ser objeto")
+    session_id = _str(session.get("id"), "session.id")
+    if session.get("transport") not in {"mcp", "cli"}:
+        raise ResearchError("session.transport invalido")
+    if session.get("graph_state") not in {"absent", "current", "stale", "unknown"}:
+        raise ResearchError("session.graph_state invalido")
+    if session.get("persistence") not in {"ready", "absent", "unknown"}:
+        raise ResearchError("session.persistence invalido")
+    graph_current = (session["graph_state"] == "current" and
+                     session.get("graph_owner") == session_id and
+                     isinstance(session.get("graph_basis"), str) and bool(session["graph_basis"]))
+
     caps = _list(research.get("capabilities", []), "capabilities")
     queries = _list(research.get("queries", []), "queries")
     claims = _list(research.get("claims", []), "claims")
@@ -183,6 +219,10 @@ def decide(research: dict | None) -> dict:
             raise ResearchError("capability.languages inválido")
         if type(c.get("advertised")) is not bool or type(c.get("schema_observed")) is not bool:
             raise ResearchError("capability requiere advertised y schema_observed observados")
+        if type(c.get("requires_graph")) is not bool or type(c.get("requires_persistence")) is not bool:
+            raise ResearchError("capability requiere requires_graph y requires_persistence del catalogo runtime")
+        if c.get("stability") not in STABILITIES:
+            raise ResearchError("capability.stability debe venir del catalogo runtime")
         probes = c.get("probes")
         if not isinstance(probes, dict) or set(probes) - set(languages):
             raise ResearchError("capability.probes debe asociar sondeos solo a lenguajes anunciados")
@@ -214,12 +254,21 @@ def decide(research: dict | None) -> dict:
             raise ResearchError("query.mode desconocido")
         if query.get("mode") in STRUCTURED_MODES:
             witness = cap_by_name[tool]
+            graph_missing = (query.get("status") == "failed" and
+                             query.get("error_code") == "NO_GRAPH_AVAILABLE" and
+                             witness["requires_graph"])
             if (not witness["advertised"] or not witness["schema_observed"] or
                     language not in witness["languages"] or
-                    witness["probes"].get(language, {}).get("status") not in {"usable", "partial"}):
+                    (not graph_missing and witness["probes"].get(language, {}).get("status") not in {"usable", "partial"})):
                 return _result("BLOCKED", None,
                                "consulta sin esquema/prueba funcional para este lenguaje; no certificable",
                                qid, tool)
+            if witness["requires_graph"] and query.get("status") == "ok" and not graph_current:
+                return _result("BLOCKED", None,
+                               "grafo no acreditado en este proceso: una consulta no puede certificarlo", qid, tool)
+            if witness["requires_persistence"] and query.get("status") == "ok" and session["persistence"] != "ready":
+                return _result("BLOCKED", None,
+                               "persistencia requerida sin estado confirmado", qid, tool)
         if query.get("status") not in QUERY_STATES or query.get("coverage") not in COVERAGES:
             raise ResearchError("query.status/coverage inválidos")
         if _str(query.get("target"), "query.target") != target:
@@ -254,6 +303,36 @@ def decide(research: dict | None) -> dict:
                 return False
             if claim_kind == "entity":
                 return bool(claim.get("symbol_id")) and claim["symbol_id"] in query.get("symbol_ids", [])
+            if claim.get("relation_source", "graph_edge") == "reference_link":
+                ref = claim.get("reference")
+                if not isinstance(ref, dict) or ref.get("query_id") != query.get("id"):
+                    return False
+                if bool(claim.get("relation_id")) or query.get("mode") != "structured":
+                    return False
+                if cap_by_name[query["capability"]]["role"] != "references":
+                    return False
+                if not isinstance(ref.get("index"), int) or ref["index"] < 0:
+                    return False
+                if not isinstance(ref.get("line"), int) or ref["line"] < 1:
+                    return False
+                if not isinstance(ref.get("path"), str) or not ref["path"]:
+                    return False
+                hit = any(
+                    isinstance(h, dict) and h.get("index") == ref["index"] and
+                    h.get("path") == ref["path"] and h.get("line") == ref["line"]
+                    for h in query.get("reference_hits", [])
+                )
+                endpoints = {
+                    symbol for ref_id in refs if ref_id in by_query
+                    for symbol in by_query[ref_id].get("symbol_ids", [])
+                    if by_query[ref_id].get("mode") in STRUCTURED_MODES and
+                    by_query[ref_id].get("status") == "ok"
+                }
+                return hit and bool(claim.get("from_symbol")) and bool(claim.get("to_symbol")) and (
+                    claim["from_symbol"] in endpoints and claim["to_symbol"] in endpoints
+                )
+            if claim.get("relation_source", "graph_edge") != "graph_edge":
+                return False
             return (bool(claim.get("relation_id")) and
                     claim["relation_id"] in query.get("relation_ids", []) and
                     bool(claim.get("from_symbol")) and bool(claim.get("to_symbol")) and
@@ -264,8 +343,23 @@ def decide(research: dict | None) -> dict:
         else:
             ungrounded.append(claim_id)
     if diagram_ids and not ungrounded:
-        return _assess_scope(research.get("scope"), qid, language, by_query, budget,
-                             sum(q["mode"] in STRUCTURED_MODES for q in queries))
+        coverage_verdict = _assess_scope(research.get("scope"), qid, language, by_query, budget,
+                                         sum(q["mode"] in STRUCTURED_MODES for q in queries))
+        if coverage_verdict["status"] != "EVIDENCE_READY":
+            return coverage_verdict
+        view = research.get("view")
+        if not isinstance(view, dict):
+            return _result("IN_PROGRESS", "plan-view",
+                           "declarar numero de nodos de la vista antes de proyectar", qid)
+        n = view.get("node_count")
+        limit = view.get("max_nodes", 15)
+        if type(n) is not int or n < 0 or type(limit) is not int or not 1 <= limit <= 20:
+            raise ResearchError("view.node_count/max_nodes invalidos")
+        if n > limit:
+            return _result("IN_PROGRESS", "split-view",
+                           f"vista con {n} nodos supera maximo {limit}; dividir por contenedor/responsabilidad",
+                           qid)
+        return coverage_verdict
 
     # Claims without references are not evidence; text search only locates candidates.
     if ungrounded:
@@ -283,14 +377,24 @@ def decide(research: dict | None) -> dict:
     roles = QUESTION_ROLES[kind]
     candidates = sorted(
         (c for c in caps if c["role"] in roles and language in c["languages"] and
-         c["advertised"] and c["schema_observed"] and c["name"] not in TEXT_ONLY_TOOLS),
-        key=lambda c: (roles.index(c["role"]), c["name"]),
+         c["advertised"] and c["schema_observed"] and c["name"] not in TEXT_ONLY_TOOLS
+         and c["stability"] != "deprecated"),
+        key=lambda c: (roles.index(c["role"]), c["stability"] != "stable", c["name"]),
     )
     if not candidates:
         return _result("PARTIAL", None,
                        "sin capacidad estructurada comprobable para esta pregunta y lenguaje; no declarar lenguaje incompatible",
                        qid)
     for cap in candidates:
+        if cap["requires_persistence"] and session["persistence"] != "ready":
+            continue  # No inicializar persistencia sin permiso; probar otro camino estructurado.
+        if cap["requires_graph"] and not graph_current:
+            if session["graph_state"] == "unknown":
+                return _result("IN_PROGRESS", "inspect-session",
+                               "averiguar el estado del grafo en el proceso MCP actual", qid, cap["name"])
+            return _result("IN_PROGRESS", "build-graph",
+                           "No graph available: falta precondicion; construir en ESTE proceso y validar base/cobertura",
+                           qid, cap["name"])
         probe = cap["probes"].get(language, {"status": "untried"})
         if probe["status"] == "untried":
             return _result("IN_PROGRESS", "probe-capability",

@@ -21,7 +21,8 @@ def probe(state="usable", **overrides):
 
 def cap(name="index", role="symbol_index", status="usable", language="kotlin", **kw):
     d = {"name": name, "role": role, "languages": [language], "advertised": True,
-         "schema_observed": True, "probes": {language: probe(status)}}
+         "schema_observed": True, "requires_graph": False, "requires_persistence": False,
+         "stability": "stable", "probes": {language: probe(status)}}
     d.update(kw)
     return d
 
@@ -38,6 +39,10 @@ def query(name="index", mode="structured", **kw):
 def state(kind="responsibilities", caps=None, queries=None, claims=None, diagram=None, **kw):
     s = {
         "catalog": "observed",
+        "language_registry": {"source": "cognicode", "version": "synthetic-1", "support": "supported"},
+        "session": {"id": "mcp-1", "transport": "mcp", "graph_state": "absent",
+                    "graph_owner": None, "graph_basis": None, "persistence": "absent"},
+        "view": {"node_count": 2, "max_nodes": 15},
         "question": {"id": "RQ-1", "text": "What does this implementation do?",
                      "kind": kind, "language": "kotlin", "target": "S::run"},
         "capabilities": [cap()] if caps is None else caps,
@@ -273,6 +278,83 @@ class QuestionProtocolTests(unittest.TestCase):
         verdict = decide(s)
         self.assertEqual(verdict["status"], "PARTIAL")
         self.assertIsNone(verdict["action"])
+
+    def test_runtime_language_preflight_before_global_c4(self):
+        s = state(language_registry={"source": "cognicode", "version": "v0.101.17",
+                                     "support": "not_listed"})
+        self.assertEqual(decide(s)["status"], "PARTIAL")
+        self.assertIn("C4 global", decide(s)["why"])
+
+    def test_missing_preflight_requests_installed_registry(self):
+        s = state()
+        del s["language_registry"]
+        self.assertEqual(decide(s)["action"], "preflight-language")
+
+    def test_missing_session_requests_current_process(self):
+        s = state()
+        del s["session"]
+        self.assertEqual(decide(s)["action"], "inspect-session")
+
+    def test_graph_only_tool_requires_same_process_build(self):
+        s = state("interaction", caps=[cap("graph", "subgraph", requires_graph=True)])
+        self.assertEqual(decide(s)["action"], "build-graph")
+        s["session"].update(graph_state="current", graph_owner="different-process",
+                            graph_basis="digest1")
+        self.assertEqual(decide(s)["action"], "build-graph")
+        s["session"]["graph_owner"] = "mcp-1"
+        self.assertEqual(decide(s)["action"], "query-structured")
+
+    def test_no_graph_error_is_missing_precondition_not_unsupported(self):
+        s = state("interaction", caps=[cap("graph", "subgraph", "failed", requires_graph=True)],
+                  queries=[query("graph", status="failed", error_code="NO_GRAPH_AVAILABLE",
+                                 relation_ids=[], symbol_ids=[])])
+        result = decide(s)
+        self.assertEqual(result["action"], "build-graph")
+        self.assertNotEqual(result["status"], "UNSUPPORTED")
+
+    def test_catalog_metadata_missing_is_not_silently_guessed(self):
+        s = state(caps=[cap()])
+        del s["capabilities"][0]["requires_graph"]
+        with self.assertRaises(ResearchError):
+            decide(s)
+
+    def test_reference_location_not_mislabelled_graph_edge(self):
+        r = relation(relation_source="reference_link", relation_id=None,
+                     reference={"query_id": "Q-1", "index": 0,
+                                "path": "src/Caller.java", "line": 42})
+        q = query("refs", relation_ids=[], reference_hits=[
+            {"index": 0, "path": "src/Caller.java", "line": 42}])
+        s = state("collaborators", caps=[cap("refs", "references")],
+                  queries=[q], claims=[r], diagram=["R-1"])
+        self.assertEqual(decide(s)["status"], "EVIDENCE_READY")
+        s["claims"][0]["reference"]["line"] = 43
+        self.assertEqual(decide(s)["action"], "justify-claims")
+
+    def test_reference_cannot_claim_graph_relation_id(self):
+        s = state("collaborators", caps=[cap("refs", "references")],
+                  queries=[query("refs", reference_hits=[{"index": 1, "path": "x", "line": 9}])],
+                  claims=[relation(relation_source="reference_link", relation_id="fake",
+                        reference={"query_id": "Q-1", "index": 1, "path": "x", "line": 9})],
+                  diagram=["R-1"])
+        self.assertEqual(decide(s)["action"], "justify-claims")
+
+    def test_reference_before_graph_on_collaboration(self):
+        s = state("collaborators", caps=[
+            cap("refs", "references"), cap("graph", "call_hierarchy", requires_graph=True)
+        ])
+        self.assertEqual(decide(s)["capability"], "refs")
+
+    def test_large_view_requests_split_instead_of_unreadable_diagram(self):
+        s = state(queries=[query()], claims=[entity()], diagram=["C-1"],
+                  view={"node_count": 29, "max_nodes": 15})
+        self.assertEqual(decide(s)["action"], "split-view")
+
+    def test_unsupported_persistence_requirement_skips_to_available_tool(self):
+        s = state("collaborators", caps=[
+            cap("persisted", "references", requires_persistence=True),
+            cap("refs", "references")
+        ])
+        self.assertEqual(decide(s)["capability"], "refs")
 
 
 if __name__ == "__main__":
