@@ -24,6 +24,11 @@ VIEW_ID = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
 LIMIT = 2 * 1024 * 1024
 WIDTH = 940
 NODE_X, NODE_W, NODE_H = 56, 360, 80
+DEFAULT_COLORS = {
+    "paper": "#f8f7f3", "surface": "#ffffff", "ink": "#202b39",
+    "stroke": "#293241", "muted": "#516173", "connector": "#64748b",
+}
+HEX_COLOR = re.compile(r"#[0-9a-fA-F]{6}\Z")
 
 
 class EditorialError(ValueError):
@@ -72,6 +77,39 @@ def title_lines(value: str) -> list[str]:
     if len(parts) > 2:
         raise EditorialError("symbol label too long for editorial view; make a narrower view")
     return parts
+
+
+def profile_colors(home: Path, profile: str) -> dict[str, str]:
+    """Load optional user-owned presentation tokens; never touch a checkout."""
+    if not VIEW_ID.fullmatch(profile):
+        raise EditorialError("invalid profile name")
+    if profile == "default":
+        return DEFAULT_COLORS.copy()
+    path = home / ".cognicode-diagrams" / "profiles" / (profile + ".json")
+    if any(p.is_symlink() for p in (path, *path.parents) if p != home.parent):
+        raise EditorialError("symlink in profile path")
+    if not path.is_file() or path.stat().st_size > 2048:
+        raise EditorialError("profile missing or oversized: " + profile)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeError) as exc:
+        raise EditorialError("invalid profile JSON") from exc
+    if (not isinstance(data, dict) or set(data) != set(DEFAULT_COLORS)
+            or any(not isinstance(c, str) or not HEX_COLOR.fullmatch(c) for c in data.values())):
+        raise EditorialError("profile must provide six hexadecimal color tokens")
+    def luminance(code: str) -> float:
+        values = [int(code[i:i+2], 16) / 255 for i in (1, 3, 5)]
+        channels = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
+        return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2]
+    def contrast(a: str, b: str) -> float:
+        x, y = sorted((luminance(a), luminance(b)))
+        return (y + .05) / (x + .05)
+    if min(contrast(data["paper"], data["ink"]),
+           contrast(data["surface"], data["ink"]),
+           contrast(data["paper"], data["muted"]),
+           contrast(data["surface"], data["muted"])) < 4.5:
+        raise EditorialError("profile fails 4.5:1 text contrast")
+    return data
 
 
 def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
@@ -169,8 +207,10 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
     return label, sorted(nodes, key=lambda n: n["symbol"]), edges, status
 
 
-def draw(label: str, nodes: list, edges: list, status: str) -> tuple[str, str]:
+def draw(label: str, nodes: list, edges: list, status: str,
+         colors: dict[str, str] | None = None) -> tuple[str, str]:
     esc = lambda v: escape(str(v), quote=True)
+    colors = colors or DEFAULT_COLORS
     positions = {n["symbol"]: 138 + i * 112 for i, n in enumerate(nodes)}
     height = 190 + 112 * len(nodes)
     paths, boxes = [], []
@@ -212,15 +252,15 @@ def draw(label: str, nodes: list, edges: list, status: str) -> tuple[str, str]:
 <title id="editorial-title">{esc(label)}</title>
 <desc id="editorial-desc">C4 static architecture projection based on {len(nodes)} selected entity claims and {len(edges)} relation claims; {esc(status)}. Ordering is visual, not execution order.</desc>
 <style>
-  .node {{fill:#ffffff;stroke:#293241;stroke-width:1.3}}
-  .connector {{fill:none;stroke:#64748b;stroke-width:1.5}}
-  .node-name {{fill:#202b39;font:600 14px system-ui,sans-serif}}
-  .node-tag {{fill:#516173;font:11px ui-monospace,monospace}}
-  .meta {{fill:#516173;font:12px system-ui,sans-serif}}
-  .headline {{fill:#202b39;font:600 23px system-ui,sans-serif}}
+  .node {{fill:{colors["surface"]};stroke:{colors["stroke"]};stroke-width:1.3}}
+  .connector {{fill:none;stroke:{colors["connector"]};stroke-width:1.5}}
+  .node-name {{fill:{colors["ink"]};font:600 14px system-ui,sans-serif}}
+  .node-tag {{fill:{colors["muted"]};font:11px ui-monospace,monospace}}
+  .meta {{fill:{colors["muted"]};font:12px system-ui,sans-serif}}
+  .headline {{fill:{colors["ink"]};font:600 23px system-ui,sans-serif}}
 </style>
-<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 8 4 L 0 8 Z" fill="#64748b"/></marker></defs>
-<rect width="{WIDTH}" height="{height}" fill="#f8f7f3"/>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 8 4 L 0 8 Z" fill="{colors["connector"]}"/></marker></defs>
+<rect width="{WIDTH}" height="{height}" fill="{colors["paper"]}"/>
 <text x="56" y="60" class="headline">{esc(label)}</text>
 <text x="56" y="86" class="meta">C4 · static evidence · {esc(status)}</text>
 <text x="56" y="110" class="meta">Layout is not execution order; open the atlas for sources and coverage.</text>
@@ -236,13 +276,13 @@ def draw(label: str, nodes: list, edges: list, status: str) -> tuple[str, str]:
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(label)} — CogniCode editorial</title>
-<style>body{{margin:0;background:#f8f7f3;color:#202b39;font:15px system-ui,sans-serif}}
+<style>body{{margin:0;background:{colors["paper"]};color:{colors["ink"]};font:15px system-ui,sans-serif}}
 main{{max-width:1080px;margin:32px auto;padding:0 22px}}
 .diagram{{max-width:100%;overflow-x:auto;border:1px solid #dddcd8}}
 .diagram svg{{display:block;min-width:{WIDTH}px;max-width:none}}
 h2{{font-size:18px}}table{{border-collapse:collapse;width:100%;table-layout:fixed}}
 td,th{{border-bottom:1px solid #d5d5d0;padding:10px;text-align:left;overflow-wrap:anywhere}}
-small{{color:#516173}}@media print{{.diagram{{overflow:visible}}.diagram svg{{min-width:0;width:100%;height:auto}}}}</style>
+small{{color:{colors["muted"]}}}@media print{{.diagram{{overflow:visible}}.diagram svg{{min-width:0;width:100%;height:auto}}}}</style>
 </head><body><main><div class="diagram">{svg}</div>
 <h2>Relaciones demostradas en la vista</h2>
 <table><thead><tr><th>Origen</th><th>Relación</th><th>Destino</th><th>Evidencia</th></tr></thead>
@@ -271,7 +311,8 @@ def write_owned(path: Path, content: str, workspace: Path) -> None:
             os.unlink(temp)
 
 
-def render(repo: Path, view_id: str, *, home: Path | None = None) -> dict:
+def render(repo: Path, view_id: str, *, home: Path | None = None,
+           profile: str = "default") -> dict:
     if not VIEW_ID.fullmatch(view_id):
         raise EditorialError("invalid view ID")
     info = inspect_workspace(repo, home=home)
@@ -279,7 +320,8 @@ def render(repo: Path, view_id: str, *, home: Path | None = None) -> dict:
         raise EditorialError("derived workspace is not ready")
     workspace = Path(info["workspace"])
     label, nodes, edges, status = model(workspace, view_id)
-    svg, page = draw(label, nodes, edges, status)
+    colors = profile_colors((home or Path.home()).expanduser().resolve(strict=True), profile)
+    svg, page = draw(label, nodes, edges, status, colors)
     folder = safe(workspace / "lenses" / "c4" / "renders", workspace)
     if not folder.is_dir():
         raise EditorialError("C4 renders directory missing")
@@ -292,7 +334,7 @@ def render(repo: Path, view_id: str, *, home: Path | None = None) -> dict:
             raise EditorialError("non-editorial output already exists: " + str(target))
     write_owned(svg_path, MARKER + "\n" + svg + "\n", workspace)
     write_owned(html_path, page, workspace)
-    return {"status": "EDITORIAL_RENDERED", "coverage": status, "entities": len(nodes),
+    return {"status": "EDITORIAL_RENDERED", "profile": profile, "coverage": status, "entities": len(nodes),
             "relations": len(edges), "svg": str(svg_path), "html": str(html_path),
             "note": "Add both output paths to the existing <view>.atlas.json assets, then atlas.py sync"}
 
@@ -301,9 +343,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, required=True, help="Explicit checkout root; identity only")
     parser.add_argument("--view", required=True, help="Existing C4 view report stem")
+    parser.add_argument("--profile", default="default", help="Optional HOME presentation profile")
     args = parser.parse_args(argv)
     try:
-        print(json.dumps(render(args.repo, args.view), ensure_ascii=False, indent=2))
+        print(json.dumps(render(args.repo, args.view, profile=args.profile), ensure_ascii=False, indent=2))
         return 0
     except (EditorialError, OSError) as exc:
         print(json.dumps({"status": "PARTIAL", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
