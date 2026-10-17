@@ -65,6 +65,8 @@ class EditorialTests(unittest.TestCase):
         self.assertIn('http-equiv="Content-Security-Policy"', html)
         self.assertNotIn("<script", html)
         self.assertIn("App::Api", html)
+        self.assertIn("Evidencia de componentes", html)
+        self.assertIn("<td>Q-1</td>", html)
         self.assertEqual(editorial.render(self.repo, "context", home=self.home), out)
         report = json.loads(self.report.read_text(encoding="utf-8"))
         report["assets"] += [
