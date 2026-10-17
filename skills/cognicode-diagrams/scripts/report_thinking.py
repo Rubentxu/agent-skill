@@ -246,6 +246,7 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
     }
     return {
         "generator": GENERATOR, "schema_version": 1, "kind": kind, "target_id": target_id,
+        "requested_context": context,
         "symbol_ids": target_symbols, "language": language,
         "beginner": {
             "what": (term_view["definition"] if term_view else
@@ -324,7 +325,13 @@ def markdown(data: dict) -> str:
 
 
 def paths(root: Path, data: dict) -> tuple[Path, Path]:
-    digest = hashlib.sha256((data["kind"] + "\0" + data["target_id"]).encode()).hexdigest()[:16]
+    # A symbol can have different meanings in different bounded contexts.
+    # Keep the old unscoped digest stable, but avoid overwriting scoped passports.
+    context = data.get("requested_context")
+    identity = data["kind"] + "\0" + data["target_id"]
+    if context is not None and data["kind"] == "symbol-passport":
+        identity += "\0context:" + context
+    digest = hashlib.sha256(identity.encode()).hexdigest()[:16]
     prefix = data["kind"] + "-" + digest
     folder = safe(root / "reports", root)
     return safe(folder / (prefix + ".report.json"), root), safe(folder / (prefix + ".report.md"), root)

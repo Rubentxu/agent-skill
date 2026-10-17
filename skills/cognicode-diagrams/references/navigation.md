@@ -145,3 +145,7 @@ El **mismo router** admite `intent=report` con `report.kind=term-card|symbol-pas
 Affordances ejecutables: `inspect-report-evidence` → `render-report` → `build-atlas` → `finish`. El primer paso guía `scripts/report_thinking.py --check` (valida el ledger HOME, sin escrituras); el segundo produce JSON/Markdown; el tercero `scripts/atlas.py sync` registra las fichas en el atlas actual. Todo el proceso es exclusivamente una **proyección**, no una consulta autónoma a CogniCode ni una certificación de código. Procedencia ajena a CogniCode, workspace inseguro y falta de evidencia **bloquean**, sin fallback de lectura. [Ejemplos y contratos](report-thinking.md).
 
 Las futuras `get-brief`, `inspect-evidence`, `expand-context`, `render-view` y `propose-term` pertenecen al roadmap [Moldable Knowledge](moldable-knowledge.md); **aún no figuran en `LINKS` ni están implementadas**.
+
+## Navegación moldable por símbolo (`intent=moldable`, M3 disponible)
+
+El router HATEOAS existente admite `intent=moldable` con `moldable.symbol` (identidad CogniCode) y `moldable.context` opcional. Pasos observables: `inspect-moldable` (`scripts/moldable_views.py --check`) → `render-moldable` (HTML/JSON contextual, solo HOME) → `build-atlas` → `open-moldable` → `finish`. No anuncia un diagrama no generado ni usa documentación, nombres o `grep` como evidencia. `prepared=ready` **no** suplanta la procedencia CogniCode, solo habilita la proyección. [Contrato M3](moldable-navigation.md).
