@@ -138,6 +138,10 @@ Son **acciones semánticas** que el agente implementa exclusivamente llamando a 
 
 `preflight-language` consulta soporte en el runtime instalado antes de C4; `inspect-session` identifica grafo/proceso; `build-graph` se ofrece por requisito real `requires_graph`, nunca por ausencia global de capacidades; `plan-view` obliga a registrar cantidad de nodos y `split-view` evita diagramas ilegibles. El helper sigue siendo puro, no conecta a CogniCode.
 
-## Próxima etapa: rutas moldables de conocimiento (NO implementadas)
+## Report Thinking — ruta moldable disponible (`intent=report`)
 
-El roadmap de [Moldable Knowledge](moldable-knowledge.md) propone `intent=report`, `get-brief`, `inspect-evidence`, `expand-context`, `render-view` y `propose-term` **solo como futuras affordances**. No figuran todavía en el router, no se ejecutan ni se anuncian como disponibles. Tendrán la misma política de sesión, workspace externo y exclusividad CogniCode que las acciones existentes. Las vistas y búsquedas se moldearán según el objeto/pregunta, sin segundo router ni nuevos analizadores.
+El **mismo router** admite `intent=report` con `report.kind=term-card|symbol-passport` y requiere `workspace=ready`. Campos de identidad: `term-card` exige `context` y `term`; `symbol-passport` exige `symbol` y admite `context` opcional. Los estados se observan y actualizan tras acciones reales: `prepared=unknown|ready|missing|invalid`, `render=absent|ready|stale|invalid`, `atlas_source=absent|stale|ready` y `language_status=unknown|candidate|accepted|disputed|deprecated|unmapped`.
+
+Affordances ejecutables: `inspect-report-evidence` → `render-report` → `build-atlas` → `finish`. El primer paso guía `scripts/report_thinking.py --check` (valida el ledger HOME, sin escrituras); el segundo produce JSON/Markdown; el tercero `scripts/atlas.py sync` registra las fichas en el atlas actual. Todo el proceso es exclusivamente una **proyección**, no una consulta autónoma a CogniCode ni una certificación de código. Procedencia ajena a CogniCode, workspace inseguro y falta de evidencia **bloquean**, sin fallback de lectura. [Ejemplos y contratos](report-thinking.md).
+
+Las futuras `get-brief`, `inspect-evidence`, `expand-context`, `render-view` y `propose-term` pertenecen al roadmap [Moldable Knowledge](moldable-knowledge.md); **aún no figuran en `LINKS` ni están implementadas**.
