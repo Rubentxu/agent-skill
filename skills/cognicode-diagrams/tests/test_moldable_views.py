@@ -98,6 +98,17 @@ class MoldableNavigationTests(unittest.TestCase):
         self.assertEqual(page["language"]["status"], "unmapped")
         self.assertEqual(len(page["language"]["alternative_contexts"]), 2)
 
+    def test_scoped_passports_do_not_overwrite_other_contexts(self):
+        sales = report.build(self.repo, "symbol-passport", symbol="App::Entry",
+                             context="almacen", home=self.home)
+        orchestration = report.build(self.repo, "symbol-passport", symbol="App::Entry",
+                                     context="orquestacion", home=self.home)
+        self.assertNotEqual(sales["json"], orchestration["json"])
+        self.assertTrue(Path(sales["json"]).is_file())
+        self.assertTrue(Path(orchestration["json"]).is_file())
+        self.assertEqual(json.loads(Path(sales["json"]).read_text())["language"]["status"], "candidate")
+        self.assertEqual(json.loads(Path(orchestration["json"]).read_text())["language"]["status"], "accepted")
+
     def test_only_real_correlated_entity_views_linked(self):
         view = self.w / "lenses/c4/reports/noclaim.atlas.json"
         view.write_text(json.dumps({"schema_version": 1, "label": "Wrong",
