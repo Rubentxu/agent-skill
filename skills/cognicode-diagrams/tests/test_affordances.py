@@ -271,6 +271,14 @@ class EditorialHateoasTests(unittest.TestCase):
             self.assertEqual(result["status"], "BLOCKED")
             self.assertEqual(result["_links"], [])
 
+    def test_declared_ready_cannot_bypass_cognicode_provenance(self):
+        for origin in ("other", "unknown"):
+            state = self.state(prepared="ready")
+            state["evidence_origin"] = origin
+            result = engine.affordances(state)
+            self.assertEqual(result["status"], "BLOCKED")
+            self.assertEqual(result["_links"], [])
+
     def test_planned_lens_cannot_use_editorial_as_bypass(self):
         result = engine.affordances(fixture(
             intent="editorial", lens="vertical-slice",
