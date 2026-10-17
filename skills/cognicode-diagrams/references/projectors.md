@@ -8,6 +8,7 @@ Los proyectores **solo** leen fuentes y renders creados por el agente bajo `~/.c
 | LikeC4 local | `lenses/*/sources/*.c4` | visor interactivo local |
 | Structurizr Local | `lenses/*/sources/workspace.dsl` | visor C1/C2/C3 local |
 | Markmap | `navigation/atlas.md` formado de sources/renders | `navigation/atlas.html` |
+| Editorial C4 (sin contenedor) | Claims/queries y `*.atlas.json` existentes, nunca fuente de checkout | `lenses/c4/renders/*.editorial.html|svg` (CSP, metadata de evidencia) |
 
 ## Contrato OCI y render
 
