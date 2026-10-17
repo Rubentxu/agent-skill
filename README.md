@@ -9,8 +9,7 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | Skill | Propósito | Estado |
 | --- | --- | --- |
 | [`code-quality-evidence-review`](skills/code-quality-evidence-review/SKILL.md) | Auditoría transversal de calidad con evidencia verificable, hallazgos reproducibles y herramientas opcionales para 12 dimensiones. | Disponible |
-| [`cognicode-quality-investigator`](skills/cognicode-quality-investigator/SKILL.md) | Adaptación de la skill de calidad: mismas doce dimensiones y evidencias, con CogniCode para descubrir símbolos, relaciones e impacto. | Disponible |
-| [`cognicode-diagrams`](skills/cognicode-diagrams/SKILL.md) | Orquestador de diagramas con CogniCode CLI/MCP, navegación por affordances y lentes extensibles. C4 disponible en Mermaid y Structurizr; otras lentes planificadas. | Disponible (C4) |
+| [`cognicode-diagrams`](skills/cognicode-diagrams/SKILL.md) | Investigación exclusivamente con CogniCode CLI/MCP, C4 y atlas HATEOAS; evolución planificada a informes agent-first, lenguaje ubicuo DDD y vistas moldables para personas y agentes. | Disponible (C4 y editorial); Report Thinking planificado |
 | [`delivery-first-testing`](skills/delivery-first-testing/SKILL.md) | Orquestación de testing orientado a valor: UAT efímeros, selección por impacto, promoción selectiva de regresiones y lentes navegables. | Disponible (router) |
 | [`distribution-first-release`](skills/distribution-first-release/SKILL.md) | Releases orientadas al consumidor: binarios instalables, higiene Git, source archives, SBOM/checksums, verificación de instalación y lentes HATEOAS-like. | Disponible (router + auditor) |
 | [`pipelinek-local-ci`](skills/pipelinek-local-ci/SKILL.md) | Bootstrap con mise/asdf, diseña/revisa/migra `pipeline.kts` y opera PipelineK como CI/CD local agent-first con DSL Jenkins-familiar, eventos y gates. | Disponible |
@@ -18,7 +17,7 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | [`mosat-technology-learning`](skills/mosat-technology-learning/SKILL.md) | Investigación y aprendizaje tecnológico con MOSAT: perspectivas disciplina/proceso/producto, 7P, fichas trazables, modelos sistémicos, validación y gaps agent-first. | Disponible |
 | [`agentchanges-review`](skills/agentchanges-review/SKILL.md) | Revisa diffs entre refs con agentchanges: notas ancladas por hash de contenido, elección de kind/status, previsualización, aplicación y verificación de parches sin perder al revisor de vista. | Disponible |
 
-Consulta los README de [la skill genérica](skills/code-quality-evidence-review/README.md) y [la alternativa CogniCode](skills/cognicode-quality-investigator/README.md) para ver cobertura, usos y precauciones. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
+Consulta el README de [la skill genérica de calidad](skills/code-quality-evidence-review/README.md) y la [skill CogniCode](skills/cognicode-diagrams/README.md). **La skill antigua `cognicode-quality-investigator` ha sido retirada**; no usar sus instrucciones, rutas ni fallback de lectura directa. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
 
 ## Instalación
 
@@ -28,9 +27,6 @@ npx skills add Rubentxu/agent-skill --list
 
 # Instalar solo la skill de calidad en OpenCode, en el proyecto actual
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode
-
-# Instalar únicamente la alternativa basada en CogniCode
-npx skills add Rubentxu/agent-skill --skill cognicode-quality-investigator --agent opencode
 
 # Crear diagramas C4 con CogniCode CLI/MCP (futuras lentes extensibles)
 npx skills add Rubentxu/agent-skill --skill cognicode-diagrams --agent opencode
@@ -76,13 +72,6 @@ agent-skill/
         ├── examples/                  # Ejemplos sintéticos
         ├── scripts/                   # Utilidades opcionales
         └── tests/                     # Pruebas y evaluaciones
-    ├── cognicode-quality-investigator/
-    │   ├── SKILL.md                   # Procedimiento CogniCode; independiente
-    │   ├── README.md
-    │   ├── references/                # Consultas CogniCode y criterios de calidad
-    │   ├── assets/                    # Plantilla de informe
-    │   ├── examples/                  # Caso sintético
-    │   └── tests/                     # Evaluaciones manuales de activación
     └── pipelinek-local-ci/
         ├── SKILL.md                   # CI local agent-first con PipelineK
         ├── README.md

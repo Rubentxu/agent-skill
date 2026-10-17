@@ -72,3 +72,7 @@ La skill requiere [preflight por versión, lenguaje, catálogo y proceso MCP](re
 ## Contexto visual tipado
 
 La [política de procedencia](references/visual-evidence.md) separa categorías implementadas e intención, preserva queries/cobertura y permite metadata de LikeC4. El [visor local de Markmap](references/projectors/markmap.md) se gestiona por `projectors.py` con el ciclo `status/start/stop/remove`; no es obligatorio para construir el atlas ni se inicia automáticamente.
+
+## Roadmap: lenguaje ubicuo y Moldable Development
+
+[**Moldable Knowledge**](references/moldable-knowledge.md) propone tarjetas de términos DDD por contexto, `Symbol Passport`, microbrief JSON para agentes y vistas interactivas para humanos desde el **mismo** ledger CogniCode. Es una propuesta, no una funcionalidad disponible todavía: no incorpora GT, analizadores paralelos ni permite leer el checkout.

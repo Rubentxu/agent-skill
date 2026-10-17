@@ -61,3 +61,7 @@ Validar con el parser de LikeC4 instalado. Repetir metadata solo donde correspon
 Cada observación útil actualiza ledger y `atlas.py sync`; cada nueva vista enlaza sus claims mediante `*.atlas.json`; render HTML solo para revisión visual/cierre. Nunca crear base de datos, otro MCP, servidor de análisis, nuevas UAT persistentes sin regresión crítica o diagramas con más de 15 nodos sin dividir.
 
 Referencia oficial: https://likec4.dev/dsl/model/ , https://likec4.dev/dsl/relationships/ , https://likec4.dev/dsl/views/dynamic/ , https://markmap.js.org/docs/packages--markmap-cli .
+
+## Evolución del lenguaje de las proyecciones (planificada)
+
+La categoría `glossary` actual es un **índice de términos observados**, NO un glosario DDD automáticamente validado. Separar la identidad técnica (`symbol_id`, `claim_ids`) del nombre humano (`context_id` + `term_id` + `label`). Conservar homónimos por contexto y diferenciar `candidate`, `accepted`, `disputed` y `deprecated`; solo atribuir `accepted` a una revisión explícita. En reportes y diagramas mostrar **el mismo término** y definición novice-friendly cuando esté acreditada, sin alterar ni deducir código a partir de ella. Contrato objetivo detallado en [Moldable Knowledge](moldable-knowledge.md).
