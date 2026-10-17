@@ -257,7 +257,7 @@ def report_affordances(state: dict) -> dict:
     coverage = enum({"claim_coverage": state.get("claim_coverage", "unknown")},
                     "claim_coverage", {"verified", "partial", "unknown"})
     language = enum({"language_status": r.get("language_status", "unknown")},
-                    "language_status", STATUSES | {"unknown", "unmapped"})
+                    "language_status", {"candidate", "accepted", "disputed", "deprecated", "unknown", "unmapped"})
     result = {"intent": "report", "kind": kind, "inputs": opts,
               "certification": "derived-presentation-only"}
     def offer(rel: str, reason: str, status="IN_PROGRESS", blockers=None) -> dict:
