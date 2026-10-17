@@ -11,6 +11,9 @@
 | Identificar colaboradores | `references`, `implementors`, `call_hierarchy` | extremos y relación |
 | Seguir interacción | `subgraph`, `trace_path` | camino estático acotado |
 | Organizar vista | `communities`, `graph_query` | grupos y subgrafos |
+| Analizar impacto de cambio | `impact_analysis`, `call_hierarchy`, `references`, `graph_query` | recorrido dirigido, origen, alcance y dirección de dependencias |
+| Investigar estructura de dependencias | `communities`, `graph_query`, `references`, `symbol_index` | entidades y aristas probadas en un alcance delimitado |
+| Descomponer bloques trazables | `symbol_context`, `members`, `type_references`, `graph_query` | identidad de cada bloque y relación respaldada por CogniCode |
 
 Los roles son ontología **de la skill**, no nombres invocables. El agente asocia cada rol exclusivamente con una operación **anunciada por CogniCode real** y su schema observado. Candidatas posibles incluyen `query_symbol_index`, `get_symbol_code`, `find_references`, `get_implementors`, `get_call_hierarchy`, `trace_path`, `graph_communities`, **solo si se descubren**. No inventar comandos, no requerir todas las candidatas.
 
@@ -29,7 +32,7 @@ Cada capacidad tiene un mapa `probes` indexado **por lenguaje del proyecto**. El
 
 Se trabaja **una pregunta concreta por sesión**; combinar luego claims contrastados de varias sesiones, nunca promesas o suposiciones. El router recibe `research` con:
 - `catalog=unknown|observed`.
-- `question={id,text,kind,language,target}`; kind: `responsibilities`, `understand_symbol`, `collaborators`, `interaction` o `view_grouping`.
+- `question={id,text,kind,language,target}`; kind: `responsibilities`, `understand_symbol`, `collaborators`, `interaction`, `view_grouping`, `change_impact`, `dependency_structure` o `traceable_decomposition`.
 - `capabilities[]` con nombre/runtime, rol, lenguajes, `advertised`, `schema_observed` y `probes:{lenguaje:probe}`. Nunca usar el probe de Rust para certificar Kotlin.
 - `queries[]` con `id`, `question_id`, `capability`, `target`, `mode=structured|symbol_context|text_candidate`, `status`, `coverage`, `symbol_ids`, `relation_ids` y `observation_plane`.
 - `claims[]` con `id`, `question_id`, `kind=entity|relation`, `status=observed`, `plane`, `query_ids` y `symbol_id` o `from_symbol,to_symbol,relation_id`.
@@ -54,7 +57,7 @@ Consultar [el ejemplo](../examples/session-c4.json), que es **sintético**, no e
 
 **Antibucle:** no repetir una capacidad sobre el mismo `target` cuando no hubo progreso; elegir otra capacidad de roles compatibles o terminar `PARTIAL`. Más detalle significa nueva pregunta/id/alcance. Una respuesta suficiente **elimina consultas adicionales**.
 
-La decisión pura verifica consistencia de **datos declarados**, no autenticidad criptográfica de respuestas CLI/MCP. El agente debe registrar el resultado real y una UAT debe comprobar que no inventa observaciones. Investigación textual alternativa autorizada es un **modo separado**, no `IMPLEMENTATION_GROUNDED` ni sustituto automático.
+La decisión pura verifica consistencia de **datos declarados**, no autenticidad criptográfica de respuestas CLI/MCP. El agente debe registrar el resultado real y una UAT debe comprobar que no inventa observaciones. Esta skill **no ofrece ningún modo alternativo de lectura de código por el LLM**. Si el runtime CogniCode no acredita el dato, detenerse en `PARTIAL/UNKNOWN`; jamás usar `read_file(raw)`, shells, agentes exploradores o repositorios remotos para obtenerlo.
 
 ## Gate de omisiones antes de dibujar
 
