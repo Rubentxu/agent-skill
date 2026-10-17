@@ -33,7 +33,11 @@ class EditorialTests(unittest.TestCase):
         }), encoding="utf-8")
         self.claims = self.w / "evidence/claims.json"
         self.queries = self.w / "evidence/queries.json"
-        self.queries.write_text(json.dumps([{"query_id": "Q-1"}]), encoding="utf-8")
+        self.queries.write_text(json.dumps([{
+            "query_id": "Q-1", "mode": "structured", "status": "ok",
+            "observation_plane": "static", "symbol_ids": ["App::Api", "App::Store"],
+            "relation_ids": ["rel-1"]
+        }]), encoding="utf-8")
         self.claims.write_text(json.dumps([
             {"claim_id": "C-1", "kind": "entity", "provenance": "OBSERVED_CODE",
              "symbol_id": "App::Api", "category": "surface", "coverage": "complete",
@@ -43,7 +47,7 @@ class EditorialTests(unittest.TestCase):
              "query_ids": ["Q-1"], "plane": "static"},
             {"claim_id": "R-1", "kind": "relation", "provenance": "OBSERVED_CODE",
              "from_symbol": "App::Api", "to_symbol": "App::Store",
-             "relation_source": "graph_edge", "attributes": {"kind": "calls"},
+             "relation_source": "graph_edge", "relation_id": "rel-1", "attributes": {"kind": "calls"},
              "coverage": "partial", "plane": "static", "query_ids": ["Q-1"]}
         ]), encoding="utf-8")
 
@@ -73,6 +77,21 @@ class EditorialTests(unittest.TestCase):
         self.assertIn("context.editorial.svg", nav)
         self.assertNotIn("![context.editorial.html]", nav)
         self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_query_id_alone_does_not_prove_a_structural_edge(self):
+        claims = json.loads(self.claims.read_text(encoding="utf-8"))
+        claims[-1]["relation_id"] = "invented-edge"
+        self.claims.write_text(json.dumps(claims), encoding="utf-8")
+        with self.assertRaisesRegex(editorial.EditorialError, "edge not corroborated"):
+            editorial.render(self.repo, "context", home=self.home)
+        self.assertFalse((self.w / "lenses/c4/renders/context.editorial.svg").exists())
+
+    def test_query_id_alone_does_not_prove_a_symbol(self):
+        claims = json.loads(self.claims.read_text(encoding="utf-8"))
+        claims[0]["symbol_id"] = "Invented::Symbol"
+        self.claims.write_text(json.dumps(claims), encoding="utf-8")
+        with self.assertRaisesRegex(editorial.EditorialError, "entity symbol not corroborated"):
+            editorial.render(self.repo, "context", home=self.home)
 
     def test_reference_link_cannot_be_forged_into_graph_edge(self):
         claims = json.loads(self.claims.read_text(encoding="utf-8"))
@@ -111,6 +130,9 @@ class EditorialTests(unittest.TestCase):
         claims[0]["symbol_id"] = "Api<unsafe>"
         claims[-1]["from_symbol"] = "Api<unsafe>"
         self.claims.write_text(json.dumps(claims), encoding="utf-8")
+        queries = json.loads(self.queries.read_text(encoding="utf-8"))
+        queries[0]["symbol_ids"].append("Api<unsafe>")
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
         html = Path(editorial.render(self.repo, "context", home=self.home)["html"]).read_text(encoding="utf-8")
         self.assertIn("Api&lt;unsafe&gt;", html)
         self.assertNotIn("<unsafe>", html)
