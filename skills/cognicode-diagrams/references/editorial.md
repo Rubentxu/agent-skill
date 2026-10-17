@@ -69,7 +69,7 @@ El atlas enlaza las dos salidas y crea miniaturas sólo para SVG/PNG/WebP. El pr
 
 ## Contrato HATEOAS (autodescubrimiento)
 
-El `intent=editorial` de `affordances.py` es **presentación**, no nueva investigación. El siguiente ejemplo es **estado ilustrativo observado por el agente**, no una prueba de código:
+El `intent=editorial` de `affordances.py` es **presentación**, no nueva investigación. `evidence_origin=cognicode` observado es obligatorio cuando `prepared=ready`; ningún estado del router puro puede demostrar autenticidad sin el runtime y su registro. El siguiente ejemplo es **estado ilustrativo observado por el agente**, no una prueba de código:
 
 ~~~json
 {
