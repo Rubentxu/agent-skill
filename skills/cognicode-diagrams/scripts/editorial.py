@@ -208,9 +208,18 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
 
 
 def draw(label: str, nodes: list, edges: list, status: str,
-         colors: dict[str, str] | None = None) -> tuple[str, str]:
+         colors: dict[str, str] | None = None, *,
+         pattern: str = "topology", focus: str | None = None) -> tuple[str, str]:
     esc = lambda v: escape(str(v), quote=True)
     colors = colors or DEFAULT_COLORS
+    if pattern not in {"topology", "dependencies", "traceability"}:
+        raise EditorialError("unsupported semantic editorial pattern")
+    if focus is not None and focus not in {n["symbol"] for n in nodes}:
+        raise EditorialError("focus is not a selected CogniCode symbol")
+    degrees = {n["symbol"]: [0, 0] for n in nodes}
+    for edge in edges:
+        degrees[edge["src"]][1] += 1
+        degrees[edge["dst"]][0] += 1
     positions = {n["symbol"]: 138 + i * 112 for i, n in enumerate(nodes)}
     height = 190 + 112 * len(nodes)
     paths, boxes = [], []
@@ -238,21 +247,34 @@ def draw(label: str, nodes: list, edges: list, status: str,
         y = positions[n["symbol"]]
         text = "".join(f'<text class="node-name" x="{NODE_X + 18}" y="{y + 29 + j * 18}">{esc(line)}</text>'
                        for j, line in enumerate(title_lines(n["symbol"])))
+        if pattern == "dependencies":
+            # Counts describe this SELECTED view, never a whole-repository fan-in.
+            tag = f'{n["category"]} · IN {degrees[n["symbol"]][0]} / OUT {degrees[n["symbol"]][1]} (vista)'
+        elif pattern == "traceability":
+            tag = f'{n["category"]} · claim {n["id"]}'
+            if len(tag) > 42:
+                raise EditorialError("claim ID too long for visible traceability badge")
+        else:
+            tag = n["category"]
+        focused = n["symbol"] == focus
         boxes.append(
             f'<g data-kind="component" data-symbol-id="{esc(n["symbol"])}" '
             f'data-claim-id="{esc(n["id"])}" data-query-ids="{esc(",".join(n["queries"]))}" '
-            f'data-plane="static" data-coverage="{esc(n["coverage"])}">'
-            f'<title>{esc(n["symbol"])} — {esc(n["id"])}</title>'
-            f'<rect x="{NODE_X}" y="{y}" width="{NODE_W}" height="{NODE_H}" rx="6" class="node"/>'
-            f'{text}<text class="node-tag" x="{NODE_X + 18}" y="{y + 68}">{esc(n["category"])}</text>'
+            f'data-plane="static" data-coverage="{esc(n["coverage"])}" '
+            f'data-in-degree="{degrees[n["symbol"]][0]}" data-out-degree="{degrees[n["symbol"]][1]}" '
+            f'data-focus="{str(focused).lower()}">'
+            f'<title>{esc(n["symbol"])} — {esc(n["id"])} · queries {esc(", ".join(n["queries"]))}</title>'
+            f'<rect x="{NODE_X}" y="{y}" width="{NODE_W}" height="{NODE_H}" rx="6" class="node{" focal" if focused else ""}"/>'
+            f'{text}<text class="node-tag" x="{NODE_X + 18}" y="{y + 68}">{esc(tag)}</text>'
             f'</g>'
         )
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="editorial-title editorial-desc"
  viewBox="0 0 {WIDTH} {height}" width="{WIDTH}" height="{height}">
 <title id="editorial-title">{esc(label)}</title>
-<desc id="editorial-desc">C4 static architecture projection based on {len(nodes)} selected entity claims and {len(edges)} relation claims; {esc(status)}. Ordering is visual, not execution order.</desc>
+<desc id="editorial-desc">C4 static architecture projection ({esc(pattern)}) based on {len(nodes)} selected entity claims and {len(edges)} relation claims; {esc(status)}. Ordering is visual, not execution order. Dependency counts are local to this view.</desc>
 <style>
   .node {{fill:{colors["surface"]};stroke:{colors["stroke"]};stroke-width:1.3}}
+  .node.focal {{stroke-width:3;stroke-dasharray:6 2}}
   .connector {{fill:none;stroke:{colors["connector"]};stroke-width:1.5}}
   .node-name {{fill:{colors["ink"]};font:600 14px system-ui,sans-serif}}
   .node-tag {{fill:{colors["muted"]};font:11px ui-monospace,monospace}}
@@ -262,7 +284,7 @@ def draw(label: str, nodes: list, edges: list, status: str,
 <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M 0 0 L 8 4 L 0 8 Z" fill="{colors["connector"]}"/></marker></defs>
 <rect width="{WIDTH}" height="{height}" fill="{colors["paper"]}"/>
 <text x="56" y="60" class="headline">{esc(label)}</text>
-<text x="56" y="86" class="meta">C4 · static evidence · {esc(status)}</text>
+<text x="56" y="86" class="meta">C4 · {esc(pattern)} · static evidence · {esc(status)}</text>
 <text x="56" y="110" class="meta">Layout is not execution order; open the atlas for sources and coverage.</text>
 {''.join(paths)}
 {''.join(boxes)}
@@ -289,6 +311,7 @@ small{{color:{colors["muted"]}}}@media print{{.diagram{{overflow:visible}}.diagr
 <tbody>{rows}</tbody></table>
 <p><small>{esc(status)}. SVG/HTML are visual projections, not verification of current code.
 Symbols, relations and query IDs come solely from the existing CogniCode ledger; inspect the atlas to audit them.
+Dependency IN/OUT metrics, if shown, count only the selected view, not the whole application.
 The positional order has no runtime meaning.</small></p></main></body></html>
 """
     return svg, html
@@ -311,8 +334,9 @@ def write_owned(path: Path, content: str, workspace: Path) -> None:
             os.unlink(temp)
 
 
-def render(repo: Path, view_id: str, *, home: Path | None = None,
-           profile: str = "default") -> dict:
+def inspect(repo: Path, view_id: str, *, home: Path | None = None,
+            profile: str = "default", pattern: str = "topology",
+            focus: str | None = None) -> dict:
     if not VIEW_ID.fullmatch(view_id):
         raise EditorialError("invalid view ID")
     info = inspect_workspace(repo, home=home)
@@ -321,7 +345,63 @@ def render(repo: Path, view_id: str, *, home: Path | None = None,
     workspace = Path(info["workspace"])
     label, nodes, edges, status = model(workspace, view_id)
     colors = profile_colors((home or Path.home()).expanduser().resolve(strict=True), profile)
-    svg, page = draw(label, nodes, edges, status, colors)
+    # Validate the actual projection, including focus and visual budget, without writing.
+    draw(label, nodes, edges, status, colors, pattern=pattern, focus=focus)
+    targets = [workspace / "lenses" / "c4" / "renders" / (view_id + suffix)
+               for suffix in (".editorial.svg", ".editorial.html")]
+    for target in targets:
+        safe(target, workspace)
+        if target.exists() and (not target.is_file() or not target.read_text(encoding="utf-8").startswith(MARKER)):
+            raise EditorialError("non-editorial output already exists: " + str(target))
+    return {"status": "EDITORIAL_INPUT_READY", "view": view_id, "pattern": pattern,
+            "profile": profile, "focus": focus, "coverage": status,
+            "entities": len(nodes), "relations": len(edges),
+            "source": "cognicode-derived-ledger", "code_access": "none"}
+
+
+def link_atlas(workspace: Path, view_id: str) -> bool:
+    """Update only the previously validated derived view report, never product files."""
+    report_path = safe(workspace / "lenses" / "c4" / "reports" / (view_id + ".atlas.json"), workspace)
+    report = load(report_path, workspace)
+    if not isinstance(report, dict) or not isinstance(report.get("assets"), list):
+        raise EditorialError("invalid derived view report")
+    extras = [f"lenses/c4/renders/{view_id}.editorial.svg",
+              f"lenses/c4/renders/{view_id}.editorial.html"]
+    assets = report["assets"]
+    if any(not isinstance(x, str) for x in assets):
+        raise EditorialError("invalid view assets")
+    for extra in extras:
+        if not (workspace / extra).is_file():
+            raise EditorialError("editorial asset not generated: " + extra)
+    additions = [extra for extra in extras if extra not in assets]
+    if not additions:
+        return False
+    updated = dict(report, assets=assets + additions)
+    fd, tmp = tempfile.mkstemp(prefix=".view-editorial-", dir=report_path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(updated, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, report_path)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+    return True
+
+
+def render(repo: Path, view_id: str, *, home: Path | None = None,
+           profile: str = "default", pattern: str = "topology",
+           focus: str | None = None, link: bool = False) -> dict:
+    if not VIEW_ID.fullmatch(view_id):
+        raise EditorialError("invalid view ID")
+    info = inspect_workspace(repo, home=home)
+    if info["status"] != "ready":
+        raise EditorialError("derived workspace is not ready")
+    workspace = Path(info["workspace"])
+    label, nodes, edges, status = model(workspace, view_id)
+    colors = profile_colors((home or Path.home()).expanduser().resolve(strict=True), profile)
+    svg, page = draw(label, nodes, edges, status, colors, pattern=pattern, focus=focus)
     folder = safe(workspace / "lenses" / "c4" / "renders", workspace)
     if not folder.is_dir():
         raise EditorialError("C4 renders directory missing")
@@ -334,7 +414,9 @@ def render(repo: Path, view_id: str, *, home: Path | None = None,
             raise EditorialError("non-editorial output already exists: " + str(target))
     write_owned(svg_path, MARKER + "\n" + svg + "\n", workspace)
     write_owned(html_path, page, workspace)
-    return {"status": "EDITORIAL_RENDERED", "profile": profile, "coverage": status, "entities": len(nodes),
+    linked = link_atlas(workspace, view_id) if link else False
+    return {"status": "EDITORIAL_RENDERED", "profile": profile, "pattern": pattern,
+            "focus": focus, "atlas_linked": linked, "coverage": status, "entities": len(nodes),
             "relations": len(edges), "svg": str(svg_path), "html": str(html_path),
             "note": "Add both output paths to the existing <view>.atlas.json assets, then atlas.py sync"}
 
@@ -344,9 +426,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", type=Path, required=True, help="Explicit checkout root; identity only")
     parser.add_argument("--view", required=True, help="Existing C4 view report stem")
     parser.add_argument("--profile", default="default", help="Optional HOME presentation profile")
+    parser.add_argument("--pattern", default="topology",
+                        choices=("topology", "dependencies", "traceability"),
+                        help="One evidence-preserving semantic presentation pattern")
+    parser.add_argument("--focus", help="Exact CogniCode symbol_id in the selected view")
+    parser.add_argument("--check", action="store_true", help="Validate inputs and budgets without writing")
+    parser.add_argument("--link-atlas", action="store_true",
+                        help="After rendering, add existing editorial assets to the derived view report")
     args = parser.parse_args(argv)
     try:
-        print(json.dumps(render(args.repo, args.view, profile=args.profile), ensure_ascii=False, indent=2))
+        if args.check and args.link_atlas:
+            parser.error("--check and --link-atlas cannot be combined")
+        result = (inspect(args.repo, args.view, profile=args.profile,
+                          pattern=args.pattern, focus=args.focus)
+                  if args.check else
+                  render(args.repo, args.view, profile=args.profile,
+                         pattern=args.pattern, focus=args.focus, link=args.link_atlas))
+        print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except (EditorialError, OSError) as exc:
         print(json.dumps({"status": "PARTIAL", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
