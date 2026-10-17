@@ -138,6 +138,44 @@ class EditorialTests(unittest.TestCase):
             editorial.render(self.repo, "context", home=self.home, profile="bad")
         self.assertFalse((self.w / "lenses/c4/renders/context.editorial.html").exists())
 
+    def test_check_only_preflight_does_not_write(self):
+        readiness = editorial.inspect(self.repo, "context", home=self.home,
+                                      pattern="traceability", focus="App::Api")
+        self.assertEqual(readiness["status"], "EDITORIAL_INPUT_READY")
+        self.assertEqual(readiness["source"], "cognicode-derived-ledger")
+        self.assertFalse((self.w / "lenses/c4/renders/context.editorial.html").exists())
+
+    def test_dependency_pattern_exposes_only_local_evidenced_counts(self):
+        report = editorial.render(self.repo, "context", home=self.home,
+                                  pattern="dependencies", focus="App::Api", link=True)
+        svg = Path(report["svg"]).read_text(encoding="utf-8")
+        self.assertIn("IN 0 / OUT 1 (vista)", svg)
+        self.assertIn('data-in-degree="1"', svg)
+        self.assertIn('data-focus="true"', svg)
+        self.assertIn('class="node focal"', svg)
+        data = json.loads(self.report.read_text(encoding="utf-8"))
+        self.assertIn("lenses/c4/renders/context.editorial.html", data["assets"])
+        self.assertIn("lenses/c4/renders/context.editorial.svg", data["assets"])
+        self.assertFalse(editorial.render(self.repo, "context", home=self.home,
+                                         pattern="dependencies", focus="App::Api",
+                                         link=True)["atlas_linked"])
+
+    def test_traceability_visibly_cites_claim_without_inventing_nodes(self):
+        rendered = editorial.render(self.repo, "context", home=self.home,
+                                    pattern="traceability")
+        svg = Path(rendered["svg"]).read_text(encoding="utf-8")
+        self.assertIn("claim C-1", svg)
+        self.assertEqual(svg.count('data-kind="component"'), 2)
+        self.assertEqual(svg.count('data-claim-id="R-1"'), 1)
+
+    def test_unknown_focus_or_presentation_pattern_fails_closed(self):
+        with self.assertRaisesRegex(editorial.EditorialError, "focus"):
+            editorial.inspect(self.repo, "context", home=self.home,
+                              focus="Invented::Code")
+        with self.assertRaisesRegex(editorial.EditorialError, "pattern"):
+            editorial.inspect(self.repo, "context", home=self.home, pattern="animation")
+        self.assertFalse((self.w / "lenses/c4/renders/context.editorial.svg").exists())
+
     def test_derived_inputs_only_and_no_output_for_invalid_view(self):
         report = json.loads(self.report.read_text(encoding="utf-8"))
         report["assets"] = ["../../repo/README.md"]
