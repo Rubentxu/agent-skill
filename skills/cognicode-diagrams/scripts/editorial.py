@@ -151,6 +151,7 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
     if (len(qids) != len(queries) or any(not isinstance(q, str) or not q for q in qids)
             or len(set(qids)) != len(qids)):
         raise EditorialError("queries must have unique IDs")
+    query_by_id = {q.get("query_id", q.get("id")): q for q in queries}
     claims = records(load(workspace / "evidence" / "claims.json", workspace), "claims")
     by_id = {}
     for claim in claims:
@@ -178,9 +179,19 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
             raise EditorialError("invalid coverage: " + cid)
         if coverage != "complete":
             status = "PARTIAL / UNKNOWN COVERAGE"
+        # Query ID existence alone is NOT structural evidence. The actual
+        # CogniCode query records must corroborate symbol/edge identity.
+        selected_queries = [query_by_id[q] for q in query_ids]
+        relevant_queries = [q for q in selected_queries
+                            if q.get("mode") in {"structured", "symbol_context"}
+                            and q.get("status") in {"ok", "partial"}
+                            and q.get("observation_plane", "static") == "static"]
         kind = claim.get("kind", "entity")
         if kind == "entity":
             symbol = plain(claim.get("symbol_id"), "symbol_id")
+            if not any(symbol in q.get("symbol_ids", []) for q in relevant_queries
+                       if isinstance(q.get("symbol_ids"), list)):
+                raise EditorialError("entity symbol not corroborated by CogniCode query: " + cid)
             if not isinstance(claim.get("category", "symbol"), str):
                 raise EditorialError("invalid claim category: " + cid)
             if symbol in symbols:
@@ -193,6 +204,14 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
                 raise EditorialError("reference_link is not an architectural edge: " + cid)
             src = plain(claim.get("from_symbol"), "from_symbol")
             dst = plain(claim.get("to_symbol"), "to_symbol")
+            relation_id = plain(claim.get("relation_id"), "relation_id")
+            if not any(q.get("mode") == "structured" and
+                       relation_id in q.get("relation_ids", []) and
+                       src in q.get("symbol_ids", []) and dst in q.get("symbol_ids", [])
+                       for q in relevant_queries
+                       if isinstance(q.get("relation_ids"), list)
+                       and isinstance(q.get("symbol_ids"), list)):
+                raise EditorialError("edge not corroborated by CogniCode query: " + cid)
             if src == dst:
                 raise EditorialError("self-loop requires another representation: " + cid)
             attrs = claim.get("attributes", {})
