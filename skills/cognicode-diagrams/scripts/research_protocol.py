@@ -15,6 +15,11 @@ QUESTION_ROLES: dict[str, tuple[str, ...]] = {
     "collaborators": ("symbol_index", "references", "implementors", "call_hierarchy", "symbol_context"),
     "interaction": ("symbol_index", "references", "subgraph", "trace_path", "symbol_context"),
     "view_grouping": ("communities", "graph_query"),
+    # Semantic roles only. A tool must be discovered and probed on the
+    # installed CogniCode runtime and language; no hardcoded MCP tool names.
+    "change_impact": ("impact_analysis", "call_hierarchy", "references", "graph_query"),
+    "dependency_structure": ("communities", "graph_query", "references", "symbol_index"),
+    "traceable_decomposition": ("symbol_context", "members", "type_references", "graph_query"),
 }
 STRUCTURED_MODES = {"structured", "symbol_context"}
 DENIED_MODES = {"raw", "repository_read", "external_indexer"}
