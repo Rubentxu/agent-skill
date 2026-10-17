@@ -79,6 +79,8 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
     if not isinstance(report, dict) or report.get("schema_version") != 1 or report.get("plane", "implementation") != "implementation":
         raise EditorialError("requires a C4 implementation view report")
     label = plain(report.get("label"), "view label")
+    if len(label) > 70:
+        raise EditorialError("view label too long for an accessible editorial header")
     ids = report.get("claim_ids")
     assets = report.get("assets")
     if (not isinstance(ids, list) or not ids or len(ids) > 40 or len(set(map(str, ids))) != len(ids)
@@ -97,7 +99,8 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
 
     queries = records(load(workspace / "evidence" / "queries.json", workspace), "queries")
     qids = [q.get("query_id", q.get("id")) for q in queries if isinstance(q, dict)]
-    if len(qids) != len(queries) or len(set(qids)) != len(qids) or any(not isinstance(q, str) or not q for q in qids):
+    if (len(qids) != len(queries) or any(not isinstance(q, str) or not q for q in qids)
+            or len(set(qids)) != len(qids)):
         raise EditorialError("queries must have unique IDs")
     claims = records(load(workspace / "evidence" / "claims.json", workspace), "claims")
     by_id = {}
@@ -129,6 +132,8 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
         kind = claim.get("kind", "entity")
         if kind == "entity":
             symbol = plain(claim.get("symbol_id"), "symbol_id")
+            if not isinstance(claim.get("category", "symbol"), str):
+                raise EditorialError("invalid claim category: " + cid)
             if symbol in symbols:
                 raise EditorialError("duplicate symbol in selected view: " + symbol)
             symbols.add(symbol)
