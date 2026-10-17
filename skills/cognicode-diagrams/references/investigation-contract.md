@@ -14,7 +14,7 @@ Esta política es normativa para `SKILL.md`, lentes, formatos, ejemplos, scripts
 | Scripts de skill | sus propios assets y workspace derivado, comprobación de la ruta `--repo` | analizar contenido del repo o ejecutar Git contra él |
 | Proyectores | diagramas, SVG/PNG, atlas, fuentes del workspace externo | montar o investigar checkout Git; decidir arquitectura |
 
-No usar documentos **aunque CogniCode los devuelva** para probar arquitectura. Solicitar símbolos, AST, enlaces a código y fragmentos de implementación mediante CogniCode. Las afirmaciones del usuario o los diagramas previos pueden servir para plantear **preguntas**, nunca para afirmar implementación.
+**El LLM y sus subagentes nunca leen directamente archivos del checkout, ni siquiera a través de una capacidad genérica de lectura.** Se permiten exclusivamente respuestas estructuradas y fragmentos acotados POR SÍMBOLO solicitados a CogniCode. No usar documentos **aunque CogniCode los devuelva** para probar arquitectura. Solicitar símbolos, AST, enlaces a código y fragmentos de implementación mediante CogniCode. Las afirmaciones del usuario o los diagramas previos pueden servir para plantear **preguntas**, nunca para afirmar implementación.
 
 ## Bucle activo obligatorio
 
@@ -53,7 +53,7 @@ Guardar, de forma limitada y sin secretos, un ledger con `query_id`, interface, 
 
 **Exclusividad de CogniCode no significa autorizar cualquier tool CogniCode como analizador.** Antes de llamar, elegir por pregunta una capacidad estructurada anunciada y comprobarla sobre un símbolo real del lenguaje; `read_file(raw)`/`search_content` no son reemplazos válidos. La búsqueda textual solo localiza candidatos, confirmados por operaciones de símbolos/relaciones. La prueba de compatibilidad se registra por herramienta + lenguaje, no a nivel global.
 
-El agente y sus subagentes deben producir [estado de decisión y claims](research-protocol.md); sin prueba no hay arquitectura implementada. Al hallar suficiente evidencia se detienen. Sin mejora, terminan la pregunta `PARTIAL/UNKNOWN` tras presupuesto finito. Una autorización explícita de investigación textual alternativa se gestiona **fuera** de esta skill y nunca se certifica como arquitectura estructural verificada.
+El agente y sus subagentes deben producir [estado de decisión y claims](research-protocol.md); sin prueba no hay arquitectura implementada. Al hallar suficiente evidencia se detienen. Sin mejora, terminan la pregunta `PARTIAL/UNKNOWN` tras presupuesto finito. **No existe excepción dentro de esta skill** que permita al LLM, subagentes, proyectores o herramientas auxiliares abrir archivos del checkout. Ni autorización informal ni fallo de CogniCode habilitan lectura directa, `read_file(raw)`, `search_content` como sustituto, Git, GitHub, IDE u otro indexador. Salir de esta skill para una operación distinta exige un flujo separado y sus resultados no pueden contaminar el ledger CogniCode.
 
 ## Evidencia alternativa y sesión verificada
 
