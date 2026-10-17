@@ -1,6 +1,6 @@
 # Moldable Knowledge — lenguaje compartido para personas y agentes
 
-> **Estado: propuesta de evolución, NO disponible en runtime.** La única capacidad ejecutable actualmente es la investigación y proyección existente en `cognicode-diagrams` (C4, editorial y atlas). Este documento define el contrato objetivo y los hitos de adopción; no anuncia nuevos `rel` como implementados.
+> **Estado mixto:** M1 (Term Card) y M2 (Symbol Passport JSON/Markdown con router e integración al atlas) **implementados** en [Report Thinking MVP](report-thinking.md). Las vistas contextuales dinámicas, secuencias pedagógicas, Change Impact Brief y handoff siguen **planificados**. No anunciar como ejecutables enlaces `rel` futuros.
 
 ## Tesis: entender juntos el mismo objeto
 
@@ -71,9 +71,9 @@ Una pregunta nueva sin instrumento pertinente no obliga a programar un proyector
 
 ## 4. Report Thinking: contrato de proyección único
 
-**Propuesta**: añadir `intent=report` al router puro existente, tras validarlo; `report` es una **presentación**, no una nueva lente de análisis. La lente/tema de pregunta y la proyección son dimensiones independientes; una misma investigación puede ofrecer `brief.json`, `brief.md`, `diagram.svg`, `atlas.html`. Todos comparten `claim_ids`, `query_ids`, `term_ids` y versión de evidencia, sin duplicar los datos como autoridad nueva.
+**Implementado en el MVP**: `intent=report` en el router puro existente; `report` es una **presentación**, no una nueva lente de análisis. La lente/tema de pregunta y la proyección son dimensiones independientes; una misma investigación puede ofrecer `brief.json`, `brief.md`, `diagram.svg`, `atlas.html`. Todos comparten `claim_ids`, `query_ids`, `term_ids` y versión de evidencia, sin duplicar los datos como autoridad nueva.
 
-Esquema ilustrativo conceptual, **NO API implementada**:
+Esquema ilustrativo conceptual de futuras ampliaciones, **no equivale al contrato exacto implementado** (véase [report-thinking.md](report-thinking.md)):
 
 ```json
 {
@@ -133,8 +133,8 @@ Ruta de ejemplo **planificada**:
 | Hito | Valor entregable | Prueba mínima / cierre |
 |---|---|---|
 | **M0 — Higiene** | Retirar skill obsoleta `cognicode-quality-investigator` y rutas de catálogo; conservar las skills independientes instalables | Validador del repositorio y sin enlaces rotos |
-| **M1 — Term Card** | Un `term_id` contextual desde claims existentes y etiqueta para principiante que no falsea DDD | Ejemplo sintético: dos contextos con mismo término quedan separados; candidato nunca aparece como aprobado |
-| **M2 — Symbol Passport** | `intent=report` devuelve un brief agent-first y Markdown humano con mismos IDs/evidencias | Una consulta CogniCode real, sin lecturas directas ni segunda consulta si basta |
+| **M1 — Term Card (implementado)** | Un `term_id` contextual desde vocabulario externo y claims existentes; etiqueta para principiante | Dos contextos con mismo término quedan separados; candidato nunca aparece como aprobado |
+| **M2 — Symbol Passport (implementado, UAT real pendiente)** | `intent=report` devuelve JSON agent-first y Markdown humano con mismos IDs/evidencias | Unit tests sobre ledger sintético; ejecutar UAT CogniCode real por lenguaje antes de afirmar compatibilidad |
 | **M3 — Contextual View** | Desde ficha de símbolo poder abrir C4, dependencias o evidencia y recuperar al informe | Un UAT efímero con navegación bidireccional y revisión visual |
 | **M4 — Change Impact Brief** | Un agente inicia una mejora con consumidores/contratos/lagunas sin buscar archivos | Comparar coste de tokens/consultas vs investigación repetida; cerrar `PARTIAL` ante limitaciones |
 | **M5 — Journeys y handoff** | Cápsula portátil con contexto, términos, preguntas y revisión; reanudación acreditada | Segundo agente continúa sin doble exploración ni usar evidencia stale |
