@@ -41,11 +41,13 @@ El router existente `scripts/affordances.py` admite `intent=editorial` y descubr
 
 El router semántico admite `topology`, `dependencies` (IN/OUT **solo del subgrafo seleccionado**) y `traceability` (claim visible), `--focus` por símbolo y perfiles externos. `pattern=auto` elige según el tipo de pregunta, pero **no** descubre componentes ni ejecuta herramientas por sí solo. Para `change_impact`, `dependency_structure` y `traceable_decomposition`, el agente descubre capacidades estructuradas pertinentes en **su CogniCode instalado**, las sondea por lenguaje y consulta solo si faltan hechos. [Protocolo y patrones](references/editorial.md).
 
-## Siguiente evolución: lenguaje ubicuo y pensamiento moldable (PLANIFICADO)
+## Report Thinking y lenguaje moldable — Term Card + Symbol Passport (READY)
 
-**No disponible aún:** [Moldable Knowledge](references/moldable-knowledge.md) define un nexo común DDD entre personas y agentes: vocabulario **por contexto** (no un glosario global inventado), fichas de significado fáciles para principiantes, `Symbol Passport`/microbrief agent-first y acciones/vistas/búsquedas **contextuales** que el router HATEOAS solo anunciará si CogniCode las soporta. Cada etiqueta humana se enlaza a un `symbol_id` y claims reales; `candidate` no es `accepted` y una etiqueta bonita no justifica una relación arquitectónica. Los futuros informes y diagramas son **proyecciones de la misma evidencia**, no autoridades nuevas.
+**MVP implementado:** `intent=report` en el router HATEOAS actual y [report_thinking.py](scripts/report_thinking.py) producen dos proyecciones desde **el mismo ledger CogniCode**: JSON pequeño para agentes y Markdown en lenguaje sencillo para humanos. `--kind term-card --context <context_id> --term <term_id>` recupera un término de `evidence/terms.json` (en HOME), y `--kind symbol-passport --symbol <symbol_id>` exige una entidad realmente corroborada por una query estructurada CogniCode. El estado `candidate` jamás equivale a `accepted`: este último requiere `curator` humano. Dos contextos DDD que compartan término no se fusionan. Si hay ambigüedad, mostrar ID técnico y contextos posibles, no escoger al azar.
 
-El objetivo moldable es partir de la pregunta y **adaptar la vista al objeto**, no producir todos los informes ni copiar Glamorous Toolkit. No añadir comandos `rel` de propuesta al router como si estuvieran implementados. El atlas actual puede seguir navegando los claims y sus proyecciones sin cambios.
+**Workflow:** investigación CogniCode ya existente → `scripts/report_thinking.py --check` → render JSON/Markdown → `scripts/atlas.py sync` → `finish`. Ningún proyector lee código/config/documentos, usa `grep`, ni deduce semántica desde el repositorio. Un `query_id` solo no corrobora identidad: debe identificar símbolo o arista y sus extremos. Las etiquetas humanas no cambian el ID técnico ni convierten intención curada en implementación. [Guía operativa y límites](references/report-thinking.md).
+
+El resto del enfoque [Moldable Knowledge](references/moldable-knowledge.md) —vistas contextuales dinámicas, drill-down y cambio-impacto— sigue **planificado**. No anunciar esas affordances como implementadas y no copiar Glamorous Toolkit completo.
 
 ## Proyección editorial opcional — criterios de diagram-design
 
