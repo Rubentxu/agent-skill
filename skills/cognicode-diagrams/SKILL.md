@@ -41,6 +41,12 @@ El router existente `scripts/affordances.py` admite `intent=editorial` y descubr
 
 El router semántico admite `topology`, `dependencies` (IN/OUT **solo del subgrafo seleccionado**) y `traceability` (claim visible), `--focus` por símbolo y perfiles externos. `pattern=auto` elige según el tipo de pregunta, pero **no** descubre componentes ni ejecuta herramientas por sí solo. Para `change_impact`, `dependency_structure` y `traceable_decomposition`, el agente descubre capacidades estructuradas pertinentes en **su CogniCode instalado**, las sondea por lenguaje y consulta solo si faltan hechos. [Protocolo y patrones](references/editorial.md).
 
+## Siguiente evolución: lenguaje ubicuo y pensamiento moldable (PLANIFICADO)
+
+**No disponible aún:** [Moldable Knowledge](references/moldable-knowledge.md) define un nexo común DDD entre personas y agentes: vocabulario **por contexto** (no un glosario global inventado), fichas de significado fáciles para principiantes, `Symbol Passport`/microbrief agent-first y acciones/vistas/búsquedas **contextuales** que el router HATEOAS solo anunciará si CogniCode las soporta. Cada etiqueta humana se enlaza a un `symbol_id` y claims reales; `candidate` no es `accepted` y una etiqueta bonita no justifica una relación arquitectónica. Los futuros informes y diagramas son **proyecciones de la misma evidencia**, no autoridades nuevas.
+
+El objetivo moldable es partir de la pregunta y **adaptar la vista al objeto**, no producir todos los informes ni copiar Glamorous Toolkit. No añadir comandos `rel` de propuesta al router como si estuvieran implementados. El atlas actual puede seguir navegando los claims y sus proyecciones sin cambios.
+
 ## Proyección editorial opcional — criterios de diagram-design
 
 Para explicar una topología C4 ya investigada con claridad visual, seleccionar **primero el significado**, después la representación. C4 técnico sigue siendo la autoridad de modelo; una vista editorial HTML/SVG es **otra proyección del mismo ledger**, no una nueva fuente de verdad. **No copiar 45 tipos, no releer checkout ni usar Mermaid como evidencia.**
