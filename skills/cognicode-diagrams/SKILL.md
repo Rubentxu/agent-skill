@@ -41,7 +41,7 @@ Para explicar una topología C4 ya investigada con claridad visual, seleccionar 
 
 - Ejecutar `python3 scripts/editorial.py --repo <raíz explícita> --view <id>` **solo** para una vista C4 de implementación con entidades y `graph_edge` acreditadas por queries existentes; ninguna `reference_link` se eleva a arista.
 - La proyección limita 2–9 nodos, 12 aristas y 5 conexiones por nodo; no omite elementos para caber, sino que rechaza selecciones demasiado grandes. `PARTIAL/UNKNOWN` se muestra si la cobertura no es completa.
-- Añadir ambos resultados `*.editorial.svg` y `*.editorial.html` al `*.atlas.json` existente; sincronizar Markmap. El HTML se sirve aislado por CSP, no ejecuta JS ni requiere contenedor.
+- Añadir ambos resultados `*.editorial.svg` y `*.editorial.html` al `*.atlas.json` existente; sincronizar Markmap. El HTML se sirve aislado por CSP, no ejecuta JS ni requiere contenedor. Los perfiles opcionales `--profile` se leen exclusivamente de `~/.cognicode-diagrams/profiles/`, con contrastes verificados; la elección de tema no cambia la evidencia.
 - Para dependencias, secuencias o UML cuyas lentes siguen `planned`, no prometer soporte. Si una tabla responde igual de bien, no dibujar.
 
 [Router, contrato, límites y uso](references/editorial.md). La salida editorial no convierte `RENDERED` en `IMPLEMENTATION_GROUNDED`.
