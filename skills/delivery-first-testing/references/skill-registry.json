@@ -16,7 +16,7 @@
       "purpose": "Ejecutar gates locales con identidad PipelineK sin crear CI paralela"
     },
     {
-      "id": "cognicode-quality-investigator",
+      "id": "cognicode-diagrams",
       "intents": [
         "feature",
         "audit"
@@ -26,7 +26,7 @@
         "api",
         "unknown"
       ],
-      "purpose": "Inspeccionar relaciones y consumidores con evidencia CogniCode"
+      "purpose": "Consulta estructurada CogniCode-only de símbolos, contexto arquitectónico y consumidores; sin lectura directa ni auditoría de calidad autónoma"
     },
     {
       "id": "retrospective-cycle-audit",
