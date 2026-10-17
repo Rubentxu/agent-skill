@@ -15,6 +15,24 @@ CogniCode CLI/MCP conserva la **autoridad exclusiva** sobre investigación. Clai
 
 El significado manda sobre el formato. No crear una segunda figura si la primera ya resuelve la pregunta.
 
+## Patrones útiles incorporados de diagram-design
+
+La elección es **semántica antes que estética**. Solo tres patrones son proyecciones preparadas, todos sobre la **misma lente C4** y los **mismos claims estructurados de CogniCode**; no registrar nuevas lentes ni copiar diagram-design.
+
+| Pregunta | `--pattern` | Evidencia permitida | Qué añade la proyección |
+|---|---|---|---|
+| ¿Qué estructura está implementada? | `topology` | Entidades + `graph_edge` seleccionadas | Vista C4 sobria y estable |
+| ¿De qué depende este componente? | `dependencies` | Las mismas relaciones demostradas | Grados IN/OUT de **esta vista**, nunca centralidad global |
+| ¿Qué evidencia respalda cada bloque? | `traceability` | Claims, query IDs, símbolos corroborados | Identificadores de claim visibles y metadata por elemento |
+
+`--focus <symbol_id>` marca un nodo observado sin cambiar topología ni evidencia (marco discontinuo además de color). `--profile` configura apariencia con perfiles externos y contraste controlado. **No se permite reducir el alcance sin hacerlo explícito:** 2–9 nodos, 12 relaciones, 5 puertos incidentes; excederlo implica dividir la vista, no borrar aristas.
+
+Otros patrones evaluados: `lifecycle phase map` y `paired policy traces` aportan valor para retries, cancelación y gates, pero requieren transiciones y orden corroborados que hoy no garantiza C4 estático. `architecture delta` exige dos snapshots realmente observados y continuidad de identidad; **no** se genera a partir de nombres o commits supuestos. `secure paved road`, controles de gobernanza y defensa en capas requieren evidencia específica de fronteras/controles: nunca completar huecos a partir de documentación de seguridad. Se mantienen **NO READY**. Gráficos de negocio, Sankey y animaciones no aportan valor suficiente a la investigación arquitectónica actual.
+
+### Preguntas y capacidades CogniCode
+
+El agente formula una pregunta `change_impact`, `dependency_structure` o `traceable_decomposition` y usa los **roles semánticos** del `research_protocol.py`. Los roles no son comandos MCP: hay que descubrir tool real, schema, estabilidad, requisitos de grafo/persistencia y soporte/probe por lenguaje **en el CogniCode instalado**. Ejemplos de capacidades potenciales: análisis de impacto, comunidades, consultas de grafo, referencias, jerarquías, miembros y código acotado por símbolo. Si no se anuncian o no funcionan, usar otra herramienta **estructurada del propio CogniCode**, o terminar `PARTIAL/UNKNOWN`. No usar archivos, grep, GitHub, shell, web, docs del checkout ni análisis por un segundo agente para rellenar el diagrama.
+
 ## Uso inmediato
 
 Precondiciones: workspace y lente C4 preparados; consultas de CogniCode registradas en evidence/claims.json y evidence/queries.json. Debe existir un informe de vista que seleccione las entidades y relaciones:
@@ -29,30 +47,64 @@ Precondiciones: workspace y lente C4 preparados; consultas de CogniCode registra
 }
 ~~~
 
-Guardar como lenses/c4/reports/context.atlas.json. Su fuente se debe haber generado previamente desde la evidencia de CogniCode.
+Guardar como lenses/c4/reports/context.atlas.json. Su fuente debe provenir de consultas CogniCode anteriores. El operador/agente aporta **la ruta raíz explícita como identidad opaca**, no se escanea el checkout para encontrarla.
 
 ~~~bash
-python3 scripts/editorial.py --repo /raiz/explicita/del/checkout --view context
-~~~
+# 1. Comprobación sin escritura, sin nueva consulta de código.
+python3 scripts/editorial.py --repo /raiz/explicita/del/checkout --view context --check --pattern dependencies
 
-Salida bajo el mismo workspace:
+# 2. Render de la misma evidencia, foco opcional en symbol_id exacto.
+#    Enlazar inmediatamente los dos outputs al informe de vista existente.
+python3 scripts/editorial.py --repo /raiz/explicita/del/checkout \
+  --view context --pattern dependencies --focus 'App::Api' --link-atlas
 
-- lenses/c4/renders/context.editorial.svg
-- lenses/c4/renders/context.editorial.html
-
-**Integrador:** añadir ambas rutas a la lista existente de assets del mismo context.atlas.json, sin eliminar la fuente técnica ni otros renders. Después:
-
-~~~bash
+# 3. El integrador único sincroniza el índice, sin invocar CogniCode.
 python3 scripts/atlas.py sync --repo /raiz/explicita/del/checkout
 python3 scripts/atlas.py check --repo /raiz/explicita/del/checkout
 ~~~
 
+Los paths de salida son `lenses/c4/renders/context.editorial.svg` y `lenses/c4/renders/context.editorial.html`. `--check` valida consulta, claims, extremos, límites de diseño, perfil/foco y seguridad **solo contra el ledger derivado**; NO acredita autenticidad del runtime o vigencia del código. `--link-atlas` actualiza únicamente el manifiesto del workspace externo, preserva la fuente técnica y evita edición manual repetitiva. Solo lo ejecuta **un integrador** si hay Agent Teams. El HTML contiene CSP sin scripts y el visor Markmap aplica CSP sandbox.
+
 El atlas enlaza las dos salidas y crea miniaturas sólo para SVG/PNG/WebP. El proyector local de Markmap admite HTML editorial únicamente desde su ruta dedicada, con CSP sandbox (origen opaco). El generador no necesita Podman.
+
+## Contrato HATEOAS (autodescubrimiento)
+
+El `intent=editorial` de `affordances.py` es **presentación**, no nueva investigación. `evidence_origin=cognicode` observado es obligatorio cuando `prepared=ready`; ningún estado del router puro puede demostrar autenticidad sin el runtime y su registro. El siguiente ejemplo es **estado ilustrativo observado por el agente**, no una prueba de código:
+
+~~~json
+{
+  "intent": "editorial",
+  "workspace": "ready",
+  "lens": "c4",
+  "basis": "current",
+  "claim_coverage": "partial",
+  "editorial": {
+    "view": "context",
+    "question_kind": "dependency_structure",
+    "pattern": "auto",
+    "prepared": "ready",
+    "render": "absent",
+    "linked": false,
+    "atlas_source": "stale",
+    "visual_review": "not_run"
+  }
+}
+~~~
+
+Se ofrece `render-editorial` con inputs derivados `{view,pattern,profile,focus?}`. Las transiciones completas son:
+
+`inspect-editorial-evidence → render-editorial → link-editorial-atlas → build-atlas → open-editorial → finish`.
+
+- `prepared=ready` **solo** después de ejecutar `editorial.py --check` en un informe real. Si falla ⇒ `invalid` y se bloquea. El router puro no verifica él solo que un estado declarado sea veraz.
+- `render=ready` tras generar ambas salidas. `linked=true` solo tras éxito del enlazado en el manifiesto. `atlas_source=ready` tras `atlas.py check` CURRENT.
+- `visual_review=passed` requiere inspeccionar en navegador. No se inventa revisión. `finish` es `PARTIAL` cuando la base/cobertura CogniCode no está verificada.
+- La ausencia de CogniCode **no** impide reproyectar evidencias históricas ya registradas, pero el resultado NO se presenta como código actual. No hay lectura alternativa ni nuevos hechos.
+- Los tipos `class`, `use-case`, `vertical-slice` siguen `planned`: el router rechaza usar el render editorial como vía de escape.
 
 ## Evidencia y ontología
 
-- Entidad: kind=entity, symbol_id, query_ids acreditados, provenance/status=OBSERVED_CODE, plane=static.
-- Relación: kind=relation, from_symbol, to_symbol, relation_source=graph_edge, query_ids acreditados.
+- Entidad: kind=entity, symbol_id, query_ids acreditados, provenance/status=OBSERVED_CODE, plane=static. La query estructurada correspondiente debe contener exactamente ese symbol_id en symbol_ids.
+- Relación: kind=relation, from_symbol, to_symbol, relation_source=graph_edge, relation_id, query_ids acreditados. La query estructurada debe contener ese relation_id y ambos extremos en relation_ids/symbol_ids; un mero query_id existente NO basta.
 - Ambos extremos deben figurar como claims de entidad **en la misma vista**. Nada de nodos implícitos ni relation_id inventados.
 - reference_link se rechaza como arista. No convertir llamadas estáticas en secuencias runtime.
 - Las salidas transportan claim_id, query_ids, plane=static, coverage y símbolo original en metadata; la tabla HTML enumera aristas y su evidencia.

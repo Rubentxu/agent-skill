@@ -15,10 +15,19 @@ QUESTION_ROLES: dict[str, tuple[str, ...]] = {
     "collaborators": ("symbol_index", "references", "implementors", "call_hierarchy", "symbol_context"),
     "interaction": ("symbol_index", "references", "subgraph", "trace_path", "symbol_context"),
     "view_grouping": ("communities", "graph_query"),
+    # Semantic roles only. A tool must be discovered and probed on the
+    # installed CogniCode runtime and language; no hardcoded MCP tool names.
+    "change_impact": ("impact_analysis", "call_hierarchy", "references", "graph_query"),
+    "dependency_structure": ("communities", "graph_query", "references", "symbol_index"),
+    "traceable_decomposition": ("symbol_context", "members", "type_references", "graph_query"),
 }
 STRUCTURED_MODES = {"structured", "symbol_context"}
 DENIED_MODES = {"raw", "repository_read", "external_indexer"}
 TEXT_ONLY_TOOLS = {"read_file", "search_content"}
+# Never let a tool advertised as structured launder direct file access.
+# Symbol-scoped get_symbol_code is separate and permitted if proved by CogniCode.
+DENIED_FILE_TOOLS = {"read_file", "list_files", "write_file", "edit_file",
+                     "resources/read", "mcp.resources.read"}
 PROBE_STATES = {"untried", "usable", "partial", "failed", "unsupported"}
 QUERY_STATES = {"ok", "partial", "failed", "unsupported"}
 COVERAGES = {"complete", "partial", "unknown"}
@@ -228,6 +237,8 @@ def decide(research: dict | None) -> dict:
             raise ResearchError("capability requiere requires_graph y requires_persistence del catalogo runtime")
         if c.get("stability") not in STABILITIES:
             raise ResearchError("capability.stability debe venir del catalogo runtime")
+        if c.get("authority", "read") not in {"read", "mutating"}:
+            raise ResearchError("capability.authority inválida")
         probes = c.get("probes")
         if not isinstance(probes, dict) or set(probes) - set(languages):
             raise ResearchError("capability.probes debe asociar sondeos solo a lenguajes anunciados")
@@ -250,7 +261,8 @@ def decide(research: dict | None) -> dict:
         tool = _str(query.get("capability"), "query.capability")
         if tool not in cap_names:
             raise ResearchError("consulta a capacidad no descubierta: " + tool)
-        if (query.get("mode") in DENIED_MODES or tool == "read_file" or
+        if (query.get("mode") in DENIED_MODES or tool in DENIED_FILE_TOOLS or
+                cap_by_name[tool].get("authority", "read") == "mutating" or
                 (tool == "search_content" and query.get("mode") != "text_candidate")):
             return _result("BLOCKED", None,
                            "se utilizó lectura raw/directa u otro indexador: no puede acreditarse exclusividad",
@@ -383,6 +395,7 @@ def decide(research: dict | None) -> dict:
     candidates = sorted(
         (c for c in caps if c["role"] in roles and language in c["languages"] and
          c["advertised"] and c["schema_observed"] and c["name"] not in TEXT_ONLY_TOOLS
+         and c["name"] not in DENIED_FILE_TOOLS and c.get("authority", "read") == "read"
          and c["stability"] != "deprecated"),
         key=lambda c: (roles.index(c["role"]), c["stability"] != "stable", c["name"]),
     )

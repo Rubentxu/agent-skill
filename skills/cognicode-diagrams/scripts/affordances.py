@@ -16,7 +16,7 @@ from research_protocol import ResearchError, decide as decide_research
 
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
-INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas"}
+INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
 WORKSPACES = {"unknown", "absent", "incomplete", "ready", "invalid"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
@@ -69,6 +69,11 @@ LINKS = {
     "render-atlas": "references/projectors/markmap.md",
     "open-atlas": "references/projectors/markmap.md",
     "review-atlas": "references/projectors/markmap.md",
+    "inspect-editorial-evidence": "references/editorial.md",
+    "render-editorial": "references/editorial.md",
+    "link-editorial-atlas": "references/editorial.md",
+    "open-editorial": "references/editorial.md",
+    "review-editorial": "references/editorial.md",
 }
 
 
@@ -123,6 +128,96 @@ def bool_field(state: dict, key: str, default: bool = False) -> bool:
     return val
 
 
+def editorial_affordances(state: dict, catalog: dict) -> dict:
+    """Presentation-only HATEOAS route over a pre-existing CogniCode C4 view.
+
+    Only observed input states; never reads the checkout or calls CogniCode.
+    The --check projector command validates the actual derived ledger.
+    """
+    lens_id = state.get("lens", "c4")
+    if lens_id != "c4" or catalog.get("c4", {}).get("status") != READY:
+        return {"status": "UNSUPPORTED", "lens": lens_id, "recommended": None,
+                "_links": [], "blockers": ["solo lente c4 disponible para presentación editorial"]}
+    view = state.get("editorial", {})
+    if not isinstance(view, dict):
+        raise InvalidState("editorial debe ser un objeto")
+    view_id = view.get("view")
+    if not isinstance(view_id, str) or not SLUG.fullmatch(view_id):
+        raise InvalidState("editorial.view debe ser el ID de un informe c4 existente")
+    pattern = view.get("pattern", "auto")
+    if pattern not in {"auto", "topology", "dependencies", "traceability"}:
+        raise InvalidState("editorial.pattern inválido")
+    question_kind = view.get("question_kind", "view_grouping")
+    if not isinstance(question_kind, str) or question_kind not in {
+        "view_grouping", "responsibilities", "understand_symbol", "collaborators",
+        "interaction", "change_impact", "dependency_structure", "traceable_decomposition"
+    }:
+        raise InvalidState("editorial.question_kind desconocido")
+    if pattern == "auto":
+        pattern = ("dependencies" if question_kind in {"collaborators", "change_impact", "dependency_structure"}
+                   else "traceability" if question_kind == "traceable_decomposition"
+                   else "topology")
+    profile = view.get("profile", "default")
+    if not isinstance(profile, str) or not SLUG.fullmatch(profile):
+        raise InvalidState("editorial.profile inválido")
+    focus = view.get("focus")
+    if focus is not None and (not isinstance(focus, str) or not focus.strip() or len(focus) > 400):
+        raise InvalidState("editorial.focus debe ser un symbol_id existente")
+    prepared = enum({"prepared": view.get("prepared", "unknown")}, "prepared",
+                    {"unknown", "missing", "ready", "invalid"})
+    # A ready status requires successful editorial.py --check, not a filename.
+    rendered = enum({"render": view.get("render", "absent")}, "render",
+                    {"absent", "stale", "ready", "invalid"})
+    linked = bool_field(view, "linked")
+    atlas = enum({"atlas_source": view.get("atlas_source", "absent")},
+                 "atlas_source", {"absent", "stale", "ready"})
+    review = enum({"visual_review": view.get("visual_review", "not_run")},
+                  "visual_review", {"not_run", "passed", "failed"})
+    basis = enum({"basis": state.get("basis", "unknown")}, "basis", BASIS)
+    origin = enum({"evidence_origin": state.get("evidence_origin", "unknown")},
+                  "evidence_origin", {"unknown", "cognicode", "other"})
+    coverage = enum({"claim_coverage": state.get("claim_coverage", "unknown")},
+                    "claim_coverage", {"unknown", "partial", "verified"})
+    opts = {"view": view_id, "pattern": pattern, "profile": profile}
+    if focus is not None:
+        opts["focus"] = focus
+    result = {"lens": lens_id, "presentation": opts, "certification": "presentation-only"}
+    def offer(rel: str, why: str, *, status: str = "IN_PROGRESS", blockers=None) -> dict:
+        link = {"rel": rel, "href": LINKS[rel], "requires_approval": False,
+                "why": why, "inputs": opts}
+        return {**result, "status": status, "recommended": rel,
+                "_links": [link], "blockers": blockers or []}
+    def stop(reason: str, status: str = "PARTIAL") -> dict:
+        return {**result, "status": status, "recommended": None,
+                "_links": [], "blockers": [reason]}
+    if prepared == "ready" and origin != "cognicode":
+        return stop("procedencia CogniCode no acreditada; proyección bloqueada", "BLOCKED")
+    if prepared == "invalid":
+        return stop("preflight editorial rechazó evidencia derivada; no suplir con lectura directa", "BLOCKED")
+    if prepared == "missing":
+        return stop("falta informe de vista C4: investigar SOLO con CogniCode antes de proyectar", "BLOCKED")
+    if prepared == "unknown":
+        return offer("inspect-editorial-evidence",
+                     "ejecutar editorial.py --check sobre ledger/report externo; no investigar checkout")
+    if rendered in {"absent", "stale", "invalid"}:
+        return offer("render-editorial",
+                     "renderizar representación derivada; no reconsultar código")
+    if not linked:
+        return offer("link-editorial-atlas", "enlazar los dos assets en informe externo de vista")
+    if atlas in {"absent", "stale"}:
+        return offer("build-atlas", "sincronizar atlas incremental con vistas ya generadas")
+    if review == "failed":
+        return offer("review-editorial", "corregir legibilidad o geometría, no modificar evidencia",
+                     status="PARTIAL")
+    if review != "passed":
+        return offer("open-editorial", "inspeccionar realmente diagrama y enlaces en navegador")
+    if coverage != "verified" or basis != "current":
+        return offer("finish", "presentación disponible, pero vigencia/cobertura de código no certificada",
+                     status="PARTIAL", blockers=["evidencia acotada o vigencia desconocida"])
+    return offer("finish", "vista revisada; solo alcance declarado por CogniCode",
+                 status="VERIFIED")
+
+
 def affordances(state: dict, catalog: dict | None = None) -> dict:
     """Compute links from already-observed data, not invent observations."""
     if not isinstance(state, dict):
@@ -155,6 +250,10 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
                      if rel else [])
             return {"status": "IN_PROGRESS" if links else "BLOCKED", "lens": lens_id,
                     "recommended": rel, "_links": links, "blockers": blockers}
+
+    # Editorial is only presentation of a previously researched C4 view.
+    if intent == "editorial":
+        return editorial_affordances(state, catalog)
 
     # Cross-lens navigation is deliberately independent of CogniCode readiness.
     # No model inference, no container auto-start, no implied visual verification.

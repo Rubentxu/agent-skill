@@ -11,7 +11,7 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 
 - Ni agente ni **SUBAGENTES** pueden leer, listar, buscar o ejecutar directamente archivos del checkout (código, configuración, manifiestos, tests, ADR, documentación) con shell, Git, editor, GitHub, otro indexador o un agente explorador. Solo **CogniCode CLI/MCP** investiga la implementación.
 - **PROYECTORES** Mermaid, Kroki, Structurizr, LikeC4 y Markmap consumen únicamente artefactos derivados bajo `~/.cognicode-diagrams/`. Nunca montan o investigan el repositorio.
-- `read_file(raw)` y `search_content` **no pueden reconstruir arquitectura** cuando falle el análisis estructurado. La búsqueda textual solo localiza candidatos que requieren confirmación estructurada; solicitar código **por símbolo** cuando sea posible. Investigación textual alternativa expresamente autorizada = **otro modo**, sin declarar `IMPLEMENTATION_GROUNDED`.
+- `read_file(raw)` y `search_content` **no pueden reconstruir arquitectura** cuando falle el análisis estructurado. La búsqueda textual solo localiza candidatos que requieren confirmación estructurada; solicitar código **por símbolo** cuando sea posible. **Esta skill no permite modos alternativos de lectura del checkout**, aunque el agente o usuario propongan un atajo. Solo CogniCode accede al código objetivo. Para otro tipo de operación se sale expresamente de esta skill; jamás se mezcla con su investigación ni se usa como evidencia.
 - Sin CogniCode: `BLOCKED`; sin evidencia suficiente: `PARTIAL/UNKNOWN`. No suplir con lectura directa, documentos ni inferencias convertidas en hechos. No modificar CogniCode.
 
 ## Protocolo de decisión, obligatorio antes de modelar
@@ -34,6 +34,12 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 - [Contrato vinculante](references/investigation-contract.md); [evaluaciones](tests/skill-evals.md) y [tests](tests/test_research_protocol.py).
 
 `VERIFIED` solo en el alcance realmente comprobado; de lo contrario `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Las pruebas puras no equivalen a UAT con un agente real y CogniCode conectado.
+
+## Autodescubrimiento editorial sobre evidencia CogniCode
+
+El router existente `scripts/affordances.py` admite `intent=editorial` y descubre el siguiente enlace: `inspect-editorial-evidence` → `render-editorial` → `link-editorial-atlas` → `build-atlas` → `open-editorial` → `finish`. El agente observa el estado después de cada paso; no inventa disponibilidad, versiones, claims o consultas. `scripts/editorial.py --check` comprueba la vista y el ledger externo sin escribir. `--link-atlas` enlaza las salidas al informe derivado existente; `atlas.py sync` sigue siendo el único integrador del atlas. La certificación de presentación **no** acredita frescura/alcance del código.
+
+El router semántico admite `topology`, `dependencies` (IN/OUT **solo del subgrafo seleccionado**) y `traceability` (claim visible), `--focus` por símbolo y perfiles externos. `pattern=auto` elige según el tipo de pregunta, pero **no** descubre componentes ni ejecuta herramientas por sí solo. Para `change_impact`, `dependency_structure` y `traceable_decomposition`, el agente descubre capacidades estructuradas pertinentes en **su CogniCode instalado**, las sondea por lenguaje y consulta solo si faltan hechos. [Protocolo y patrones](references/editorial.md).
 
 ## Proyección editorial opcional — criterios de diagram-design
 

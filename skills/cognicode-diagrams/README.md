@@ -37,6 +37,10 @@ La lente `c4` está habilitada; `class`, `use-case` y `vertical-slice` están pl
 - [Guía de instalación/diagnóstico](references/bootstrap.md)
 - [Validación](references/validate.md)
 
+## Investigación y renderización sin lectura del checkout
+
+**Todo código objetivo lo analiza únicamente CogniCode CLI/MCP.** Ni LLM, ni subagentes, ni scripts ni proyectores pueden abrir los ficheros del proyecto, siquiera mediante un wrapper/otro agente/GitHub/shell. Las respuestas estructuradas y código **por símbolo** proceden del runtime real de CogniCode; si carece de soporte o cobertura, `PARTIAL/UNKNOWN`, sin fallback. El checkout se utiliza únicamente como **ruta opaca** para identificar el workspace de diagramas externo.
+
 ## Proyección editorial opcional
 
 Además de las vistas técnicas, `scripts/editorial.py` produce una explicación C4 en HTML/SVG autónomo **a partir de claims CogniCode ya seleccionados** en un informe `*.atlas.json` (sin leer o volver a investigar el checkout). Rechaza relaciones `reference_link`, nodos sin queries y diagramas demasiado grandes: 2–9 nodos, 12 aristas máximo. Su HTML es estático y se sirve con CSP sandbox en el visor del atlas.
@@ -44,6 +48,8 @@ Además de las vistas técnicas, `scripts/editorial.py` produce una explicación
 ```bash
 python3 scripts/editorial.py --repo /ruta/exacta/a/raiz --view context
 ```
+
+La presentación ahora participa en el router HATEOAS: `intent=editorial` lleva a `--check`, render, enlace con `--link-atlas`, sincronización y revisión visual. `--pattern topology|dependencies|traceability` elige topología, dependencias **locales** o bloque trazable; `--focus 'App::Api'` marca un símbolo existente. Para `change_impact`, `dependency_structure` y `traceable_decomposition`, el agente descubre **roles** CogniCode, nunca comandos supuestos. [HATEOAS](references/navigation.md#proyección-editorial-autodescubierta-intenteditorial) y [patrones](references/editorial.md#patrones-útiles-incorporados-de-diagram-design).
 
 El aspecto puede personalizarse con `--profile dark` y un JSON cerrado de seis tokens bajo `~/.cognicode-diagrams/profiles/dark.json` (sin tocar el repo y con contraste obligatorio). [Perfiles](references/editorial.md#perfiles-de-colores-sin-dependencias).
 

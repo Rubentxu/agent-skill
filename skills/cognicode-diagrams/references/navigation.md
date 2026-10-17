@@ -29,7 +29,7 @@ No hay API HTTP, servidor, router de comandos, base de datos ni extensión de Co
 ```
 
 - `workspace`: `unknown|absent|incomplete|ready|invalid`. `unknown` ofrece `inspect-workspace`; `absent|incomplete` ofrece `init-workspace`; `invalid` bloquea. Ver [workspace.md](workspace.md). `catalog` y `setup` quedan exentos.
-- `intent`: `catalog|setup|scan|discover|create|interpret|translate|review|update|validate|preview`.
+- `intent`: `catalog|setup|scan|discover|create|interpret|translate|review|update|validate|preview|atlas|editorial`.
 - `lens`: `id` del registro de lentes. Para `catalog` puede omitirse; las lentes `planned` no se ofrecen para ejecución.
 - `environment`: `unknown|missing|cli_ready|mcp_ready|both_ready`. La observación se toma de comandos/calls, nunca de memoria.
 - `evidence`: `absent|symbols_ready|graph_ready|partial|stale`; un grafo READY exige consulta posterior que confirme su disponibilidad, no solo un stdout exit 0.
@@ -64,6 +64,26 @@ Ejemplo de estado observado, con imagen pendiente y gateway de Kroki disponible 
 
 Para indexar diagramas **ya presentes** en todas las lentes no se necesita un `lens` ni escanear CogniCode. Requiere workspace `ready`, `atlas_assets=present` observado y estados `atlas_source=absent|stale|ready`, `atlas_html=absent|stale|rendered|failed`, `markmap=unknown|missing|ready`, `visual_review=not_run|passed|failed`. Las affordances `build-atlas`, `inspect-markmap`, `render-atlas`, `open-atlas`, `review-atlas` y `finish` se ofrecen según ese estado, con guías en [Markmap](projectors/markmap.md). `atlas.py check` acredita actualización contra **artefactos locales**, no contra el código fuente. Un HTML creado no declara `VERIFIED` antes de una inspección visual real.
 
+## Proyección editorial autodescubierta (`intent=editorial`)
+
+Esta ruta está integrada en el **mismo** `scripts/affordances.py`; requiere `workspace=ready`, `lens=c4` activa y un informe existente de claims/queries CogniCode. La ruta no investiga ni monta el checkout. `prepared=ready` se declara **solo** tras `scripts/editorial.py --check` sobre vista/evidencia derivada, con origen `evidence_origin=cognicode` observado. Estado de ejemplo:
+
+```json
+{
+  "intent":"editorial","workspace":"ready","lens":"c4",
+  "evidence_origin":"cognicode","basis":"current","claim_coverage":"partial",
+  "editorial":{
+    "view":"context","question_kind":"dependency_structure","pattern":"auto",
+    "profile":"default","prepared":"ready","render":"absent",
+    "linked":false,"atlas_source":"stale","visual_review":"not_run"
+  }
+}
+```
+
+**Affordances:** `inspect-editorial-evidence` (preflight sin escribir), `render-editorial` (topology/dependencies/traceability, foco y perfil), `link-editorial-atlas` (enlaza los dos assets, sin retocar ledger), `build-atlas`, `open-editorial` (inspección real) y `finish`. Las acciones son **enlaces semánticos**, no comandos ejecutados por el router. Para `render-editorial` usar `scripts/editorial.py` y para `link-editorial-atlas` repetirlo con `--link-atlas` (idempotente). La salida incluye `certification=presentation-only`; `VERIFIED` solo con vista revisada, base actual y cobertura verificada **declaradas**, nunca como certificado que la imagen valide el código por sí sola.
+
+`pattern=auto` selecciona presentación por `question_kind` sin inventar aristas: `dependency_structure/change_impact/collaborators` → `dependencies`; `traceable_decomposition` → `traceability`; el resto → `topology`. Los patrones tienen límites y semántica en [editorial](editorial.md). **No habilita las lentes planned ni nuevos parsers.** Si falta evidencia → solicitar investigación estructurada por CogniCode mediante el router de investigación; nunca usar `read_file(raw)`/GitHub/shell.
+
 ## Visores interactivos opcionales (`intent=preview`)
 
 Para mostrar contenido que ya existe en el workspace externo, **sin activar CogniCode ni volver a escanear**, el agente puede elegir `projector=likec4-local` con `formats=["likec4"]` o `projector=structurizr-local` con `formats=["structurizr"]`. Campos observados adicionales:
@@ -83,7 +103,7 @@ Para mostrar contenido que ya existe en el workspace externo, **sin activar Cogn
 
 ## Semántica de las acciones
 
-`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `query-cognicode`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`, `inspect-projector`, `start-projector`, `open-projector`, `review-layout`, `build-atlas`, `inspect-markmap`, `render-atlas`, `open-atlas`, `review-atlas`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
+`inspect-workspace`, `init-workspace`, `inspect-environment`, `install-cognicode`, `scan-symbols`, `build-graph`, `query-cognicode`, `interpret-input`, `discover-model`, `review-model`, `reconcile`, `render-mermaid`, `render-structurizr`, `validate`, `inspect-kroki`, `start-kroki`, `start-mermaid-companion`, `preview-mermaid`, `preview-structurizr`, `finish`, `inspect-projector`, `start-projector`, `open-projector`, `review-layout`, `build-atlas`, `inspect-markmap`, `render-atlas`, `open-atlas`, `review-atlas`, `inspect-editorial-evidence`, `render-editorial`, `link-editorial-atlas`, `open-editorial`, `review-editorial`. Para `catalog`, `list-lenses`. Para una lente no disponible, `UNSUPPORTED` con razón; no se suplanta por C4.
 
 A continuación de cada acción, observar si ha funcionado y actualizar **en la conversación** los campos realmente cambiados. Evitar ejecutar el mismo paso sin que cambie alguna precondición. El agente puede saltarse el helper y aplicar estas normas directamente.
 

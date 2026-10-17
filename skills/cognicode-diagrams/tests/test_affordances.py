@@ -217,6 +217,86 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(engine.affordances(x)['recommended'],'discover-model')
 
 
+
+class EditorialHateoasTests(unittest.TestCase):
+    def state(self, **steps):
+        return fixture(intent="editorial", lens="c4", basis="current",
+                       editorial={"view": "context", **steps})
+
+    def test_unknown_evidence_requires_real_preflight(self):
+        result = engine.affordances(self.state())
+        self.assertEqual(result["recommended"], "inspect-editorial-evidence")
+        self.assertEqual(result["certification"], "presentation-only")
+        self.assertNotIn("scan-symbols", rels(self.state()))
+
+    def test_ready_preflight_offers_real_renderer_without_rescan(self):
+        result = engine.affordances(self.state(prepared="ready",
+            question_kind="dependency_structure", focus="pkg::API"))
+        self.assertEqual(result["recommended"], "render-editorial")
+        self.assertEqual(result["_links"][0]["inputs"]["pattern"], "dependencies")
+        self.assertEqual(result["_links"][0]["inputs"]["focus"], "pkg::API")
+        self.assertNotIn("query-cognicode", rels(self.state(prepared="ready")))
+
+    def test_traceable_decomposition_routes_to_provenance_mode(self):
+        state = self.state(prepared="ready", question_kind="traceable_decomposition")
+        self.assertEqual(engine.affordances(state)["presentation"]["pattern"], "traceability")
+
+    def test_rendered_view_links_and_syncs_atlas(self):
+        linked = self.state(prepared="ready", render="ready")
+        self.assertEqual(rels(linked), ["link-editorial-atlas"])
+        linked["editorial"].update(linked=True)
+        self.assertEqual(rels(linked), ["build-atlas"])
+        linked["editorial"].update(atlas_source="ready")
+        self.assertEqual(rels(linked), ["open-editorial"])
+        linked["editorial"].update(visual_review="passed")
+        self.assertEqual(engine.affordances(linked)["status"], "VERIFIED")
+
+    def test_partial_claims_never_certified_even_after_visual_review(self):
+        state = self.state(prepared="ready", render="ready", linked=True,
+                           atlas_source="ready", visual_review="passed")
+        state["claim_coverage"] = "partial"
+        result = engine.affordances(state)
+        self.assertEqual(result["status"], "PARTIAL")
+        self.assertEqual(result["recommended"], "finish")
+
+    def test_unknown_basis_never_certified(self):
+        state = self.state(prepared="ready", render="ready", linked=True,
+                           atlas_source="ready", visual_review="passed")
+        state["basis"] = "unknown"
+        self.assertEqual(engine.affordances(state)["status"], "PARTIAL")
+
+    def test_invalid_or_missing_preflight_blocks_without_other_file_access(self):
+        for prepared in ("invalid", "missing"):
+            result = engine.affordances(self.state(prepared=prepared))
+            self.assertEqual(result["status"], "BLOCKED")
+            self.assertEqual(result["_links"], [])
+
+    def test_declared_ready_cannot_bypass_cognicode_provenance(self):
+        for origin in ("other", "unknown"):
+            state = self.state(prepared="ready")
+            state["evidence_origin"] = origin
+            result = engine.affordances(state)
+            self.assertEqual(result["status"], "BLOCKED")
+            self.assertEqual(result["_links"], [])
+
+    def test_planned_lens_cannot_use_editorial_as_bypass(self):
+        result = engine.affordances(fixture(
+            intent="editorial", lens="vertical-slice",
+            editorial={"view":"context", "prepared":"ready"}))
+        self.assertEqual(result["status"], "UNSUPPORTED")
+
+    def test_invalid_pattern_and_profile_fail_closed(self):
+        for key, bad in (("pattern", "unrestricted"), ("profile", "../unsafe"),
+                         ("question_kind", "dump_files"), ("focus", "")):
+            with self.assertRaises(engine.InvalidState):
+                engine.affordances(self.state(**{key: bad}))
+
+    def test_workspace_precedes_editorial(self):
+        state = self.state(prepared="ready")
+        state["workspace"] = "absent"
+        self.assertEqual(rels(state), ["init-workspace"])
+
+
 if __name__ == '__main__':
     unittest.main()
 
