@@ -126,6 +126,9 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
         raise EditorialError("view needs distinct claim_ids")
     if not isinstance(assets, list) or not assets:
         raise EditorialError("view requires existing derived assets")
+    managed = {f"lenses/c4/renders/{view_id}.editorial.svg",
+               f"lenses/c4/renders/{view_id}.editorial.html"}
+    technical_source_seen = False
     for asset in assets:
         if not isinstance(asset, str) or not (
             asset.startswith("lenses/c4/sources/") or asset.startswith("lenses/c4/renders/")
@@ -133,7 +136,15 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
             raise EditorialError("invalid view asset")
         target = safe(workspace / asset, workspace)
         if not target.is_file():
+            # Generated editorial outputs can be repaired after deletion. Other
+            # missing assets invalidate the source report: never invent a source.
+            if asset in managed and not target.exists():
+                continue
             raise EditorialError("missing view asset: " + asset)
+        if asset not in managed:
+            technical_source_seen = True
+    if not technical_source_seen:
+        raise EditorialError("view has no existing derived technical source")
 
     queries = records(load(workspace / "evidence" / "queries.json", workspace), "queries")
     qids = [q.get("query_id", q.get("id")) for q in queries if isinstance(q, dict)]
