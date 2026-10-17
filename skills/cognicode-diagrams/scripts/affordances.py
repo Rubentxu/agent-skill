@@ -174,6 +174,8 @@ def editorial_affordances(state: dict, catalog: dict) -> dict:
     review = enum({"visual_review": view.get("visual_review", "not_run")},
                   "visual_review", {"not_run", "passed", "failed"})
     basis = enum({"basis": state.get("basis", "unknown")}, "basis", BASIS)
+    origin = enum({"evidence_origin": state.get("evidence_origin", "unknown")},
+                  "evidence_origin", {"unknown", "cognicode", "other"})
     coverage = enum({"claim_coverage": state.get("claim_coverage", "unknown")},
                     "claim_coverage", {"unknown", "partial", "verified"})
     opts = {"view": view_id, "pattern": pattern, "profile": profile}
@@ -188,6 +190,8 @@ def editorial_affordances(state: dict, catalog: dict) -> dict:
     def stop(reason: str, status: str = "PARTIAL") -> dict:
         return {**result, "status": status, "recommended": None,
                 "_links": [], "blockers": [reason]}
+    if prepared == "ready" and origin != "cognicode":
+        return stop("procedencia CogniCode no acreditada; proyección bloqueada", "BLOCKED")
     if prepared == "invalid":
         return stop("preflight editorial rechazó evidencia derivada; no suplir con lectura directa", "BLOCKED")
     if prepared == "missing":
