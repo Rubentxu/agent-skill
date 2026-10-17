@@ -170,7 +170,7 @@ def html_page(data: dict, dest: Path, root: Path) -> str:
         blocks.append(link(item["rel"], item["label"] + " · JSON para agentes",
                            root / item["json"]))
     for view in data["views"]:
-        if view["html"]:
+        if view.get("html"):
             blocks.append(link("open-diagram", view["label"] + " · diagrama C4",
                                root / view["html"]))
     if not blocks:
@@ -201,8 +201,8 @@ code{{overflow-wrap:anywhere}}small{{color:#46566a}}h1{{line-height:1.2}}</style
 <p>Claims: {esc(", ".join(data["evidence"]["claim_ids"]))}</p>
 <p>Consultas CogniCode: {esc(", ".join(data["evidence"]["query_ids"]))}</p>
 <p>Cobertura: {esc(data["evidence"]["coverage"])} · versión: {esc(data["evidence"]["basis"]["status"])}</p>
-{link("inspect-evidence", "Ver claims derivados", root / "evidence/claims.json")}
-{link("inspect-evidence", "Ver consultas derivadas", root / "evidence/queries.json")}
+<ul>{link("inspect-evidence", "Ver claims derivados", root / "evidence/claims.json")}
+{link("inspect-evidence", "Ver consultas derivadas", root / "evidence/queries.json")}</ul>
 <p><small>Las rutas a evidencia nunca autorizan leer el checkout original.</small></p></section>
 {"<section><h2>El término varía por contexto</h2><ul>" + alternatives + "</ul></section>" if alternatives else ""}
 {"<section><h2>Próximas consultas útiles</h2><ul>" + pending + "</ul></section>" if pending else ""}
