@@ -68,6 +68,29 @@ El diseño usa tarjetas sobrias, texto legible, rutas ortogonales en carriles ex
 
 Se deja fuera de alcance deliberadamente: copiar los 45 tipos, incorporar plantillas externas, sistemas de perfiles adicionales, servicio persistente, PNG automático, comparaciones de versiones sin dos observaciones reales. Las reglas visuales pueden ampliarse sólo por necesidades demostradas.
 
+## Perfiles de colores (sin dependencias)
+
+Por defecto se utilizan seis tokens internos con contraste legible. Para un tema corporativo u oscuro crear (por autorización del usuario) un perfil en HOME, **nunca en el checkout**:
+
+~~~json
+{
+  "paper": "#111827",
+  "surface": "#1f2937",
+  "ink": "#ffffff",
+  "stroke": "#e5e7eb",
+  "muted": "#cbd5e1",
+  "connector": "#94a3b8"
+}
+~~~
+
+Guardar como ~/.cognicode-diagrams/profiles/dark.json y ejecutar:
+
+~~~bash
+python3 scripts/editorial.py --repo /raiz/explicita/del/checkout --view context --profile dark
+~~~
+
+El perfil debe ser JSON cerrado con seis colores hexadecimales y contraste de texto de 4.5:1; se rechazan nombres arbitrarios, symlinks y colores con poco contraste. Cambia **sólo el aspecto** de la proyección, nunca claims, consultas, topología o atlas. Los perfiles son opcionales, reutilizables y no requieren servicio ni base de datos.
+
 ## Seguridad y pruebas delivery-first
 
 - El script sólo lee ledgers y manifiestos derivados en ~/.cognicode-diagrams/, nunca el checkout ni documentación de producto.
