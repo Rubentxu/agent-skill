@@ -103,8 +103,8 @@ Se ofrece `render-editorial` con inputs derivados `{view,pattern,profile,focus?}
 
 ## Evidencia y ontología
 
-- Entidad: kind=entity, symbol_id, query_ids acreditados, provenance/status=OBSERVED_CODE, plane=static.
-- Relación: kind=relation, from_symbol, to_symbol, relation_source=graph_edge, query_ids acreditados.
+- Entidad: kind=entity, symbol_id, query_ids acreditados, provenance/status=OBSERVED_CODE, plane=static. La query estructurada correspondiente debe contener exactamente ese symbol_id en symbol_ids.
+- Relación: kind=relation, from_symbol, to_symbol, relation_source=graph_edge, relation_id, query_ids acreditados. La query estructurada debe contener ese relation_id y ambos extremos en relation_ids/symbol_ids; un mero query_id existente NO basta.
 - Ambos extremos deben figurar como claims de entidad **en la misma vista**. Nada de nodos implícitos ni relation_id inventados.
 - reference_link se rechaza como arista. No convertir llamadas estáticas en secuencias runtime.
 - Las salidas transportan claim_id, query_ids, plane=static, coverage y símbolo original en metadata; la tabla HTML enumera aristas y su evidencia.
