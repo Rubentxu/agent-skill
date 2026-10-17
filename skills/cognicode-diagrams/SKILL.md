@@ -35,6 +35,17 @@ description: "Investiga la arquitectura implementada con CogniCode CLI/MCP media
 
 `VERIFIED` solo en el alcance realmente comprobado; de lo contrario `PARTIAL`, `BLOCKED`, `FAILED` o `UNSUPPORTED`. Las pruebas puras no equivalen a UAT con un agente real y CogniCode conectado.
 
+## Proyección editorial opcional — criterios de diagram-design
+
+Para explicar una topología C4 ya investigada con claridad visual, seleccionar **primero el significado**, después la representación. C4 técnico sigue siendo la autoridad de modelo; una vista editorial HTML/SVG es **otra proyección del mismo ledger**, no una nueva fuente de verdad. **No copiar 45 tipos, no releer checkout ni usar Mermaid como evidencia.**
+
+- Ejecutar `python3 scripts/editorial.py --repo <raíz explícita> --view <id>` **solo** para una vista C4 de implementación con entidades y `graph_edge` acreditadas por queries existentes; ninguna `reference_link` se eleva a arista.
+- La proyección limita 2–9 nodos, 12 aristas y 5 conexiones por nodo; no omite elementos para caber, sino que rechaza selecciones demasiado grandes. `PARTIAL/UNKNOWN` se muestra si la cobertura no es completa.
+- Añadir ambos resultados `*.editorial.svg` y `*.editorial.html` al `*.atlas.json` existente; sincronizar Markmap. El HTML se sirve aislado por CSP, no ejecuta JS ni requiere contenedor.
+- Para dependencias, secuencias o UML cuyas lentes siguen `planned`, no prometer soporte. Si una tabla responde igual de bien, no dibujar.
+
+[Router, contrato, límites y uso](references/editorial.md). La salida editorial no convierte `RENDERED` en `IMPLEMENTATION_GROUNDED`.
+
 ## Atlas incremental y visual thinking (obligatorio)
 
 - **Durante** la investigación, consolidar claims/queries CogniCode en el ledger externo y sincronizar el atlas **tras cada observación útil**, antes de crear diagramas: `python3 scripts/atlas.py sync --repo <raiz>`.
