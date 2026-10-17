@@ -28,6 +28,10 @@ Fichero `lenses/c4/reports/contexto.atlas.json`:
 
 Requisitos: los claims existen en `claims.json`, cada asset existe entre las fuentes/renders de **esa misma lente**, rutas relativas al workspace externo, sin symlinks/traversal, JSON válido. Asociar solo las afirmaciones representadas por esa vista. Cuando no haya vínculo preciso, el recurso seguirá accesible desde el inventario por lente pero **no** se asociará arbitrariamente a un símbolo.
 
+### Render editorial de una vista existente
+
+Cuando la vista C4 ya tiene claims y fuentes técnicas, ejecutar `scripts/editorial.py --repo <raíz> --view <nombre>`, incorporar los **dos** ficheros `*.editorial.svg` y `*.editorial.html` a `assets` del mismo manifiesto `*.atlas.json`, y sincronizar. El atlas registra sus hashes, enlaza el HTML y no lo usa como miniatura. No se crea otro tipo de claim ni se analiza SVG/HTML como evidencia. La vista HTML generada es estática y el servidor Markmap la sirve con CSP sandbox. [Guía editorial](editorial.md).
+
 ## Acceso y seguridad
 
 Solo archivos **derivados** bajo `~/.cognicode-diagrams/workspaces/<id>/`; nada de Git, shell sobre checkout, consultas directas al repositorio ni otro indexador. El atlas jamás convierte una referencia `find_usages` en arista de grafo ni una llamada estática en protocolo HTTP. Markmap es un árbol interactivo: para relaciones cruzadas, generar enlaces por claim y vistas, **no un nuevo grafo persistente**.
