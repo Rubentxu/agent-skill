@@ -109,6 +109,9 @@ class EditorialTests(unittest.TestCase):
         claims = json.loads(self.claims.read_text(encoding="utf-8"))
         claims[-1]["to_symbol"] = "Missing"
         self.claims.write_text(json.dumps(claims), encoding="utf-8")
+        queries = json.loads(self.queries.read_text(encoding="utf-8"))
+        queries[0]["symbol_ids"].append("Missing")
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
         with self.assertRaisesRegex(editorial.EditorialError, "endpoint"):
             editorial.render(self.repo, "context", home=self.home)
 
