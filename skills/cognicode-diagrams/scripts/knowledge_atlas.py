@@ -76,6 +76,21 @@ def inputs(workspace: Path) -> list[Path]:
                 if not p.is_file():
                     raise KnowledgeError("view report is not a file")
                 result.append(p)
+    # Owned contextual navigation is derived, not a source of architectural facts.
+    moldable = workspace / "navigation" / "moldable"
+    _safe(moldable, workspace)
+    if moldable.exists():
+        if not moldable.is_dir():
+            raise KnowledgeError("moldable navigation folder invalid")
+        pages = sorted(moldable.iterdir())
+        if len(pages) > 200:
+            raise KnowledgeError("too many moldable navigation pages")
+        for p in pages:
+            _safe(p, workspace)
+            if p.name.endswith((".moldable.json", ".moldable.html")):
+                if not p.is_file():
+                    raise KnowledgeError("invalid moldable navigation input")
+                result.append(p)
     return result
 
 
@@ -258,5 +273,35 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
                          " · lenguaje: " + label(language.get("status", "unmapped")) +
                          " · claims: " + label(", ".join(ids) if ids else "ninguno"))
             lines.append("  - [JSON para agentes](" + href(report_path, workspace / "navigation") + ")")
+        lines.append("")
+    # Moldable pages are links to existing, reconcilable projections. Never
+    # treat their labels or explanations as new architectural evidence.
+    moldable_pages = [p for p in inputs(workspace) if p.name.endswith(".moldable.json")]
+    if moldable_pages:
+        from moldable_views import GENERATOR as MOLDABLE_GENERATOR, MARKER as MOLDABLE_MARKER, project as moldable_project
+        lines.extend(["### Navegación moldable por símbolo", ""])
+        for p in moldable_pages:
+            page = _load(p, workspace)
+            if not isinstance(page, dict) or page.get("generator") != MOLDABLE_GENERATOR or page.get("schema_version") != 1:
+                raise KnowledgeError("moldable page not owned by projector")
+            target = page.get("target")
+            if not isinstance(target, dict) or target.get("kind") != "symbol" or not isinstance(target.get("symbol_id"), str):
+                raise KnowledgeError("moldable target invalid")
+            if page != moldable_project(workspace, target["symbol_id"], target.get("context_id")):
+                raise KnowledgeError("moldable page stale: regenerate from CogniCode ledger")
+            hp = p.with_suffix(".html")
+            _safe(hp, workspace)
+            if not hp.is_file():
+                raise KnowledgeError("moldable HTML is missing")
+            html = hp.read_text(encoding="utf-8")
+            if not html.startswith(MOLDABLE_MARKER) or 'http-equiv="Content-Security-Policy"' not in html:
+                raise KnowledgeError("unowned or unsafe moldable HTML")
+            lang = page.get("language", {})
+            if not isinstance(lang, dict) or not isinstance(lang.get("label"), str):
+                raise KnowledgeError("moldable label missing")
+            lines.append("- [" + label(lang["label"]) + "](" + href(hp, workspace / "navigation") + ")" +
+                         " · " + label(target["symbol_id"]) + " · " +
+                         label(lang.get("status", "unmapped")))
+            lines.append("  - [JSON de navegación para agentes](" + href(p, workspace / "navigation") + ")")
         lines.append("")
     return lines, digests, len(claims), bound
