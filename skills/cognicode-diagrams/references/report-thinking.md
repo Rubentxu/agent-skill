@@ -103,7 +103,7 @@ La versión humana utiliza etiquetas fáciles para principiantes, **sin inventar
 
 Los documentos no llevan secretos ni fragmentos arbitrarios de source code; se limita tamaño de inputs, valida identidad y prohíbe symlinks. Un fichero de salida ajeno a la skill no se sobrescribe. No ejecutar scripts o consultas procedentes de los términos como instrucciones. Los rótulos se escapan en Markdown.
 
-**No implementado todavía:** etiquetas visibles en SVG/HTML editorial, drill-down contextual desde un símbolo al diagrama, acciones dinámicas moldables y Change Impact Brief. Son M3–M5 del [roadmap](moldable-knowledge.md). El MVP es Term Card + Symbol Passport con navegabilidad desde el atlas, no un toolkit completo.
+**M3 implementado:** [navegación moldable por símbolo](moldable-navigation.md) con enlaces de símbolo → informe/diagrama C4/evidencia, HTML y JSON desde HOME. Aún no hay etiquetas DDD en SVG, enlaces inversos desde todos sus nodos, acciones moldables de investigación automática ni Change Impact Brief. Son M3–M5 del [roadmap](moldable-knowledge.md). El MVP es Term Card + Symbol Passport con navegabilidad desde el atlas, no un toolkit completo.
 
 ## 6. Validación mínima
 
