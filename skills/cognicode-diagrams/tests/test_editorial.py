@@ -160,6 +160,17 @@ class EditorialTests(unittest.TestCase):
                                          pattern="dependencies", focus="App::Api",
                                          link=True)["atlas_linked"])
 
+    def test_linked_view_recovers_deleted_managed_html_only(self):
+        first = editorial.render(self.repo, "context", home=self.home, link=True)
+        Path(first["html"]).unlink()
+        readiness = editorial.inspect(self.repo, "context", home=self.home)
+        self.assertEqual(readiness["status"], "EDITORIAL_INPUT_READY")
+        recovered = editorial.render(self.repo, "context", home=self.home, link=True)
+        self.assertTrue(Path(recovered["html"]).is_file())
+        self.source.unlink()
+        with self.assertRaisesRegex(editorial.EditorialError, "missing view asset"):
+            editorial.render(self.repo, "context", home=self.home, link=True)
+
     def test_traceability_visibly_cites_claim_without_inventing_nodes(self):
         rendered = editorial.render(self.repo, "context", home=self.home,
                                     pattern="traceability")
