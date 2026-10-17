@@ -64,6 +64,10 @@ python3 scripts/render_markmap.py --repo /ruta/proyecto --engine native
 
 Esta alternativa hereda la configuración de red del proceso nativo y no ofrece aislamiento de red del contenedor. El comando ejecuta `markmap ... --offline --no-open --output <temporal>` y sustituye el HTML final **solo** si la salida es válida. Si falla, conserva el HTML anterior. Los enlaces a imágenes siguen siendo archivos separados: `--offline` empaqueta recursos de Markmap, **no incrusta ni distribuye los SVG del workspace**.
 
+## Vistas editoriales HTML
+
+El atlas indexa exclusivamente `lenses/c4/renders/*.editorial.html` con marcador gestionado y CSP. El visor local tiene una ruta dedicada y añade `Content-Security-Policy: sandbox` con origen opaco; el resto de HTML queda prohibido. Un HTML con scripts o sin marcador nunca debe considerarse salida de la skill. El SVG editorial funciona como miniatura y el HTML como vista legible autónoma; ambos se enlazan al mismo claim report. [Proyección editorial](../editorial.md).
+
 ## Navegación e interoperabilidad
 
 - `navigation/atlas.md` y `navigation/atlas.html` viven juntos: sus enlaces relativos `../lenses/<lente>/renders/...` deben abrirse con acceso al workspace completo. No mover solo el HTML sin los assets.
