@@ -45,6 +45,8 @@ Además de las vistas técnicas, `scripts/editorial.py` produce una explicación
 python3 scripts/editorial.py --repo /ruta/exacta/a/raiz --view context
 ```
 
+El aspecto puede personalizarse con `--profile dark` y un JSON cerrado de seis tokens bajo `~/.cognicode-diagrams/profiles/dark.json` (sin tocar el repo y con contraste obligatorio). [Perfiles](references/editorial.md#perfiles-de-colores-sin-dependencias).
+
 Añadir al mismo informe de vista los assets `lenses/c4/renders/context.editorial.svg` y `lenses/c4/renders/context.editorial.html`, y ejecutar `atlas.py sync`. El atlas enlaza HTML y SVG; el SVG sigue siendo la miniatura. No se habilitan por ello lentes `planned`. [Contrato y router semántico](references/editorial.md).
 
 ## Pruebas
