@@ -37,6 +37,16 @@ La lente `c4` está habilitada; `class`, `use-case` y `vertical-slice` están pl
 - [Guía de instalación/diagnóstico](references/bootstrap.md)
 - [Validación](references/validate.md)
 
+## Proyección editorial opcional
+
+Además de las vistas técnicas, `scripts/editorial.py` produce una explicación C4 en HTML/SVG autónomo **a partir de claims CogniCode ya seleccionados** en un informe `*.atlas.json` (sin leer o volver a investigar el checkout). Rechaza relaciones `reference_link`, nodos sin queries y diagramas demasiado grandes: 2–9 nodos, 12 aristas máximo. Su HTML es estático y se sirve con CSP sandbox en el visor del atlas.
+
+```bash
+python3 scripts/editorial.py --repo /ruta/exacta/a/raiz --view context
+```
+
+Añadir al mismo informe de vista los assets `lenses/c4/renders/context.editorial.svg` y `lenses/c4/renders/context.editorial.html`, y ejecutar `atlas.py sync`. El atlas enlaza HTML y SVG; el SVG sigue siendo la miniatura. No se habilitan por ello lentes `planned`. [Contrato y router semántico](references/editorial.md).
+
 ## Pruebas
 
 `python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py' -v`
