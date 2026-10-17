@@ -115,6 +115,29 @@ class EditorialTests(unittest.TestCase):
         self.assertIn("Api&lt;unsafe&gt;", html)
         self.assertNotIn("<unsafe>", html)
 
+    def test_custom_profile_applies_to_html_and_svg(self):
+        folder = self.home / ".cognicode-diagrams/profiles"
+        folder.mkdir(parents=True, exist_ok=True)
+        folder.joinpath("dark.json").write_text(json.dumps({
+            "paper": "#111827", "surface": "#1f2937", "ink": "#ffffff",
+            "stroke": "#e5e7eb", "muted": "#cbd5e1", "connector": "#94a3b8"
+        }), encoding="utf-8")
+        out = editorial.render(self.repo, "context", home=self.home, profile="dark")
+        self.assertEqual(out["profile"], "dark")
+        self.assertIn("#111827", Path(out["html"]).read_text(encoding="utf-8"))
+        self.assertIn("#1f2937", Path(out["svg"]).read_text(encoding="utf-8"))
+
+    def test_unreadable_profile_fails_without_output(self):
+        folder = self.home / ".cognicode-diagrams/profiles"
+        folder.mkdir(parents=True, exist_ok=True)
+        folder.joinpath("bad.json").write_text(json.dumps({
+            "paper": "#ffffff", "surface": "#ffffff", "ink": "#ffffff",
+            "stroke": "#ffffff", "muted": "#ffffff", "connector": "#ffffff"
+        }), encoding="utf-8")
+        with self.assertRaisesRegex(editorial.EditorialError, "contrast"):
+            editorial.render(self.repo, "context", home=self.home, profile="bad")
+        self.assertFalse((self.w / "lenses/c4/renders/context.editorial.html").exists())
+
     def test_derived_inputs_only_and_no_output_for_invalid_view(self):
         report = json.loads(self.report.read_text(encoding="utf-8"))
         report["assets"] = ["../../repo/README.md"]
