@@ -120,6 +120,17 @@ class MoldableNavigationTests(unittest.TestCase):
         with self.assertRaisesRegex(report.ReportError, "not corroborated"):
             moldable.project(self.w, "Forged")
 
+    def test_invalid_matched_diagram_never_becomes_link(self):
+        manifest = self.w / "lenses/c4/reports/broken.atlas.json"
+        manifest.write_text(json.dumps({"schema_version": 1, "label": "Broken",
+                                        "claim_ids": ["C-1"], "assets": []}))
+        data = moldable.project(self.w, "App::Entry")
+        self.assertEqual(data["views"][0]["status"], "invalid")
+        out = moldable.build(self.repo, "App::Entry", home=self.home)
+        html = Path(out["html"]).read_text()
+        self.assertNotIn("Abrir diagrama", html)
+        self.assertNotIn("broken.editorial.html", html)
+
     def test_stale_page_requires_regeneration(self):
         report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
         moldable.build(self.repo, "App::Entry", home=self.home)
