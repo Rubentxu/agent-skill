@@ -16,7 +16,7 @@ from research_protocol import ResearchError, decide as decide_research
 
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
-INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial", "report"}
+INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial", "report", "moldable"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
 WORKSPACES = {"unknown", "absent", "incomplete", "ready", "invalid"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
@@ -77,6 +77,9 @@ LINKS = {
     "inspect-report-evidence": "references/report-thinking.md",
     "render-report": "references/report-thinking.md",
     "inspect-report": "references/report-thinking.md",
+    "inspect-moldable": "references/moldable-navigation.md",
+    "render-moldable": "references/moldable-navigation.md",
+    "open-moldable": "references/moldable-navigation.md",
 }
 
 
@@ -287,6 +290,64 @@ def report_affordances(state: dict) -> dict:
                  "VERIFIED")
 
 
+
+def moldable_affordances(state: dict) -> dict:
+    """Contextual navigation over an already corroborated symbol in HOME."""
+    v = state.get("moldable")
+    if not isinstance(v, dict):
+        raise InvalidState("moldable must be an object")
+    symbol = v.get("symbol")
+    if not isinstance(symbol, str) or not symbol.strip() or len(symbol) > 400:
+        raise InvalidState("moldable.symbol requires CogniCode symbol_id")
+    opts = {"symbol": symbol}
+    if "context" in v:
+        c = v["context"]
+        if not isinstance(c, str) or not SLUG.fullmatch(c):
+            raise InvalidState("moldable.context invalid")
+        opts["context"] = c
+    prepared = enum({"prepared": v.get("prepared", "unknown")}, "prepared",
+                    {"unknown", "ready", "missing", "invalid"})
+    rendered = enum({"render": v.get("render", "absent")}, "render",
+                    {"absent", "stale", "ready", "invalid"})
+    atlas = enum({"atlas_source": v.get("atlas_source", "absent")}, "atlas_source",
+                 {"absent", "stale", "ready"})
+    visual = enum({"visual_review": v.get("visual_review", "not_run")}, "visual_review",
+                  {"not_run", "passed", "failed"})
+    origin = enum({"evidence_origin": state.get("evidence_origin", "unknown")},
+                  "evidence_origin", {"cognicode", "unknown", "other"})
+    basis = enum({"basis": state.get("basis", "unknown")}, "basis", BASIS)
+    coverage = enum({"claim_coverage": state.get("claim_coverage", "unknown")},
+                    "claim_coverage", {"verified", "partial", "unknown"})
+    language = enum({"language_status": v.get("language_status", "unknown")},
+                    "language_status", {"accepted", "candidate", "disputed", "deprecated", "unmapped", "unknown"})
+    result = {"intent": "moldable", "inputs": opts, "certification": "derived-navigation-only"}
+    def offer(rel, why, status="IN_PROGRESS", blockers=None):
+        return {**result, "status": status, "recommended": rel,
+                "_links": [{"rel": rel, "href": LINKS[rel], "inputs": opts,
+                            "requires_approval": False, "why": why}],
+                "blockers": blockers or []}
+    def blocked(reason):
+        return {**result, "status": "BLOCKED", "recommended": None,
+                "_links": [], "blockers": [reason]}
+    if prepared in {"missing", "invalid"}:
+        return blocked("no grounded symbol/context in CogniCode derived ledger")
+    if prepared == "unknown":
+        return offer("inspect-moldable", "moldable_views.py --check on derived artifacts")
+    if origin != "cognicode":
+        return blocked("provenance of selected symbol is not CogniCode")
+    if rendered in {"absent", "stale", "invalid"}:
+        return offer("render-moldable", "build symbol-specific page from existing artifacts")
+    if atlas != "ready":
+        return offer("build-atlas", "index contextual page; do not rescan checkout")
+    if visual != "passed":
+        return offer("open-moldable", "inspect existing HTML links and labels",
+                     "PARTIAL" if visual == "failed" else "IN_PROGRESS")
+    if coverage != "verified" or basis != "current" or language != "accepted":
+        return offer("finish", "navigable page ready, but code basis/coverage or language is not certified",
+                     "PARTIAL", ["presentation does not establish code truth or DDD agreement"])
+    return offer("finish", "view checked and scoped claims observed; no runtime proof", "VERIFIED")
+
+
 def affordances(state: dict, catalog: dict | None = None) -> dict:
     """Compute links from already-observed data, not invent observations."""
     if not isinstance(state, dict):
@@ -326,6 +387,9 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
 
     if intent == "report":
         return report_affordances(state)
+
+    if intent == "moldable":
+        return moldable_affordances(state)
 
     # Cross-lens navigation is deliberately independent of CogniCode readiness.
     # No model inference, no container auto-start, no implied visual verification.
