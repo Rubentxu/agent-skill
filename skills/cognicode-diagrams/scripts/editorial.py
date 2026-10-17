@@ -323,6 +323,11 @@ def draw(label: str, nodes: list, edges: list, status: str,
         f'<tr><td>{esc(e["src"])}</td><td>{esc(e["kind"])}</td><td>{esc(e["dst"])}</td>'
         f'<td><code>{esc(e["id"])}</code> · {esc(e["coverage"])}</td></tr>' for e in edges
     )
+    node_rows = "".join(
+        f'<tr><td>{esc(n["symbol"])}</td><td><code>{esc(n["id"])}</code></td>'
+        f'<td>{esc(", ".join(n["queries"]))}</td><td>{esc(n["coverage"])}</td></tr>'
+        for n in nodes
+    )
     html = f"""{MARKER}
 <!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
@@ -339,6 +344,9 @@ small{{color:{colors["muted"]}}}@media print{{.diagram{{overflow:visible}}.diagr
 <h2>Relaciones demostradas en la vista</h2>
 <table><thead><tr><th>Origen</th><th>Relación</th><th>Destino</th><th>Evidencia</th></tr></thead>
 <tbody>{rows}</tbody></table>
+<h2>Evidencia de componentes</h2>
+<table><thead><tr><th>Símbolo</th><th>Claim</th><th>Consultas CogniCode</th><th>Cobertura</th></tr></thead>
+<tbody>{node_rows}</tbody></table>
 <p><small>{esc(status)}. SVG/HTML are visual projections, not verification of current code.
 Symbols, relations and query IDs come solely from the existing CogniCode ledger; inspect the atlas to audit them.
 Dependency IN/OUT metrics, if shown, count only the selected view, not the whole application.
