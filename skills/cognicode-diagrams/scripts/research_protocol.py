@@ -395,6 +395,7 @@ def decide(research: dict | None) -> dict:
     candidates = sorted(
         (c for c in caps if c["role"] in roles and language in c["languages"] and
          c["advertised"] and c["schema_observed"] and c["name"] not in TEXT_ONLY_TOOLS
+         and c["name"] not in DENIED_FILE_TOOLS and c.get("authority", "read") == "read"
          and c["stability"] != "deprecated"),
         key=lambda c: (roles.index(c["role"]), c["stability"] != "stable", c["name"]),
     )
