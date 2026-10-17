@@ -130,6 +130,20 @@ class QuestionProtocolTests(unittest.TestCase):
                   claims=[entity()], diagram=["C-1"])
         self.assertEqual(decide(s)["status"], "BLOCKED")
 
+    def test_file_reader_never_suggested_for_probe_or_query(self):
+        s = state(caps=[cap("list_files", "symbol_index")])
+        result = decide(s)
+        self.assertEqual(result["status"], "PARTIAL")
+        self.assertIsNone(result["capability"])
+        self.assertIsNone(result["action"])
+
+    def test_mutating_capability_is_skipped_before_probe(self):
+        s = state(caps=[cap("unsafe_apply", "symbol_index", authority="mutating"),
+                        cap("safe_index", "symbol_index")])
+        d = decide(s)
+        self.assertEqual(d["capability"], "safe_index")
+        self.assertEqual(d["action"], "query-structured")
+
     def test_new_semantic_questions_choose_discovered_cognicode_roles(self):
         for kind, role in (
             ("change_impact", "impact_analysis"),
