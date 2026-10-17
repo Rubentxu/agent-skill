@@ -75,4 +75,4 @@ La [política de procedencia](references/visual-evidence.md) separa categorías 
 
 ## Roadmap: lenguaje ubicuo y Moldable Development
 
-[**Moldable Knowledge**](references/moldable-knowledge.md) propone tarjetas de términos DDD por contexto, `Symbol Passport`, microbrief JSON para agentes y vistas interactivas para humanos desde el **mismo** ledger CogniCode. Es una propuesta, no una funcionalidad disponible todavía: no incorpora GT, analizadores paralelos ni permite leer el checkout.
+**Disponible:** [Report Thinking MVP](references/report-thinking.md) genera `Term Card` y `Symbol Passport` (JSON para agentes, Markdown para novatos) desde el **mismo** ledger CogniCode, enlazados al atlas tras `atlas.py sync`. El lenguaje ubicuo es contextual, separa candidato y aceptación humana, y nunca reemplaza `symbol_id`. [Moldable Knowledge](references/moldable-knowledge.md) mantiene planificadas las vistas contextuales dinámicas y el Change Impact Brief; no incorpora GT, lectores de archivos del checkout ni analizadores paralelos.

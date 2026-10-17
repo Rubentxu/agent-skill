@@ -16,7 +16,7 @@ from research_protocol import ResearchError, decide as decide_research
 
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
-INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial"}
+INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial", "report"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
 WORKSPACES = {"unknown", "absent", "incomplete", "ready", "invalid"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
@@ -74,6 +74,9 @@ LINKS = {
     "link-editorial-atlas": "references/editorial.md",
     "open-editorial": "references/editorial.md",
     "review-editorial": "references/editorial.md",
+    "inspect-report-evidence": "references/report-thinking.md",
+    "render-report": "references/report-thinking.md",
+    "inspect-report": "references/report-thinking.md",
 }
 
 
@@ -218,6 +221,72 @@ def editorial_affordances(state: dict, catalog: dict) -> dict:
                  status="VERIFIED")
 
 
+def report_affordances(state: dict) -> dict:
+    """Report HATEOAS uses declared states, never opens source code or trusts a path."""
+    r = state.get("report")
+    if not isinstance(r, dict):
+        raise InvalidState("report must be an object")
+    kind = r.get("kind")
+    if kind not in {"term-card", "symbol-passport"}:
+        raise InvalidState("report.kind unsupported")
+    opts = {"kind": kind}
+    if kind == "term-card":
+        context, term = r.get("context"), r.get("term")
+        if not all(isinstance(x, str) and SLUG.fullmatch(x) for x in (context, term)):
+            raise InvalidState("term-card requires contextual term ID")
+        opts.update({"context": context, "term": term})
+    else:
+        symbol = r.get("symbol")
+        if not isinstance(symbol, str) or not symbol.strip() or len(symbol) > 400:
+            raise InvalidState("symbol-passport requires CogniCode symbol_id")
+        opts["symbol"] = symbol
+        if "context" in r:
+            context = r["context"]
+            if not isinstance(context, str) or not SLUG.fullmatch(context):
+                raise InvalidState("invalid report.context")
+            opts["context"] = context
+    prepared = enum({"prepared": r.get("prepared", "unknown")}, "prepared",
+                    {"unknown", "ready", "missing", "invalid"})
+    rendered = enum({"render": r.get("render", "absent")}, "render",
+                    {"absent", "ready", "stale", "invalid"})
+    atlas = enum({"atlas_source": r.get("atlas_source", "absent")}, "atlas_source",
+                 {"absent", "stale", "ready"})
+    origin = enum({"evidence_origin": state.get("evidence_origin", "unknown")},
+                  "evidence_origin", {"cognicode", "unknown", "other"})
+    basis = enum({"basis": state.get("basis", "unknown")}, "basis", BASIS)
+    coverage = enum({"claim_coverage": state.get("claim_coverage", "unknown")},
+                    "claim_coverage", {"verified", "partial", "unknown"})
+    language = enum({"language_status": r.get("language_status", "unknown")},
+                    "language_status", {"candidate", "accepted", "disputed", "deprecated", "unknown", "unmapped"})
+    result = {"intent": "report", "kind": kind, "inputs": opts,
+              "certification": "derived-presentation-only"}
+    def offer(rel: str, reason: str, status="IN_PROGRESS", blockers=None) -> dict:
+        return {**result, "status": status, "recommended": rel,
+                "_links": [{"rel": rel, "href": LINKS[rel], "why": reason,
+                            "requires_approval": False, "inputs": opts}],
+                "blockers": blockers or []}
+    def stop(reason: str) -> dict:
+        return {**result, "status": "BLOCKED", "recommended": None,
+                "_links": [], "blockers": [reason]}
+    if prepared == "invalid":
+        return stop("report preflight invalid: no direct checkout fallback")
+    if prepared == "missing":
+        return stop("missing CogniCode evidence or curated term; investigate via CogniCode")
+    if prepared == "unknown":
+        return offer("inspect-report-evidence", "run report_thinking.py --check on derived ledger")
+    if origin != "cognicode":
+        return stop("report evidence provenance is not CogniCode")
+    if rendered in {"absent", "stale", "invalid"}:
+        return offer("render-report", "produce compact JSON and beginner Markdown from ledger")
+    if atlas != "ready":
+        return offer("build-atlas", "index existing moldable reports alongside claims and diagrams")
+    if language in {"candidate", "disputed", "deprecated", "unmapped", "unknown"} or coverage != "verified" or basis != "current":
+        return offer("finish", "report available; vocabulary, coverage or revision remains unconfirmed",
+                     "PARTIAL", ["presentation is not a source-code or domain certificate"])
+    return offer("finish", "scoped evidence and human-accepted language; presentation only",
+                 "VERIFIED")
+
+
 def affordances(state: dict, catalog: dict | None = None) -> dict:
     """Compute links from already-observed data, not invent observations."""
     if not isinstance(state, dict):
@@ -254,6 +323,9 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     # Editorial is only presentation of a previously researched C4 view.
     if intent == "editorial":
         return editorial_affordances(state, catalog)
+
+    if intent == "report":
+        return report_affordances(state)
 
     # Cross-lens navigation is deliberately independent of CogniCode readiness.
     # No model inference, no container auto-start, no implied visual verification.
