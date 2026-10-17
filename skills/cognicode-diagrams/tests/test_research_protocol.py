@@ -118,6 +118,30 @@ class QuestionProtocolTests(unittest.TestCase):
         self.assertEqual(d["status"], "BLOCKED")
         self.assertIsNone(d["action"])
 
+    def test_file_wrappers_and_mutating_tools_cannot_launder_code_reads(self):
+        for tool in ("list_files", "write_file", "edit_file", "resources/read"):
+            with self.subTest(tool=tool):
+                s = state(caps=[cap(tool, "symbol_index")],
+                          queries=[query(tool)],
+                          claims=[entity()], diagram=["C-1"])
+                self.assertEqual(decide(s)["status"], "BLOCKED")
+        s = state(caps=[cap("refactor_apply", "symbol_index", authority="mutating")],
+                  queries=[query("refactor_apply")],
+                  claims=[entity()], diagram=["C-1"])
+        self.assertEqual(decide(s)["status"], "BLOCKED")
+
+    def test_new_semantic_questions_choose_discovered_cognicode_roles(self):
+        for kind, role in (
+            ("change_impact", "impact_analysis"),
+            ("dependency_structure", "communities"),
+            ("traceable_decomposition", "symbol_context")
+        ):
+            with self.subTest(kind=kind):
+                s = state(kind, caps=[cap("observed_runtime_tool", role)])
+                d = decide(s)
+                self.assertEqual(d["action"], "query-structured")
+                self.assertEqual(d["capability"], "observed_runtime_tool")
+
     def test_search_content_may_locate_only_candidates(self):
         s = state(caps=[cap("search_content", "symbol_index"), cap("index", "symbol_index")],
                   queries=[query("search_content", mode="text_candidate")],
