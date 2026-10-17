@@ -137,3 +137,7 @@ Son **acciones semánticas** que el agente implementa exclusivamente llamando a 
 ## Nuevas affordances del preflight
 
 `preflight-language` consulta soporte en el runtime instalado antes de C4; `inspect-session` identifica grafo/proceso; `build-graph` se ofrece por requisito real `requires_graph`, nunca por ausencia global de capacidades; `plan-view` obliga a registrar cantidad de nodos y `split-view` evita diagramas ilegibles. El helper sigue siendo puro, no conecta a CogniCode.
+
+## Próxima etapa: rutas moldables de conocimiento (NO implementadas)
+
+El roadmap de [Moldable Knowledge](moldable-knowledge.md) propone `intent=report`, `get-brief`, `inspect-evidence`, `expand-context`, `render-view` y `propose-term` **solo como futuras affordances**. No figuran todavía en el router, no se ejecutan ni se anuncian como disponibles. Tendrán la misma política de sesión, workspace externo y exclusividad CogniCode que las acciones existentes. Las vistas y búsquedas se moldearán según el objeto/pregunta, sin segundo router ni nuevos analizadores.
