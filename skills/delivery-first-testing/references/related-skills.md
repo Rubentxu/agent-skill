@@ -7,7 +7,7 @@ Si la sesión proporciona `available_skills` (lista observada de identificadores
 ### Afinidad y prioridades
 
 - PipelineK presente y objetivo merge/integration/release: `pipelinek-local-ci` opera el ejecutor ya fijado, no redefine la política de pruebas.
-- Cambios de consumidores/contratos: `cognicode-quality-investigator` puede localizar relaciones, pero sólo si CogniCode está listo y el análisis aporta valor.
+- Cambios de consumidores/contratos: `cognicode-diagrams` puede aportar contexto C4 y relaciones **solo si** CogniCode está operativo y la skill está instalada. **No** es un auditor de calidad ni un lector alternativo del checkout. La exploración del código sigue siendo exclusivamente mediante CogniCode.
 - Ciclo bloqueado por falsos verdes: `retrospective-cycle-audit` para refutación, sin alargar indefinidamente un cambio sencillo.
 - Revisión de diffs: `agentchanges-review` si está instalado y solicitado el contexto de notas.
 - UAT GUI y Playwright CLI **observado como disponible**: explorar, interactuar y obtener evidencia; no convertir sesiones en pruebas permanentes.
