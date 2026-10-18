@@ -35,4 +35,4 @@ La página muestra **qué nombre usamos**, **en qué contexto**, **qué código 
 
 Se han añadido pruebas focalizadas de identidad, contexto ambiguo, trazabilidad, enlaces C4, ausencia de artefactos, actualización del atlas y rutas HATEOAS. La UAT con una instalación real de CogniCode y revisión visual en navegador se certifican únicamente si se ejecutan; no se infieren de unit tests con fixtures.
 
-Aún no hay etiquetas de dominio directamente dentro del SVG C4, enlaces inversos desde todos sus nodos, Change Impact Brief ni consultas moldables automáticas. Son evolutivos siguientes, no capacidades implementadas.
+**Navegación inversa implementada**: cada nodo C4 editorial que disponga de ficha moldable actual enlaza de vuelta a ella. El SVG muestra etiqueta DDD contextual (o `propuesto`); el identificador técnico persiste en tooltip y `data-symbol-id`. Sin ficha vigente, no hay enlace. Quedan pendientes Change Impact Brief, búsquedas moldables automáticas y generación automática de páginas faltantes.
