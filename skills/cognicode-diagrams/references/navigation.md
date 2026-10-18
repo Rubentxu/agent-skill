@@ -150,6 +150,10 @@ Las futuras `get-brief`, `inspect-evidence`, `expand-context`, `render-view` y `
 
 El router HATEOAS existente admite `intent=moldable` con `moldable.symbol` (identidad CogniCode) y `moldable.context` opcional. Pasos observables: `inspect-moldable` (`scripts/moldable_views.py --check`) → `render-moldable` (HTML/JSON contextual, solo HOME) → `build-atlas` → `open-moldable` → `finish`. No anuncia un diagrama no generado ni usa documentación, nombres o `grep` como evidencia. `prepared=ready` **no** suplanta la procedencia CogniCode, solo habilita la proyección. [Contrato M3](moldable-navigation.md).
 
+## Change Impact Brief M4 en `intent=report`
+
+`report.kind=change-impact` requiere `report.symbol` (identidad CogniCode), `report.goal` (cambio solicitado por usuario, una sola línea) y permite `report.context` DDD. La affordance `inspect-report-evidence` prepara el preflight `scripts/report_thinking.py --kind change-impact --symbol ... --goal ... --check`, luego `render-report`, `build-atlas` y `finish`. Nunca devuelve `VERIFIED` para hipótesis de impacto estático, aunque las flags declaradas sean completas; si faltan datos se vuelve al protocolo de investigación exclusiva CogniCode. [Contrato M4](change-impact.md).
+
 ## Etiquetas DDD y enlace inverso desde nodos C4 (`editorial.context`)
 
 `intent=editorial` acepta `editorial.context` opcional (slug de un contexto DDD) y lo transporta al comando `scripts/editorial.py --context <id>`. El render usa **exclusivamente** vocabulario de HOME y símbolos previamente corroborados por CogniCode. Si el término es único y aceptado, muestra su nombre; si es candidato, lo marca `(propuesto)`; ante ambigüedad, conserva el nombre técnico. El nodo SVG puede abrir su ficha contextual *solo* cuando el JSON y HTML de la ficha siguen siendo proyecciones actuales de los mismos hechos. Ausencia o caducidad ⇒ nodo sin enlace. El `symbol_id` técnico no cambia y el `--check` no escribe. [Orden operativo y límites](editorial.md#m3--etiquetas-ubicuas-y-navegación-inversa-desde-componentes-ready).

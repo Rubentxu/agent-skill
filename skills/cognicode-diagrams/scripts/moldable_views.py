@@ -106,6 +106,41 @@ def project(root: Path, symbol: str, context: str | None = None) -> dict:
                 "markdown": str(pair[1].relative_to(root)),
                 "claim_ids": card["evidence"]["claim_ids"]
             })
+    # A Change Impact Brief is a pre-existing *question-specific* projection,
+    # not an automatic claim about impact. Reproject to prove it is not stale.
+    folder = report.safe(root / "reports", root)
+    if folder.is_dir():
+        manifests = sorted(folder.glob("change-impact-*.report.json"))
+        if len(manifests) > MAX_VIEWS:
+            raise MoldableError("too many change briefs; narrow the inquiry")
+        for jp in manifests:
+            report.safe(jp, root)
+            if jp.stat().st_size > MAX_BYTES:
+                continue
+            try:
+                previous = report.load(jp, root)
+                if (not isinstance(previous, dict) or
+                    previous.get("generator") != report.GENERATOR or
+                    previous.get("kind") != "change-impact" or
+                    previous.get("target_id") != symbol or
+                    previous.get("requested_context") != context):
+                    continue
+                change = previous.get("change", {})
+                goal = change.get("goal") if isinstance(change, dict) else None
+                current = report.project(root, "change-impact", symbol=symbol,
+                                         context=context, goal=goal)
+                pair = _existing_report(root, current)
+            except (ValueError, UnicodeError):
+                continue  # Unknown, malformed or stale report is never a link.
+            if pair:
+                report_links.append({
+                    "rel": "open-change-impact", "kind": "change-impact",
+                    "label": "Preparar cambio: " + goal, "goal": goal,
+                    "json": str(pair[0].relative_to(root)),
+                    "markdown": str(pair[1].relative_to(root)),
+                    "claim_ids": current["evidence"]["claim_ids"],
+                    "readiness": current["change"]["readiness"]
+                })
     views = []
     lens = report.safe(root / "lenses" / "c4" / "reports", root)
     if lens.is_dir():

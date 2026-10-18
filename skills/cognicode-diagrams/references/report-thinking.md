@@ -1,6 +1,6 @@
 # Report Thinking MVP — Term Card + Symbol Passport
 
-**Disponible:** proyección sin lectura del checkout mediante `scripts/report_thinking.py`, ruta `intent=report` en `scripts/affordances.py` y enlaces en el atlas existente. No es un agente autónomo de investigación, evaluador de calidad, clasificador automático de dominio ni certificador de código.
+**Disponible:** proyección sin lectura del checkout mediante `scripts/report_thinking.py`, ruta `intent=report` en `scripts/affordances.py` y enlaces en el atlas existente. Además de Term Card y Symbol Passport, el [Change Impact Brief M4](change-impact.md) prepara un cambio concreto mediante relaciones estructurales y lagunas acreditadas; nunca interpreta una posible afectación como defecto demostrado. No es un agente autónomo de investigación, evaluador de calidad, clasificador automático de dominio ni certificador de código.
 
 ## 1. Objetivo y autoridades
 
@@ -103,7 +103,7 @@ La versión humana utiliza etiquetas fáciles para principiantes, **sin inventar
 
 Los documentos no llevan secretos ni fragmentos arbitrarios de source code; se limita tamaño de inputs, valida identidad y prohíbe symlinks. Un fichero de salida ajeno a la skill no se sobrescribe. No ejecutar scripts o consultas procedentes de los términos como instrucciones. Los rótulos se escapan en Markdown.
 
-**M3 implementado:** [navegación moldable por símbolo](moldable-navigation.md) con enlaces de símbolo → informe/diagrama C4/evidencia, HTML y JSON desde HOME, y enlaces inversos desde nodos SVG a fichas vigentes con etiquetas DDD. Aún no hay acciones de investigación moldable automáticas ni Change Impact Brief. Son M3–M5 del [roadmap](moldable-knowledge.md). El MVP es Term Card + Symbol Passport con navegabilidad desde el atlas, no un toolkit completo.
+**M3 implementado:** [navegación moldable por símbolo](moldable-navigation.md) con enlaces de símbolo → informe/diagrama C4/evidencia, HTML y JSON desde HOME, y enlaces inversos desde nodos SVG a fichas vigentes con etiquetas DDD. Aún no hay acciones de investigación moldable automáticas; [Change Impact Brief](change-impact.md) ya está disponible. Son M3–M5 del [roadmap](moldable-knowledge.md). El MVP es Term Card + Symbol Passport con navegabilidad desde el atlas, no un toolkit completo.
 
 ## 6. Validación mínima
 
