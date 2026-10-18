@@ -135,7 +135,7 @@ Ruta de ejemplo **planificada**:
 | **M0 — Higiene** | Retirar skill obsoleta `cognicode-quality-investigator` y rutas de catálogo; conservar las skills independientes instalables | Validador del repositorio y sin enlaces rotos |
 | **M1 — Term Card (implementado)** | Un `term_id` contextual desde vocabulario externo y claims existentes; etiqueta para principiante | Dos contextos con mismo término quedan separados; candidato nunca aparece como aprobado |
 | **M2 — Symbol Passport (implementado, UAT real pendiente)** | `intent=report` devuelve JSON agent-first y Markdown humano con mismos IDs/evidencias | Unit tests sobre ledger sintético; ejecutar UAT CogniCode real por lenguaje antes de afirmar compatibilidad |
-| **M3 — Contextual View (implementado, UAT visual real pendiente)** | Desde un símbolo abrir informes, diagramas C4 editoriales acreditados y evidencia en HTML/JSON externo, con HATEOAS | Tests de vínculos desde contexto → vistas; enlaces de vuelta desde nodos SVG siguen pendientes |
+| **M3 — Contextual View (implementado, UAT visual real pendiente)** | Desde un símbolo abrir informes/diagramas/evidencia y volver desde los nodos SVG con ficha vigente, con nombres DDD contextuales | Pruebas de ida/vuelta, términos ambiguos y rechazo de enlaces caducados; UAT visual real pendiente |
 | **M4 — Change Impact Brief** | Un agente inicia una mejora con consumidores/contratos/lagunas sin buscar archivos | Comparar coste de tokens/consultas vs investigación repetida; cerrar `PARTIAL` ante limitaciones |
 | **M5 — Journeys y handoff** | Cápsula portátil con contexto, términos, preguntas y revisión; reanudación acreditada | Segundo agente continúa sin doble exploración ni usar evidencia stale |
 
