@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from urllib.parse import quote
 import tempfile
 
 from workspace import inspect as inspect_workspace
@@ -237,11 +238,57 @@ def model(workspace: Path, view_id: str) -> tuple[str, list, list, str]:
     return label, sorted(nodes, key=lambda n: n["symbol"]), edges, status
 
 
+
+def contextual_nodes(workspace: Path, nodes: list, context: str | None, view_id: str) -> tuple[dict, dict]:
+    """Names are curated/proposed vocabulary; links require current owned pages.
+
+    The C4 model already established these symbol identities from structured
+    CogniCode queries. Neither the vocabulary nor a local page adds code facts.
+    """
+    import report_thinking as reports
+    from moldable_views import current_page
+
+    try:
+        if context is not None:
+            reports.slug(context, "context_id")
+        dictionary = reports.vocab(workspace)
+        terms, links = {}, {}
+        render_dir = workspace / "lenses" / "c4" / "renders"
+        for n in nodes:
+            symbol = n["symbol"]
+            candidates = sorted(
+                (t for t in dictionary.values()
+                 if symbol in t["symbol_ids"]
+                 and (context is None or t["context_id"] == context)
+                 and t["status"] in {"accepted", "candidate"}),
+                key=lambda t: (t["context_id"], t["term_id"]))
+            if len(candidates) == 1:
+                term = candidates[0]
+                display = term["label"] + (" (propuesto)" if term["status"] == "candidate" else "")
+                # Never truncate a term: show its technical ID if it does not fit.
+                if len(display) <= 94:
+                    terms[symbol] = {"label": display, "context_id": term["context_id"],
+                                     "term_id": term["term_id"], "status": term["status"]}
+            page = current_page(workspace, symbol, context)
+            if page is not None:
+                path = os.path.relpath(page, render_dir).replace(os.sep, "/")
+                # Pure, local, percent-encoded URL; no url schemes or fragments.
+                if not path.startswith("../../../navigation/moldable/"):
+                    raise EditorialError("unexpected contextual navigation destination")
+                links[symbol] = quote(path, safe="/.-_~")
+        return terms, links
+    except reports.ReportError as exc:
+        raise EditorialError("invalid derived domain vocabulary: " + str(exc)) from exc
+
+
 def draw(label: str, nodes: list, edges: list, status: str,
          colors: dict[str, str] | None = None, *,
-         pattern: str = "topology", focus: str | None = None) -> tuple[str, str]:
+         pattern: str = "topology", focus: str | None = None,
+         terms: dict | None = None, links: dict | None = None) -> tuple[str, str]:
     esc = lambda v: escape(str(v), quote=True)
     colors = colors or DEFAULT_COLORS
+    terms = terms or {}
+    links = links or {}
     if pattern not in {"topology", "dependencies", "traceability"}:
         raise EditorialError("unsupported semantic editorial pattern")
     if focus is not None and focus not in {n["symbol"] for n in nodes}:
@@ -275,8 +322,10 @@ def draw(label: str, nodes: list, edges: list, status: str,
         )
     for i, n in enumerate(nodes):
         y = positions[n["symbol"]]
+        shared = terms.get(n["symbol"], {})
+        visible_name = shared.get("label", n["symbol"])
         text = "".join(f'<text class="node-name" x="{NODE_X + 18}" y="{y + 29 + j * 18}">{esc(line)}</text>'
-                       for j, line in enumerate(title_lines(n["symbol"])))
+                       for j, line in enumerate(title_lines(visible_name)))
         if pattern == "dependencies":
             # Counts describe this SELECTED view, never a whole-repository fan-in.
             tag = f'{n["category"]} · IN {degrees[n["symbol"]][0]} / OUT {degrees[n["symbol"]][1]} (vista)'
@@ -287,17 +336,25 @@ def draw(label: str, nodes: list, edges: list, status: str,
         else:
             tag = n["category"]
         focused = n["symbol"] == focus
-        boxes.append(
+        symbol_link = links.get(n["symbol"])
+        node = (
             f'<g data-kind="component" data-symbol-id="{esc(n["symbol"])}" '
             f'data-claim-id="{esc(n["id"])}" data-query-ids="{esc(",".join(n["queries"]))}" '
             f'data-plane="static" data-coverage="{esc(n["coverage"])}" '
+            f'data-context-id="{esc(shared.get("context_id", ""))}" '
+            f'data-term-id="{esc(shared.get("term_id", ""))}" '
+            f'data-term-status="{esc(shared.get("status", "unmapped"))}" '
             f'data-in-degree="{degrees[n["symbol"]][0]}" data-out-degree="{degrees[n["symbol"]][1]}" '
             f'data-focus="{str(focused).lower()}">'
-            f'<title>{esc(n["symbol"])} — {esc(n["id"])} · queries {esc(", ".join(n["queries"]))}</title>'
+            f'<title>{esc(visible_name)} — símbolo: {esc(n["symbol"])} · {esc(n["id"])} · consultas {esc(", ".join(n["queries"]))}</title>'
             f'<rect x="{NODE_X}" y="{y}" width="{NODE_W}" height="{NODE_H}" rx="6" class="node{" focal" if focused else ""}"/>'
             f'{text}<text class="node-tag" x="{NODE_X + 18}" y="{y + 68}">{esc(tag)}</text>'
             f'</g>'
         )
+        # SVG2 links work in standalone SVG and embedded HTML, without JS.
+        boxes.append((f'<a class="node-link" href="{esc(symbol_link)}" '
+                      f'aria-label="Abrir ficha contextual de {esc(visible_name)}">{node}</a>')
+                     if symbol_link else node)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="editorial-title editorial-desc"
  viewBox="0 0 {WIDTH} {height}" width="{WIDTH}" height="{height}">
 <title id="editorial-title">{esc(label)}</title>
@@ -305,6 +362,9 @@ def draw(label: str, nodes: list, edges: list, status: str,
 <style>
   .node {{fill:{colors["surface"]};stroke:{colors["stroke"]};stroke-width:1.3}}
   .node.focal {{stroke-width:3;stroke-dasharray:6 2}}
+  .node-link {{cursor:pointer}}
+  .node-link .node-name {{text-decoration:underline}}
+  .node-link:focus .node {{stroke-width:3}}
   .connector {{fill:none;stroke:{colors["connector"]};stroke-width:1.5}}
   .node-name {{fill:{colors["ink"]};font:600 14px system-ui,sans-serif}}
   .node-tag {{fill:{colors["muted"]};font:11px ui-monospace,monospace}}
@@ -324,7 +384,11 @@ def draw(label: str, nodes: list, edges: list, status: str,
         f'<td><code>{esc(e["id"])}</code> · {esc(e["coverage"])}</td></tr>' for e in edges
     )
     node_rows = "".join(
-        f'<tr><td>{esc(n["symbol"])}</td><td><code>{esc(n["id"])}</code></td>'
+        f'<tr><td><code>{esc(n["symbol"])}</code></td>'
+        f'<td>{esc(terms.get(n["symbol"], {}).get("label", "Sin término compartido"))}'
+        + (f' · <a rel="noopener" href="{esc(links[n["symbol"]])}">Abrir ficha</a>'
+           if n["symbol"] in links else "") +
+        f'</td><td><code>{esc(n["id"])}</code></td>'
         f'<td>{esc(", ".join(n["queries"]))}</td><td>{esc(n["coverage"])}</td></tr>'
         for n in nodes
     )
@@ -345,12 +409,12 @@ small{{color:{colors["muted"]}}}@media print{{.diagram{{overflow:visible}}.diagr
 <table><thead><tr><th>Origen</th><th>Relación</th><th>Destino</th><th>Evidencia</th></tr></thead>
 <tbody>{rows}</tbody></table>
 <h2>Evidencia de componentes</h2>
-<table><thead><tr><th>Símbolo</th><th>Claim</th><th>Consultas CogniCode</th><th>Cobertura</th></tr></thead>
+<table><thead><tr><th>Símbolo técnico</th><th>Nombre común y ficha</th><th>Claim</th><th>Consultas CogniCode</th><th>Cobertura</th></tr></thead>
 <tbody>{node_rows}</tbody></table>
 <p><small>{esc(status)}. SVG/HTML are visual projections, not verification of current code.
 Symbols, relations and query IDs come solely from the existing CogniCode ledger; inspect the atlas to audit them.
 Dependency IN/OUT metrics, if shown, count only the selected view, not the whole application.
-The positional order has no runtime meaning.</small></p></main></body></html>
+The positional order has no runtime meaning. A common name is curated language, not independently proven implementation.</small></p></main></body></html>
 """
     return svg, html
 
@@ -374,7 +438,7 @@ def write_owned(path: Path, content: str, workspace: Path) -> None:
 
 def inspect(repo: Path, view_id: str, *, home: Path | None = None,
             profile: str = "default", pattern: str = "topology",
-            focus: str | None = None) -> dict:
+            focus: str | None = None, context: str | None = None) -> dict:
     if not VIEW_ID.fullmatch(view_id):
         raise EditorialError("invalid view ID")
     info = inspect_workspace(repo, home=home)
@@ -384,7 +448,8 @@ def inspect(repo: Path, view_id: str, *, home: Path | None = None,
     label, nodes, edges, status = model(workspace, view_id)
     colors = profile_colors((home or Path.home()).expanduser().resolve(strict=True), profile)
     # Validate the actual projection, including focus and visual budget, without writing.
-    draw(label, nodes, edges, status, colors, pattern=pattern, focus=focus)
+    terms, links = contextual_nodes(workspace, nodes, context, view_id)
+    draw(label, nodes, edges, status, colors, pattern=pattern, focus=focus, terms=terms, links=links)
     targets = [workspace / "lenses" / "c4" / "renders" / (view_id + suffix)
                for suffix in (".editorial.svg", ".editorial.html")]
     for target in targets:
@@ -392,7 +457,7 @@ def inspect(repo: Path, view_id: str, *, home: Path | None = None,
         if target.exists() and (not target.is_file() or not target.read_text(encoding="utf-8").startswith(MARKER)):
             raise EditorialError("non-editorial output already exists: " + str(target))
     return {"status": "EDITORIAL_INPUT_READY", "view": view_id, "pattern": pattern,
-            "profile": profile, "focus": focus, "coverage": status,
+            "profile": profile, "focus": focus, "context": context, "linked_nodes": len(links), "coverage": status,
             "entities": len(nodes), "relations": len(edges),
             "source": "cognicode-derived-ledger", "code_access": "none"}
 
@@ -430,7 +495,8 @@ def link_atlas(workspace: Path, view_id: str) -> bool:
 
 def render(repo: Path, view_id: str, *, home: Path | None = None,
            profile: str = "default", pattern: str = "topology",
-           focus: str | None = None, link: bool = False) -> dict:
+           focus: str | None = None, link: bool = False,
+           context: str | None = None) -> dict:
     if not VIEW_ID.fullmatch(view_id):
         raise EditorialError("invalid view ID")
     info = inspect_workspace(repo, home=home)
@@ -439,7 +505,9 @@ def render(repo: Path, view_id: str, *, home: Path | None = None,
     workspace = Path(info["workspace"])
     label, nodes, edges, status = model(workspace, view_id)
     colors = profile_colors((home or Path.home()).expanduser().resolve(strict=True), profile)
-    svg, page = draw(label, nodes, edges, status, colors, pattern=pattern, focus=focus)
+    terms, links = contextual_nodes(workspace, nodes, context, view_id)
+    svg, page = draw(label, nodes, edges, status, colors, pattern=pattern,
+                     focus=focus, terms=terms, links=links)
     folder = safe(workspace / "lenses" / "c4" / "renders", workspace)
     if not folder.is_dir():
         raise EditorialError("C4 renders directory missing")
@@ -454,7 +522,7 @@ def render(repo: Path, view_id: str, *, home: Path | None = None,
     write_owned(html_path, page, workspace)
     linked = link_atlas(workspace, view_id) if link else False
     return {"status": "EDITORIAL_RENDERED", "profile": profile, "pattern": pattern,
-            "focus": focus, "atlas_linked": linked, "coverage": status, "entities": len(nodes),
+            "focus": focus, "context": context, "linked_nodes": len(links), "atlas_linked": linked, "coverage": status, "entities": len(nodes),
             "relations": len(edges), "svg": str(svg_path), "html": str(html_path),
             "note": "Add both output paths to the existing <view>.atlas.json assets, then atlas.py sync"}
 
@@ -468,6 +536,7 @@ def main(argv: list[str] | None = None) -> int:
                         choices=("topology", "dependencies", "traceability"),
                         help="One evidence-preserving semantic presentation pattern")
     parser.add_argument("--focus", help="Exact CogniCode symbol_id in the selected view")
+    parser.add_argument("--context", help="DDD context_id; no implicit merging of homonyms")
     parser.add_argument("--check", action="store_true", help="Validate inputs and budgets without writing")
     parser.add_argument("--link-atlas", action="store_true",
                         help="After rendering, add existing editorial assets to the derived view report")
@@ -476,10 +545,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.check and args.link_atlas:
             parser.error("--check and --link-atlas cannot be combined")
         result = (inspect(args.repo, args.view, profile=args.profile,
-                          pattern=args.pattern, focus=args.focus)
+                          pattern=args.pattern, focus=args.focus, context=args.context)
                   if args.check else
                   render(args.repo, args.view, profile=args.profile,
-                         pattern=args.pattern, focus=args.focus, link=args.link_atlas))
+                         pattern=args.pattern, focus=args.focus, link=args.link_atlas,
+                         context=args.context))
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except (EditorialError, OSError) as exc:
