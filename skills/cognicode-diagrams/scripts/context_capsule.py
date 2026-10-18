@@ -11,6 +11,7 @@ import sys
 import tempfile
 
 import report_thinking as report
+import research_protocol
 from workspace import inspect as inspect_workspace
 
 GENERATOR = "cognicode-diagrams-capsule-v1"
@@ -219,11 +220,79 @@ def resume(root, symbol, goal, context=None):
             "next": "revalidate-by-cognicode", "code_access": "cognicode-only"}
 
 
-def build(repo, symbol, goal, *, context=None, home=None, check=False, receiving=False):
+def next_question(root, symbol, goal, context=None, research_state=None):
+    """Choose ONE CogniCode-only next step without invoking or faking any tool.
+
+    A snapshot is an agent-reported observation, not proof that its claimed
+    runtime exists; research_protocol validates semantic roles and consistency.
+    """
+    received = resume(root, symbol, goal, context)
+    if received["status"] != "LEDGER_MATCHES_RUNTIME_UNVERIFIED":
+        return {"status": "PAUSED", "reason": received["status"], "action": None,
+                "runtime_verified": False, "code_access": "cognicode-only"}
+    if research_state is None:
+        return {"status": "PARTIAL", "action": "discover-capabilities",
+                "why": "Detectar CogniCode instalado y lenguaje del símbolo; no reutilizar supuestos de la cápsula",
+                "source": "runtime-observation-required",
+                "runtime_verified": False, "code_access": "cognicode-only"}
+    if not isinstance(research_state, dict):
+        raise CapsuleError("research snapshot must be a structured object")
+    if research_state.get("observation_origin") != "cognicode":
+        return {"status": "BLOCKED", "action": None,
+                "why": "research snapshot does not originate from CogniCode; NO FALLBACK",
+                "runtime_verified": False, "code_access": "cognicode-only"}
+    research = research_state.get("research")
+    if not isinstance(research, dict):
+        raise CapsuleError("research snapshot needs research state")
+    question = research.get("question")
+    if not isinstance(question, dict):
+        raise CapsuleError("research snapshot needs a concrete question")
+    if (question.get("kind") != "change_impact" or
+            question.get("target") != report.text(symbol, "symbol_id") or
+            question.get("text") != valid_goal(goal)):
+        return {"status": "BLOCKED", "action": None,
+                "why": "snapshot question does not match capsule symbol, intent and research role",
+                "runtime_verified": False, "code_access": "cognicode-only"}
+    # Language is not guessed from extension/file names: it must come from
+    # a live CogniCode discovery/probe, declared in the structured snapshot.
+    language = question.get("language")
+    if not isinstance(language, str) or not language.strip():
+        raise CapsuleError("language is not established by CogniCode")
+    try:
+        result = research_protocol.decide(research)
+    except research_protocol.ResearchError as exc:
+        raise CapsuleError("invalid CogniCode research state: " + str(exc)) from exc
+    action = result.get("action")
+    if result["status"] == "BLOCKED":
+        return {"status": "BLOCKED", "action": None, "why": result["why"],
+                "runtime_verified": False, "code_access": "cognicode-only"}
+    if result["status"] in {"PARTIAL", "EVIDENCE_READY"} and not action:
+        return {"status": "PARTIAL", "action": None, "why": result["why"],
+                "runtime_verified": False, "code_access": "cognicode-only",
+                "research_status": result["status"]}
+    return {"status": "PARTIAL", "action": action,
+            "why": result["why"], "question_id": result.get("question_id"),
+            "capability": result.get("capability"), "missing": result.get("missing", []),
+            "research_status": result["status"],
+            "runtime_verified": False, "code_access": "cognicode-only",
+            "warning": "Snapshot is self-reported; the agent must validate against real CogniCode CLI/MCP output"}
+
+
+def build(repo, symbol, goal, *, context=None, home=None, check=False, receiving=False,
+          next_step=False, research_snapshot=None):
     workspace = inspect_workspace(repo, home=home)
     if workspace["status"] != "ready":
         raise CapsuleError("unsafe or absent workspace; never read target checkout")
     root = Path(workspace["workspace"])
+    if next_step:
+        state = None
+        if research_snapshot is not None:
+            # Only an external derived-workspace file. Never a source path.
+            path = Path(research_snapshot)
+            if not path.is_absolute():
+                raise CapsuleError("research snapshot path must be absolute under HOME")
+            state = report.load(path, root)
+        return next_question(root, symbol, goal, context, state)
     if receiving:
         return resume(root, symbol, goal, context)
     data = model(root, symbol, goal, context)
@@ -255,13 +324,19 @@ def main(argv=None):
     group = p.add_mutually_exclusive_group()
     group.add_argument("--check", action="store_true")
     group.add_argument("--receive", action="store_true")
+    group.add_argument("--next", action="store_true", help="Return one CogniCode-only research affordance")
+    p.add_argument("--research-snapshot", type=Path, help="Observed CogniCode session JSON, only under derived HOME")
     args = p.parse_args(argv)
     try:
+        if args.research_snapshot is not None and not args.next:
+            raise CapsuleError("--research-snapshot requires --next")
         out = build(args.repo, args.symbol, args.goal, context=args.context,
-                    check=args.check, receiving=args.receive)
+                    check=args.check, receiving=args.receive, next_step=args.next,
+                    research_snapshot=args.research_snapshot)
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 2 if out["status"] in {"MISSING_OR_UNSAFE_CAPSULE",
-                                      "INVALID_CAPSULE", "STALE_DERIVED_EVIDENCE"} else 0
+                                      "INVALID_CAPSULE", "STALE_DERIVED_EVIDENCE",
+                                      "BLOCKED", "PAUSED"} else 0
     except (CapsuleError, report.ReportError, ValueError, OSError) as exc:
         print(json.dumps({"status": "BLOCKED", "error": str(exc)}, ensure_ascii=False),
               file=sys.stderr)
