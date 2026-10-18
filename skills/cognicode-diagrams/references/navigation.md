@@ -154,6 +154,10 @@ El router HATEOAS existente admite `intent=moldable` con `moldable.symbol` (iden
 
 El mismo router ofrece `handoff.phase=sender|receiver` sobre un `symbol_id`, una petición `goal` y contexto DDD opcional. Emisor: `inspect-handoff → render-handoff → build-atlas → handoff-capsule` (PARTIAL). Receptor: `inspect-handoff → receive-handoff → revalidate-handoff-via-cognicode → finish` (nunca VERIFIED por flags declaradas). Si CogniCode está ausente: `BLOCKED / PAUSED_NO_FALLBACK`, sin `read_file`, `grep` o lector alternativo. Comprobar el ledger HOME no valida frescura del código; la revalidación debe hacerse mediante el CogniCode real. [Contrato M5](context-capsules.md).
 
+## M6 — próxima pregunta del receptor
+
+El enlace `revalidate-handoff-via-cognicode` usa la ruta ya implementada `context_capsule.py --next` para derivar la próxima decisión desde el protocolo compartido `research_protocol.decide`. Opcionalmente acepta `--research-snapshot` **exclusivamente bajo HOME externo** con observaciones del CogniCode real y coincidencia estricta entre símbolo, petición y `kind=change_impact`. Sin snapshot se recomienda descubrir capacidades; si el ledger ha cambiado se bloquea la continuación hasta revalidar. No se añade un planificador, servidor ni acceso alternativo a archivos. [Guía M6](context-capsules.md#m6--siguiente-pregunta-del-agente-receptor-disponible).
+
 ## Change Impact Brief M4 en `intent=report`
 
 `report.kind=change-impact` requiere `report.symbol` (identidad CogniCode), `report.goal` (cambio solicitado por usuario, una sola línea) y permite `report.context` DDD. La affordance `inspect-report-evidence` prepara el preflight `scripts/report_thinking.py --kind change-impact --symbol ... --goal ... --check`, luego `render-report`, `build-atlas` y `finish`. Nunca devuelve `VERIFIED` para hipótesis de impacto estático, aunque las flags declaradas sean completas; si faltan datos se vuelve al protocolo de investigación exclusiva CogniCode. [Contrato M4](change-impact.md).
