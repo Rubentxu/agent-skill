@@ -1,6 +1,6 @@
 # Moldable Knowledge — lenguaje compartido para personas y agentes
 
-> **Estado mixto:** M1 (Term Card) y M2 (Symbol Passport JSON/Markdown con router e integración al atlas) **implementados** en [Report Thinking MVP](report-thinking.md). La **navegación contextual por símbolo M3** ya está implementada en [moldable-navigation.md](moldable-navigation.md), con enlaces salientes a fichas y diagramas existentes. Los enlaces inversos desde todos los nodos SVG, búsquedas moldeables dinámicas, secuencias pedagógicas, Change Impact Brief y handoff siguen **planificados**. No anunciar como ejecutables enlaces `rel` futuros.
+> **Estado mixto:** M1 (Term Card) y M2 (Symbol Passport JSON/Markdown con router e integración al atlas) **implementados** en [Report Thinking MVP](report-thinking.md). La **navegación contextual por símbolo M3** ya está implementada en [moldable-navigation.md](moldable-navigation.md), con enlaces salientes a fichas y diagramas existentes. Los nodos SVG con ficha moldable actual ofrecen enlace inverso y etiqueta DDD contextual; sin ficha, no se inventa un enlace. Las búsquedas moldeables dinámicas, secuencias pedagógicas, Change Impact Brief y handoff siguen **planificados**. No anunciar como ejecutables enlaces `rel` futuros.
 
 ## Tesis: entender juntos el mismo objeto
 
