@@ -235,7 +235,7 @@ def report_affordances(state: dict) -> dict:
     if not isinstance(r, dict):
         raise InvalidState("report must be an object")
     kind = r.get("kind")
-    if kind not in {"term-card", "symbol-passport"}:
+    if kind not in {"term-card", "symbol-passport", "change-impact"}:
         raise InvalidState("report.kind unsupported")
     opts = {"kind": kind}
     if kind == "term-card":
@@ -248,6 +248,14 @@ def report_affordances(state: dict) -> dict:
         if not isinstance(symbol, str) or not symbol.strip() or len(symbol) > 400:
             raise InvalidState("symbol-passport requires CogniCode symbol_id")
         opts["symbol"] = symbol
+        if kind == "change-impact":
+            goal = r.get("goal")
+            if (not isinstance(goal, str) or not goal.strip() or len(goal) > 240
+                    or "\\n" in goal or "\\t" in goal):
+                raise InvalidState("change-impact requires one-line change goal")
+            opts["goal"] = goal.strip()
+        elif r.get("goal") is not None:
+            raise InvalidState("goal is only valid for change-impact")
         if "context" in r:
             context = r["context"]
             if not isinstance(context, str) or not SLUG.fullmatch(context):
@@ -285,7 +293,7 @@ def report_affordances(state: dict) -> dict:
     if origin != "cognicode":
         return stop("report evidence provenance is not CogniCode")
     if rendered in {"absent", "stale", "invalid"}:
-        return offer("render-report", "produce compact JSON and beginner Markdown from ledger")
+        return offer("render-report", "project grounded brief and beginner Markdown from CogniCode ledger; for change-impact include --goal")
     if atlas != "ready":
         return offer("build-atlas", "index existing moldable reports alongside claims and diagrams")
     if language in {"candidate", "disputed", "deprecated", "unmapped", "unknown"} or coverage != "verified" or basis != "current":
