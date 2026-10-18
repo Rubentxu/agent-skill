@@ -169,7 +169,7 @@ class ReportThinkingTests(unittest.TestCase):
         self.assertEqual(len({a["json"], b["json"], c["json"]}), 3)
         d = json.loads(Path(a["json"]).read_text())
         self.assertEqual([r["claim_id"] for r in d["change"]["observed_outgoing"]], ["R1"])
-        self.assertIn("No encontrar relaciones entrantes aquí NO demuestra ausencia de consumidores", d["change"]["unknowns"])
+        self.assertIn("No encontrar relaciones entrantes aquí NO demuestra ausencia de consumidores.", d["change"]["unknowns"])
         self.assertEqual(d["language"]["status"], "accepted")
 
     def test_missing_goal_and_malicious_query_never_produce_brief(self):
