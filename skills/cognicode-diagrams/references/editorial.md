@@ -154,3 +154,27 @@ El perfil debe ser JSON cerrado con seis colores hexadecimales y contraste de te
 - UAT visual real con navegador/Podman es **efímera**: ejecutar durante el ciclo y conservar recibo; la prueba unitaria no equivale a un render inspeccionado.
 
 Se han adoptado ideas de diseño de diagram-design (MIT); no se copian sus fuentes, plantillas, assets ni scripts.
+
+## M3 — etiquetas ubicuas y navegación inversa desde componentes (READY)
+
+Al seleccionar un **nodo del SVG editorial C4**, se abre su página contextual moldable si existe una página válida para el **mismo `symbol_id` y `context_id`**. El HTML del editor también ofrece el enlace explícito **Abrir ficha** en la tabla de evidencias. No se ejecuta JavaScript y los destinos son rutas relativas al workspace externo, nunca URLs externas ni ficheros del checkout.
+
+**Orden de operación** (evita páginas desactualizadas y enlaces fantasmas):
+
+1. Investigar exclusivamente con CogniCode y conservar los claims estructurados de la vista C4. Renderizar y enlazar primero el editorial C4, si no existe.
+2. Generar las fichas `term-card` y `symbol-passport` que aporten valor. Definir el término contextual solo con `terms.json` fuera del checkout; la aceptación necesita un curador humano.
+3. Generar o regenerar `moldable_views.py --symbol '<id>' --context '<id>'`. Su contenido enlaza solo informes y diagramas realmente existentes.
+4. **Re-renderizar** el editorial con `--view '<vista>' --context '<id>' --link-atlas`: el nodo SVG enlazará a la ficha **solo si** ambas salidas (`.moldable.json` y `.moldable.html`) coinciden exactamente con sus proyecciones actuales. Una página stale, ajena a la skill o alterada se deja sin enlace.
+5. Sincronizar atlas con `atlas.py sync`. Abrir el **HTML editorial** desde el atlas: los nodos del SVG incrustado son clicables; una miniatura SVG como imagen en Markmap no tiene interacción interna.
+
+```bash
+python3 scripts/editorial.py --repo /raiz/explicita --view context --context orquestacion --check
+python3 scripts/editorial.py --repo /raiz/explicita --view context --context orquestacion --link-atlas
+python3 scripts/atlas.py sync --repo /raiz/explicita
+```
+
+**Contrato didáctico y DDD**: si el símbolo tiene un único término aceptado en el contexto, se muestra ese nombre; si es candidato, se escribe literalmente **(propuesto)**; si hay varios términos compatibles, se muestra el nombre técnico sin elegir a ciegas. Los términos demasiado largos no se truncan: se conserva el `symbol_id`. La identidad técnica completa está siempre en tooltip (`title`), `data-symbol-id` y tabla HTML, junto a `claim_id` y `query_ids`. Ni la etiqueta humana ni el enlace crean evidencia técnica.
+
+**Semántica y seguridad**: solo `graph_edge` previamente corroboradas por CogniCode; ningún `reference_link` se convierte en arista. Los `href` generados se comprueban como rutas relativas a `navigation/moldable/` y pasan por escape HTML/XML y codificación de URL. No se montan los ficheros del proyecto, no se usa Git, grep ni otro lector, ni hay runtime ni cambios de arquitectura implícitos. Las páginas y diagramas pueden requerir regeneración tras cambiar evidencias o glosario; `atlas.py check` mide frescura de artefactos, **no** del código.
+
+**Limitaciones honestas**: los nodos sin ficha vigente se muestran, pero no son enlaces; no se genera automáticamente una página por cada componente, ni se fuerza a inventar términos. La validación de CLI/CI sobre fixtures no equivale a una inspección manual real del navegador o a una UAT con CogniCode instalado.
