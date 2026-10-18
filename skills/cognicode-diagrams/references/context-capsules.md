@@ -63,3 +63,29 @@ El atlas registra solo cápsulas que pueden reconstruirse byte a byte desde su i
 Se mantienen solo regresiones quirúrgicas en la suite ya disponible: límites y símbolos/cuestiones, homónimos, idempotencia, rechazo de archivos ajenos, `--check` sin escrituras, staleness respecto al ledger, atlas, enlaces moldables y HATEOAS sin fallback. UAT real con agentes y CogniCode instalado por lenguaje **pendiente**; no se infiere de los tests sintéticos. La reducción de tokens todavía debe medirse comparando handoff breve con investigación duplicada.
 
 El siguiente trabajo solo debe ejecutarse si añade utilidad real: investigar con un agente A, continuar con B, contar llamadas CogniCode y tokens, comprobar mejora del tiempo a una decisión. No crear orquestador de agentes ni memoria persistente adicional para este hito.
+
+## M6 — siguiente pregunta del agente receptor (disponible)
+
+`context_capsule.py --next` usa **el mismo** `research_protocol.decide` de la skill para proponer una única operación de investigación permitida, sin ejecutar comandos sobre el proyecto ni inventar herramientas. El receptor primero compara el handoff con el ledger; si está obsoleto devuelve `PAUSED`, no recomienda búsquedas alternativas.
+
+```bash
+# Agente B: con una cápsula vigente respecto al ledger
+python3 scripts/context_capsule.py --repo /raiz/explicita \
+  --symbol 'App::StepExecutor' --context orquestacion \
+  --goal 'Modificar recuperación sin romper consumidores' --next
+
+# Después de descubrir la instalación REAL de CogniCode y recoger su estado estructurado
+# exclusivamente en HOME, el agente puede pedir la siguiente decisión:
+python3 scripts/context_capsule.py --repo /raiz/explicita \
+  --symbol 'App::StepExecutor' --context orquestacion \
+  --goal 'Modificar recuperación sin romper consumidores' --next \
+  --research-snapshot /HOME-EXTERNO/receiver-research.json
+```
+
+El JSON suministrado por el agente bajo HOME contiene `observation_origin=cognicode` y `research` con el contrato existente del [protocolo de investigación](research-protocol.md). La pregunta debe ser exactamente `kind=change_impact`, `target=<symbol_id>`, `text=<goal>` y `language` **observado por CogniCode**. `catalog=unknown` provoca `discover-capabilities`; catálogo conocido pero sin registro de lenguaje exige `preflight-language`. Cuando hay más información, el mismo protocolo valida sesión, probes, consultas y claims. No se inventan nombres de herramientas ni se omiten sondeos por lenguaje.
+
+**El estado observado es aportado por el agente.** Este validador puede rechazar contradicciones, lectura directa o una sesión sin cobertura, pero no autenticar por sí solo el origen del JSON ni la identidad del proceso CogniCode. Las salidas del nuevo modo siguen siendo `PARTIAL`, incluso si `research_protocol` considera suficiente la evidencia; la verificación material requiere operar contra el runtime CogniCode real con permisos efectivos que bloqueen lectores alternativos.
+
+Se rechaza cualquier `--research-snapshot` fuera del workspace derivado, archivo con symlink o input sin el formato esperado; la opción solo se admite con `--next`. Si el receptor no tiene CogniCode instalado, no crea estado ficticio: `PAUSED_NO_FALLBACK` y no lee el checkout.
+
+**UAT necesaria, no simulada:** dos agentes distintos, el segundo con `read_file`, terminal de lectura, Git/GitHub source, IDE y exploradores de subagentes bloqueados por permisos del host; A obtiene pruebas reales mediante CogniCode, B continúa únicamente mediante sus consultas y registra llamadas/tokens. La release pública `v0.101.21` existe, pero en el entorno de esta integración no se pudo descargar/ejecutar. No se acredita aún una UAT real, ni se añade un test harness permanente para suplirla.

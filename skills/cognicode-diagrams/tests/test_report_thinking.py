@@ -163,6 +163,57 @@ class ReportThinkingTests(unittest.TestCase):
         self.assertIn("Cápsula JSON para agentes", atlas_text)
         self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
 
+    def test_handoff_frontier_reuses_existing_cognicode_research_protocol(self):
+        goal = "Modificar persistencia sin romper consumidores"
+        capsule.build(self.repo, "App::Store", goal, home=self.home)
+        first = capsule.build(self.repo, "App::Store", goal, home=self.home,
+                              next_step=True)
+        self.assertEqual(first["status"], "PARTIAL")
+        self.assertEqual(first["action"], "discover-capabilities")
+        self.assertFalse(first["runtime_verified"])
+        state = {"observation_origin": "cognicode", "research": {
+            "question": {"id": "Q-change", "kind": "change_impact",
+                         "text": goal, "target": "App::Store", "language": "rust"},
+            "catalog": "unknown",
+        }}
+        location = self.w / "handoffs" / "receiver-state.json"
+        location.write_text(json.dumps(state), encoding="utf-8")
+        out = capsule.build(self.repo, "App::Store", goal, home=self.home,
+                            next_step=True, research_snapshot=location)
+        self.assertEqual(out["action"], "discover-capabilities")
+        state["research"]["catalog"] = "observed"
+        location.write_text(json.dumps(state))
+        out = capsule.build(self.repo, "App::Store", goal, home=self.home,
+                            next_step=True, research_snapshot=location)
+        self.assertEqual(out["action"], "preflight-language")
+        self.assertEqual(out["status"], "PARTIAL")
+        self.assertFalse(out["runtime_verified"])
+
+    def test_handoff_frontier_blocks_mismatch_other_sources_and_direct_paths(self):
+        goal = "Ajustar recuperación"
+        capsule.build(self.repo, "App::Entry", goal, home=self.home)
+        state = {"observation_origin": "github", "research": {
+            "question": {"id": "Q-1", "kind": "change_impact",
+                         "text": goal, "target": "App::Entry", "language": "rust"},
+            "catalog": "observed"
+        }}
+        self.assertEqual(capsule.next_question(self.w, "App::Entry", goal,
+                                              research_state=state)["status"], "BLOCKED")
+        state["observation_origin"] = "cognicode"
+        state["research"]["question"]["target"] = "App::Other"
+        self.assertEqual(capsule.next_question(self.w, "App::Entry", goal,
+                                              research_state=state)["status"], "BLOCKED")
+        direct = self.repo / "SENTINEL_DO_NOT_READ"
+        with self.assertRaisesRegex(report.ReportError, "outside derived workspace"):
+            capsule.build(self.repo, "App::Entry", goal, home=self.home,
+                          next_step=True, research_snapshot=direct)
+        # No package-specific exception can grant file-reading access if CogniCode fails.
+        old = json.loads(self.queries.read_text())
+        old[0]["basis"] = "changed-revision"
+        self.queries.write_text(json.dumps(old))
+        self.assertEqual(capsule.build(self.repo, "App::Entry", goal,
+                                      home=self.home, next_step=True)["status"], "PAUSED")
+
     def test_capsule_does_not_merge_ddd_contexts_or_different_goals(self):
         first = capsule.build(self.repo, "App::Entry", "Ajustar reintentos",
                               context="orquestacion", home=self.home)
