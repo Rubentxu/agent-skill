@@ -49,7 +49,7 @@ El router semántico admite `topology`, `dependencies` (IN/OUT **solo del subgra
 
 **M3 implementado:** [navegación moldable](references/moldable-navigation.md) con `intent=moldable`, `scripts/moldable_views.py --symbol <symbol_id> [--context <id>]`, salidas HTML/JSON en HOME y enlaces desde el atlas. Selecciona **solo** pasaportes, fichas DDD y diagramas C4 editoriales que ya existen, tienen la identidad acreditada y están vinculados mediante claims CogniCode. `--check` no escribe. También disponible: los nodos del SVG/HTML C4 editorial muestran un nombre DDD aceptado (o candidato rotulado) mediante `editorial.py --context <id>` y enlazan de vuelta a páginas moldables existentes y actuales. El `symbol_id` técnico permanece en metadatos, tooltip y tabla. Sin contexto, un homónimo ambiguo conserva su identificador técnico. No se inventan relaciones, análisis de impacto ni rutas alternativas de lectura.
 
-Las futuras búsquedas moldables automáticas, enlaces inversos desde cada nodo SVG, Change Impact Brief y narrativas siguen **planificadas**. [Roadmap](references/moldable-knowledge.md).
+Las futuras búsquedas moldables automáticas, Change Impact Brief y narrativas siguen **planificadas**. Los nodos **sin ficha vigente** no son enlaces: regenerar primero su página moldable. [Roadmap](references/moldable-knowledge.md).
 
 ## Proyección editorial opcional — criterios de diagram-design
 
