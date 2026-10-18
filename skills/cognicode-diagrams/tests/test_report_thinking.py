@@ -177,7 +177,7 @@ class ReportThinkingTests(unittest.TestCase):
             report.build(self.repo, "change-impact", symbol="App::Entry", home=self.home)
         with self.assertRaisesRegex(report.ReportError, "one line"):
             report.build(self.repo, "change-impact", symbol="App::Entry",
-                         goal="Actualizar\\nRomper la política", home=self.home)
+                         goal="Actualizar" + chr(10) + "Romper la política", home=self.home)
         with self.assertRaisesRegex(report.ReportError, "--goal"):
             report.build(self.repo, "symbol-passport", symbol="App::Entry",
                          goal="No debe aceptarse", home=self.home)
@@ -253,7 +253,7 @@ class ReportRoutingTests(unittest.TestCase):
         with self.assertRaises(affordances.InvalidState):
             affordances.affordances(self.state(kind="change-impact", goal=""))
         with self.assertRaises(affordances.InvalidState):
-            affordances.affordances(self.state(kind="change-impact", goal="dos\\nlíneas"))
+            affordances.affordances(self.state(kind="change-impact", goal="dos" + chr(10) + "líneas"))
 
     def test_workspace_and_wrong_term_are_rejected(self):
         s = self.state()
