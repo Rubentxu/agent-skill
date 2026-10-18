@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Moldable Term Card / Symbol Passport from CogniCode-derived ledgers ONLY.
+"""Moldable Term Card / Symbol Passport / Change Impact Brief from CogniCode-derived ledgers ONLY.
 
 Never opens or scans the target checkout, calls Git, runs CogniCode, or creates
 business semantics. This is a presentation projector over prior structured evidence.
@@ -190,9 +190,16 @@ def basis_of(queries: dict, ids: set[str]) -> dict:
 
 
 def project(root: Path, kind: str, *, symbol: str | None = None,
-            context: str | None = None, term: str | None = None) -> dict:
-    if kind not in {"term-card", "symbol-passport"}:
+            context: str | None = None, term: str | None = None,
+            goal: str | None = None) -> dict:
+    if kind not in {"term-card", "symbol-passport", "change-impact"}:
         raise ReportError("unknown report kind")
+    if kind == "change-impact":
+        goal = text(goal, "change goal", 240)
+        if "\n" in goal or "\t" in goal:
+            raise ReportError("change goal must be one line")
+    elif goal is not None:
+        raise ReportError("--goal only valid for change-impact")
     queries, entities, relations = evidence(root)
     terms = vocab(root)
     selected_term = None
@@ -206,7 +213,7 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
         target_id = selected_term["context_id"] + ":" + selected_term["term_id"]
     else:
         if symbol is None or term is not None:
-            raise ReportError("symbol-passport requires --symbol and optional --context")
+            raise ReportError("symbol-passport/change-impact requires --symbol and optional --context")
         symbol = text(symbol, "symbol_id")
         if symbol not in entities:
             raise ReportError("symbol lacks corroborated CogniCode entity evidence")
@@ -244,7 +251,7 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
              "status": t["status"]} for t in matched
         ] if len(matched) > 1 else []
     }
-    return {
+    output = {
         "generator": GENERATOR, "schema_version": 1, "kind": kind, "target_id": target_id,
         "requested_context": context,
         "symbol_ids": target_symbols, "language": language,
@@ -272,6 +279,49 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
         "status": "GROUNDED_SCOPED" if claims else "LANGUAGE_ONLY",
         "certification": "derived-presentation-not-runtime-verification"
     }
+    if kind == "change-impact":
+        # Direction is CORROBORATED; whether the change affects any neighbour
+        # is a HYPOTHESIS, never a semantic or runtime conclusion.
+        incoming = [r for r in shown if r["to_symbol"] == symbol]
+        outgoing = [r for r in shown if r["from_symbol"] == symbol]
+        unknown = ["No se ha demostrado qué comportamientos modifica la petición.",
+                   "El grafo estático no demuestra impacto runtime ni compatibilidad.",
+                   "La lista solo cubre las relaciones corroboradas en el ledger disponible."]
+        if truncated:
+            unknown.append("Se omitieron relaciones por el presupuesto de presentación.")
+        if not incoming:
+            unknown.append("No encontrar relaciones entrantes aquí NO demuestra ausencia de consumidores.")
+        if not outgoing:
+            unknown.append("No encontrar relaciones salientes aquí NO demuestra independencia.")
+        output["change"] = {
+            "goal": goal,
+            "question_status": "USER_INTENT_NOT_CODE_EVIDENCE",
+            "observed_incoming": incoming, "observed_outgoing": outgoing,
+            "potentially_affected": [
+                {"symbol_id": r["from_symbol"], "relation_claim_id": r["claim_id"],
+                 "status": "HYPOTHESIS_NOT_VALIDATED"}
+                for r in incoming
+            ],
+            "unknowns": unknown,
+            "next_questions": [
+                {"question": "¿Qué consumidores y referencias estructuradas tiene el símbolo en el ámbito pertinente?",
+                 "purpose": "Confirmar el alcance de relaciones entrantes y omisiones",
+                 "authority": "cognicode-only"},
+                {"question": "¿Qué contratos y usos del símbolo condicionan el cambio solicitado?",
+                 "purpose": "Investigar compatibilidad sin inferirla de las aristas",
+                 "authority": "cognicode-only"},
+                {"question": "¿Qué rutas de error o estados importantes se asocian al comportamiento que se pretende modificar?",
+                 "purpose": "Acotar verificaciones quirúrgicas antes de editar",
+                 "authority": "cognicode-only"}
+            ],
+            "readiness": ("PARTIAL_RESEARCH_REQUIRED" if truncated or
+                          output["evidence"]["coverage"] != "scoped" or
+                          output["evidence"]["basis"]["status"] != "reported_unverified"
+                          else "SCOPED_STATIC_EVIDENCE_ONLY"),
+            "edit_authorized": False,
+            "impact_verified": False
+        }
+    return output
 
 
 def markdown(data: dict) -> str:
@@ -286,7 +336,7 @@ def markdown(data: dict) -> str:
     lines = [
         MARKER,
         "# " + literal(v["label"]), "",
-        "**Tipo:** " + ("Ficha de término" if data["kind"] == "term-card" else "Pasaporte de símbolo"),
+        "**Tipo:** " + {"term-card": "Ficha de término", "symbol-passport": "Pasaporte de símbolo", "change-impact": "Informe de preparación de cambio"}[data["kind"]],
         "**Contexto:** " + literal(v["context_id"]),
         "**Término:** " + literal(v["term_id"]),
         "**Estado del nombre:** " + literal(v["status"]),
@@ -321,6 +371,34 @@ def markdown(data: dict) -> str:
         for a in v["alternative_contexts"]:
             lines.append("- " + literal(a["context_id"]) + ": " + literal(a["label"]) +
                          " (" + literal(a["status"]) + ")")
+    if data["kind"] == "change-impact":
+        change = data["change"]
+        # The goal is user intent, NOT proof of the code behaviour.
+        lines += ["", "## Cambio solicitado (intención del usuario)", "",
+                  literal(change["goal"]), "",
+                  "## Relaciones entrantes observadas (posibles consumidores)", ""]
+        lines += (["- " + literal(r["from_symbol"]) + " → " + literal(r["to_symbol"]) +
+                   " (claim " + literal(r["claim_id"]) + "; consulta " +
+                   literal(", ".join(r["query_ids"])) + ")" for r in change["observed_incoming"]]
+                  or ["Ninguna observada en el ámbito disponible. **NO significa que no haya consumidores.**"])
+        lines += ["", "## Relaciones salientes observadas (colaboradores)", ""]
+        lines += (["- " + literal(r["from_symbol"]) + " → " + literal(r["to_symbol"]) +
+                   " (claim " + literal(r["claim_id"]) + ")" for r in change["observed_outgoing"]]
+                  or ["Ninguna observada en este ámbito; no implica independencia."])
+        lines += ["", "## Hipótesis, NO fallos demostrados", ""]
+        lines += (["- Podría necesitar revisión: " + literal(h["symbol_id"]) +
+                   " (relación " + literal(h["relation_claim_id"]) + ")."
+                   for h in change["potentially_affected"]]
+                  or ["No se identificaron candidatos en las relaciones entrantes observadas."])
+        lines += ["", "## Qué preguntar a CogniCode antes de modificar", ""]
+        lines += ["- " + literal(q["question"]) + " — " + literal(q["purpose"])
+                  for q in change["next_questions"]]
+        lines += ["", "## Límites y decisión", ""]
+        lines += ["- " + literal(x) for x in change["unknowns"]]
+        lines += ["", "Preparación: " + literal(change["readiness"]),
+                  "Edición autorizada por este informe: **NO**.",
+                  "Impacto real verificado: **NO**.",
+                  "Utilizar pruebas afectadas/contratos solo después de investigar el cambio con CogniCode.", ""]
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -329,8 +407,10 @@ def paths(root: Path, data: dict) -> tuple[Path, Path]:
     # Keep the old unscoped digest stable, but avoid overwriting scoped passports.
     context = data.get("requested_context")
     identity = data["kind"] + "\0" + data["target_id"]
-    if context is not None and data["kind"] == "symbol-passport":
+    if context is not None and data["kind"] in {"symbol-passport", "change-impact"}:
         identity += "\0context:" + context
+    if data["kind"] == "change-impact":
+        identity += "\0goal:" + data["change"]["goal"]
     digest = hashlib.sha256(identity.encode()).hexdigest()[:16]
     prefix = data["kind"] + "-" + digest
     folder = safe(root / "reports", root)
@@ -361,12 +441,12 @@ def owned_write(path: Path, content: str, *, is_json: bool = False) -> None:
 
 def build(repo: Path, kind: str, *, symbol: str | None = None,
           context: str | None = None, term: str | None = None,
-          home: Path | None = None, check: bool = False) -> dict:
+          goal: str | None = None, home: Path | None = None, check: bool = False) -> dict:
     info = inspect_workspace(repo, home=home)
     if info["status"] != "ready":
         raise ReportError("external CogniCode workspace not ready")
     root = Path(info["workspace"])
-    data = project(root, kind, symbol=symbol, context=context, term=term)
+    data = project(root, kind, symbol=symbol, context=context, term=term, goal=goal)
     jpath, mpath = paths(root, data)
     if check:
         return {"status": "EVIDENCE_READY", "kind": kind, "scope": data["status"],
@@ -391,15 +471,16 @@ def build(repo: Path, kind: str, *, symbol: str | None = None,
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", required=True, type=Path)
-    parser.add_argument("--kind", choices=("term-card", "symbol-passport"), required=True)
+    parser.add_argument("--kind", choices=("term-card", "symbol-passport", "change-impact"), required=True)
     parser.add_argument("--symbol")
     parser.add_argument("--context")
     parser.add_argument("--term")
+    parser.add_argument("--goal", help="Specific intended change (user request), not code evidence")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
     try:
         result = build(args.repo, args.kind, symbol=args.symbol, context=args.context,
-                       term=args.term, check=args.check)
+                       term=args.term, goal=args.goal, check=args.check)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except (ReportError, OSError, ValueError) as exc:
