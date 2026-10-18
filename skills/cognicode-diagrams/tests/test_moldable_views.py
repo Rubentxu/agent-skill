@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 
 SKILL = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL / "scripts"))
@@ -91,6 +92,82 @@ class MoldableNavigationTests(unittest.TestCase):
         self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
         self.assertEqual(moldable.build(self.repo, "App::Entry", context="orquestacion",
                                        home=self.home), out)
+
+    def test_svg_nodes_link_back_to_current_contextual_pages(self):
+        # Diagram -> symbol page -> passport/term/evidence -> diagram.
+        report.build(self.repo, "symbol-passport", symbol="App::Entry",
+                     context="orquestacion", home=self.home)
+        report.build(self.repo, "term-card", context="orquestacion",
+                     term="paso", home=self.home)
+        manifest = self.w / "lenses/c4/reports/context.atlas.json"
+        manifest.write_text(json.dumps({
+            "schema_version": 1, "plane": "implementation", "label": "Recorrido",
+            "claim_ids": ["C-1", "C-2", "R-1"],
+            "assets": ["lenses/c4/sources/context.mmd"]
+        }))
+        (self.w / "lenses/c4/sources/context.mmd").write_text("flowchart LR\nA-->B\n")
+        editorial.render(self.repo, "context", home=self.home, link=True)
+        p = moldable.build(self.repo, "App::Entry", context="orquestacion", home=self.home)
+        checked = editorial.inspect(self.repo, "context", context="orquestacion", home=self.home)
+        self.assertEqual(checked["linked_nodes"], 1)
+        out = editorial.render(self.repo, "context", context="orquestacion", home=self.home)
+        svg = Path(out["svg"]).read_text(encoding="utf-8")
+        page = Path(out["html"]).read_text(encoding="utf-8")
+        root = ET.fromstring(svg[svg.index("<svg"):])
+        ns = {"s": "http://www.w3.org/2000/svg"}
+        anchors = root.findall(".//s:a", namespaces=ns)
+        self.assertEqual(len(anchors), 1)
+        anchor = anchors[0]
+        self.assertTrue(anchor.attrib["href"].startswith("../../../navigation/moldable/"))
+        self.assertIn("Abrir ficha contextual", anchor.attrib["aria-label"])
+        node = anchor.find("s:g", ns)
+        self.assertEqual(node.attrib["data-symbol-id"], "App::Entry")
+        self.assertEqual(node.attrib["data-context-id"], "orquestacion")
+        self.assertEqual(node.attrib["data-term-id"], "paso")
+        self.assertEqual(node.attrib["data-term-status"], "accepted")
+        self.assertIn("Paso del proceso", svg)
+        self.assertIn("App::Entry", svg)
+        self.assertIn("Abrir ficha", page)
+        self.assertIn("http-equiv=\"Content-Security-Policy\"", page)
+        self.assertEqual(moldable.current_page(self.w, "App::Entry", "orquestacion"),
+                         Path(p["html"]))
+        self.assertNotIn("SECRET_IN_TARGET", svg)
+        self.assertEqual(atlas.build(self.repo, home=self.home)["status"], "ATLAS_SOURCE_READY")
+
+        # A changed term immediately invalidates the old navigation target.
+        terms = json.loads(self.v.read_text())
+        terms[0]["label"] = "Paso revisado"
+        self.v.write_text(json.dumps(terms))
+        self.assertIsNone(moldable.current_page(self.w, "App::Entry", "orquestacion"))
+        out = editorial.render(self.repo, "context", context="orquestacion", home=self.home)
+        svg = Path(out["svg"]).read_text()
+        self.assertIn("Paso revisado", svg)
+        self.assertNotIn('class="node-link"', svg)
+        moldable.build(self.repo, "App::Entry", context="orquestacion", home=self.home)
+        out = editorial.render(self.repo, "context", context="orquestacion", home=self.home)
+        self.assertIn('class="node-link"', Path(out["svg"]).read_text())
+
+    def test_ambiguous_context_and_unowned_html_never_get_live_link(self):
+        manifest = self.w / "lenses/c4/reports/context.atlas.json"
+        manifest.write_text(json.dumps({
+            "schema_version": 1, "plane": "implementation", "label": "Recorrido",
+            "claim_ids": ["C-1", "C-2", "R-1"],
+            "assets": ["lenses/c4/sources/context.mmd"]
+        }))
+        (self.w / "lenses/c4/sources/context.mmd").write_text("flowchart LR\nA-->B\n")
+        # Without bounded context the model preserves ambiguous technical IDs.
+        out = editorial.render(self.repo, "context", home=self.home)
+        self.assertNotIn("Paso del proceso", Path(out["svg"]).read_text())
+        self.assertIn("App::Entry", Path(out["svg"]).read_text())
+        page = moldable.build(self.repo, "App::Entry", context="almacen", home=self.home)
+        out = editorial.render(self.repo, "context", context="almacen", home=self.home)
+        svg = Path(out["svg"]).read_text()
+        self.assertIn("Movimiento de almacén (propuesto)", svg)
+        self.assertIn('data-term-status="candidate"', svg)
+        self.assertIn('class="node-link"', svg)
+        Path(page["html"]).write_text(moldable.MARKER + "\n" + "<script>bad()</script>")
+        out = editorial.render(self.repo, "context", context="almacen", home=self.home)
+        self.assertNotIn('class="node-link"', Path(out["svg"]).read_text())
 
     def test_unselected_context_preserves_ambiguity(self):
         page = moldable.project(self.w, "App::Entry")
