@@ -296,6 +296,10 @@ def report_affordances(state: dict) -> dict:
         return offer("render-report", "project grounded brief and beginner Markdown from CogniCode ledger; for change-impact include --goal")
     if atlas != "ready":
         return offer("build-atlas", "index existing moldable reports alongside claims and diagrams")
+    if kind == "change-impact":
+        # Even confirmed topology does not verify semantic change impact.
+        return offer("finish", "brief available; proposed impact remains an unverified hypothesis",
+                     "PARTIAL", ["static relationships never authorize edits or prove behaviour"])
     if language in {"candidate", "disputed", "deprecated", "unmapped", "unknown"} or coverage != "verified" or basis != "current":
         return offer("finish", "report available; vocabulary, coverage or revision remains unconfirmed",
                      "PARTIAL", ["presentation is not a source-code or domain certificate"])
