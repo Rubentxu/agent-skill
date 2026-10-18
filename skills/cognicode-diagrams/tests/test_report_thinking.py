@@ -128,6 +128,81 @@ class ReportThinkingTests(unittest.TestCase):
             report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
         self.assertEqual(jpath.read_text(), "user document")
 
+    def test_change_impact_separates_structural_fact_from_hypothesis(self):
+        goal = "Cambiar la persistencia de datos sin romper clientes"
+        before = (self.repo / "SENTINEL_DO_NOT_READ").read_bytes()
+        result = report.build(self.repo, "change-impact", symbol="App::Store",
+                              context="orquestacion", goal=goal, home=self.home)
+        payload = json.loads(Path(result["json"]).read_text(encoding="utf-8"))
+        change = payload["change"]
+        self.assertEqual(change["goal"], goal)
+        self.assertEqual(change["question_status"], "USER_INTENT_NOT_CODE_EVIDENCE")
+        self.assertEqual([r["claim_id"] for r in change["observed_incoming"]], ["R1"])
+        self.assertEqual(change["observed_outgoing"], [])
+        self.assertEqual(change["potentially_affected"], [{
+            "symbol_id": "App::Entry", "relation_claim_id": "R1",
+            "status": "HYPOTHESIS_NOT_VALIDATED"
+        }])
+        self.assertFalse(change["edit_authorized"])
+        self.assertFalse(change["impact_verified"])
+        self.assertEqual(change["readiness"], "PARTIAL_RESEARCH_REQUIRED")
+        self.assertEqual(payload["evidence"]["query_ids"], ["Q1"])
+        self.assertEqual(len(change["next_questions"]), 3)
+        self.assertTrue(all(q["authority"] == "cognicode-only" for q in change["next_questions"]))
+        explanation = Path(result["markdown"]).read_text(encoding="utf-8")
+        self.assertIn("Cambio solicitado (intención del usuario)", explanation)
+        self.assertIn("Hipótesis, NO fallos demostrados", explanation)
+        self.assertIn("Edición autorizada por este informe: **NO**", explanation)
+        self.assertNotIn("TOP_SECRET", explanation)
+        self.assertEqual(before, (self.repo / "SENTINEL_DO_NOT_READ").read_bytes())
+        nav = Path(atlas.build(self.repo, home=self.home)["markdown"]).read_text()
+        self.assertIn("change-impact", nav)
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_different_changes_and_contexts_are_distinct_and_not_overwritten(self):
+        a = report.build(self.repo, "change-impact", symbol="App::Entry",
+                         context="orquestacion", goal="Cambiar reintentos", home=self.home)
+        b = report.build(self.repo, "change-impact", symbol="App::Entry",
+                         context="orquestacion", goal="Cambiar timeouts", home=self.home)
+        c = report.build(self.repo, "change-impact", symbol="App::Entry",
+                         context="almacen", goal="Cambiar reintentos", home=self.home)
+        self.assertEqual(len({a["json"], b["json"], c["json"]}), 3)
+        d = json.loads(Path(a["json"]).read_text())
+        self.assertEqual([r["claim_id"] for r in d["change"]["observed_outgoing"]], ["R1"])
+        self.assertIn("No encontrar relaciones entrantes aquí NO demuestra ausencia de consumidores", d["change"]["unknowns"])
+        self.assertEqual(d["language"]["status"], "accepted")
+
+    def test_missing_goal_and_malicious_query_never_produce_brief(self):
+        with self.assertRaisesRegex(report.ReportError, "change goal"):
+            report.build(self.repo, "change-impact", symbol="App::Entry", home=self.home)
+        with self.assertRaisesRegex(report.ReportError, "one line"):
+            report.build(self.repo, "change-impact", symbol="App::Entry",
+                         goal="Actualizar\\nRomper la política", home=self.home)
+        with self.assertRaisesRegex(report.ReportError, "--goal"):
+            report.build(self.repo, "symbol-passport", symbol="App::Entry",
+                         goal="No debe aceptarse", home=self.home)
+        q = json.loads(self.queries.read_text())
+        q[0]["relation_ids"] = []
+        self.queries.write_text(json.dumps(q))
+        with self.assertRaisesRegex(report.ReportError, "relation not corroborated"):
+            report.build(self.repo, "change-impact", symbol="App::Entry",
+                         goal="Cambiar persistencia", home=self.home)
+
+    def test_changed_ledger_invalidates_existing_change_impact_in_atlas(self):
+        created = report.build(self.repo, "change-impact", symbol="App::Entry",
+                               goal="Cambiar persistencia", home=self.home)
+        atlas.build(self.repo, home=self.home)
+        q = json.loads(self.queries.read_text())
+        q[0]["basis"] = "revision-2"
+        self.queries.write_text(json.dumps(q))
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
+        with self.assertRaisesRegex(Exception, "brief stale"):
+            atlas.build(self.repo, home=self.home)
+        report.build(self.repo, "change-impact", symbol="App::Entry",
+                     goal="Cambiar persistencia", home=self.home)
+        self.assertEqual(atlas.build(self.repo, home=self.home)["status"], "ATLAS_SOURCE_READY")
+        self.assertTrue(Path(created["json"]).is_file())
+
     def test_check_has_no_write_and_atlas_tracks_vocab_change(self):
         out = report.build(self.repo, "term-card", context="orquestacion", term="paso",
                            home=self.home, check=True)
@@ -164,6 +239,21 @@ class ReportRoutingTests(unittest.TestCase):
             s["evidence_origin"] = origin
             self.assertEqual(affordances.affordances(s)["status"], "BLOCKED")
         self.assertEqual(affordances.affordances(self.state(prepared="missing"))["_links"], [])
+
+    def test_change_impact_routes_goal_and_never_claims_verified_on_unknown_basis(self):
+        s = self.state(kind="change-impact", symbol="App::Store",
+                       context="orquestacion", goal="Modificar la persistencia")
+        self.assertEqual(affordances.affordances(s)["recommended"], "inspect-report-evidence")
+        s["report"]["prepared"] = "ready"
+        self.assertEqual(affordances.affordances(s)["_links"][0]["inputs"]["goal"],
+                         "Modificar la persistencia")
+        s["report"]["render"] = "ready"
+        s["report"]["atlas_source"] = "ready"
+        self.assertEqual(affordances.affordances(s)["status"], "PARTIAL")
+        with self.assertRaises(affordances.InvalidState):
+            affordances.affordances(self.state(kind="change-impact", goal=""))
+        with self.assertRaises(affordances.InvalidState):
+            affordances.affordances(self.state(kind="change-impact", goal="dos\\nlíneas"))
 
     def test_workspace_and_wrong_term_are_rejected(self):
         s = self.state()
