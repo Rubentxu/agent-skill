@@ -265,8 +265,26 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             if not isinstance(language, dict) or not isinstance(language.get("label"), str):
                 raise KnowledgeError("report without language metadata")
             report_kind = report.get("kind")
-            if report_kind not in {"term-card", "symbol-passport"}:
+            if report_kind not in {"term-card", "symbol-passport", "change-impact"}:
                 raise KnowledgeError("unknown moldable report kind")
+            if report_kind == "change-impact":
+                # A changed ledger/vocabulary/intent must not leave a plausible but
+                # obsolete "ready to change" brief in the shared knowledge atlas.
+                from report_thinking import project as report_project, ReportError
+                change = report.get("change")
+                target = report.get("target_id")
+                if not isinstance(change, dict) or not isinstance(target, str):
+                    raise KnowledgeError("change-impact requires explicit intent and target")
+                try:
+                    current = report_project(workspace, "change-impact", symbol=target,
+                                             context=report.get("requested_context"),
+                                             goal=change.get("goal"))
+                except ReportError as exc:
+                    raise KnowledgeError("invalid or stale change-impact brief") from exc
+                if current != report:
+                    raise KnowledgeError("change-impact brief stale: regenerate from CogniCode ledger")
+                if report.get("change", {}).get("edit_authorized") is not False:
+                    raise KnowledgeError("change-impact is not an edit authorization")
             lines.append("- [" + label(language["label"]) + " (" + label(report_kind) + ")](" +
                          href(rel_md, workspace / "navigation") + ")")
             lines.append("  - Estado: " + label(report.get("status", "UNKNOWN")) +
