@@ -16,7 +16,7 @@ from research_protocol import ResearchError, decide as decide_research
 
 BASE = Path(__file__).resolve().parents[1]
 CATALOG = BASE / "references" / "lens-registry.json"
-INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial", "report", "moldable"}
+INTENTS = {"catalog", "setup", "scan", "discover", "create", "interpret", "translate", "review", "update", "validate", "preview", "atlas", "editorial", "report", "moldable", "handoff"}
 ENVS = {"unknown", "missing", "cli_ready", "mcp_ready", "both_ready"}
 WORKSPACES = {"unknown", "absent", "incomplete", "ready", "invalid"}
 EVIDENCE = {"absent", "symbols_ready", "graph_ready", "partial", "stale"}
@@ -77,6 +77,11 @@ LINKS = {
     "inspect-report-evidence": "references/report-thinking.md",
     "render-report": "references/report-thinking.md",
     "inspect-report": "references/report-thinking.md",
+    "inspect-handoff": "references/context-capsules.md",
+    "render-handoff": "references/context-capsules.md",
+    "handoff-capsule": "references/context-capsules.md",
+    "receive-handoff": "references/context-capsules.md",
+    "revalidate-handoff-via-cognicode": "references/context-capsules.md",
     "inspect-moldable": "references/moldable-navigation.md",
     "render-moldable": "references/moldable-navigation.md",
     "open-moldable": "references/moldable-navigation.md",
@@ -365,6 +370,74 @@ def moldable_affordances(state: dict) -> dict:
     return offer("finish", "view checked and scoped claims observed; no runtime proof", "VERIFIED")
 
 
+def handoff_affordances(state: dict) -> dict:
+    """Offer receiver/sender actions without executing code or treating cache as truth."""
+    h = state.get("handoff")
+    if not isinstance(h, dict):
+        raise InvalidState("handoff must be an object")
+    symbol, goal = h.get("symbol"), h.get("goal")
+    if not isinstance(symbol, str) or not symbol.strip() or len(symbol) > 400:
+        raise InvalidState("handoff requires CogniCode symbol_id")
+    if (not isinstance(goal, str) or not goal.strip() or len(goal) > 240 or
+            chr(10) in goal or chr(9) in goal):
+        raise InvalidState("handoff goal must be a one-line user request")
+    opts = {"symbol": symbol, "goal": goal.strip()}
+    if "context" in h:
+        context = h["context"]
+        if not isinstance(context, str) or not SLUG.fullmatch(context):
+            raise InvalidState("invalid handoff context")
+        opts["context"] = context
+    phase = enum({"phase": h.get("phase", "sender")}, "phase", {"sender", "receiver"})
+    prepared = enum({"prepared": h.get("prepared", "unknown")}, "prepared",
+                    {"unknown", "ready", "missing", "invalid"})
+    rendered = enum({"render": h.get("render", "absent")}, "render",
+                    {"absent", "ready", "stale", "invalid"})
+    atlas = enum({"atlas_source": h.get("atlas_source", "absent")}, "atlas_source",
+                 {"absent", "stale", "ready"})
+    received = enum({"received": h.get("received", "unknown")}, "received",
+                    {"unknown", "ledger_matches", "stale", "invalid"})
+    runtime = enum({"runtime": h.get("runtime", "unknown")}, "runtime",
+                   {"unknown", "available", "unavailable", "rechecked"})
+    provenance = enum({"evidence_origin": state.get("evidence_origin", "unknown")},
+                      "evidence_origin", {"cognicode", "unknown", "other"})
+    result = {"intent": "handoff", "phase": phase, "inputs": opts,
+              "certification": "partial-derived-handoff-no-runtime-attestation"}
+    def offer(rel, why, status="IN_PROGRESS"):
+        return {**result, "status": status, "recommended": rel,
+                "_links": [{"rel": rel, "href": LINKS[rel], "inputs": opts,
+                            "requires_approval": False, "why": why}],
+                "blockers": []}
+    def stop(why):
+        return {**result, "status": "BLOCKED", "recommended": None,
+                "_links": [], "blockers": [why]}
+    if prepared in {"invalid", "missing"}:
+        return stop("cannot ground handoff in CogniCode; never read target files as fallback")
+    if prepared == "unknown":
+        return offer("inspect-handoff", "run context_capsule.py --check on derived evidence")
+    if provenance != "cognicode":
+        return stop("only CogniCode source evidence is permitted")
+    if phase == "sender":
+        if rendered in {"absent", "stale", "invalid"}:
+            return offer("render-handoff", "generate bounded JSON/Markdown in HOME")
+        if atlas != "ready":
+            return offer("build-atlas", "index only current handoff capsules")
+        return offer("handoff-capsule", "pass capsule identity; receiver must recheck CogniCode",
+                     "PARTIAL")
+    if received == "invalid":
+        return stop("capsule invalid; receiver must request fresh CogniCode investigation")
+    if received == "unknown":
+        return offer("receive-handoff", "run context_capsule.py --receive; checks derived ledger ONLY")
+    if runtime == "unavailable":
+        return stop("CogniCode unavailable: PAUSED_NO_FALLBACK; never use read_file/grep/GitHub")
+    if received == "stale" or runtime in {"unknown", "available"}:
+        return offer("revalidate-handoff-via-cognicode",
+                     "probe installed CogniCode for target language and refresh symbol/revision",
+                     "PARTIAL")
+    # The pure state machine cannot certify source truth, even if callers claim 'rechecked'.
+    return offer("finish", "receiver has declared a CogniCode recheck; capsule remains partial",
+                 "PARTIAL")
+
+
 def affordances(state: dict, catalog: dict | None = None) -> dict:
     """Compute links from already-observed data, not invent observations."""
     if not isinstance(state, dict):
@@ -407,6 +480,9 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
 
     if intent == "moldable":
         return moldable_affordances(state)
+
+    if intent == "handoff":
+        return handoff_affordances(state)
 
     # Cross-lens navigation is deliberately independent of CogniCode readiness.
     # No model inference, no container auto-start, no implied visual verification.

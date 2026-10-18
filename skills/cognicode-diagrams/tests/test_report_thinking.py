@@ -10,6 +10,8 @@ sys.path.insert(0, str(SKILL / "scripts"))
 import atlas
 import affordances
 import report_thinking as report
+import context_capsule as capsule
+import moldable_views as moldable
 import workspace
 
 
@@ -128,6 +130,85 @@ class ReportThinkingTests(unittest.TestCase):
             report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
         self.assertEqual(jpath.read_text(), "user document")
 
+    def test_context_capsule_sender_receiver_and_moldable_atlas(self):
+        goal = "Modificar persistencia sin romper consumidores"
+        self.assertEqual(capsule.build(self.repo, "App::Store", goal,
+                                       home=self.home, check=True)["status"], "EVIDENCE_READY")
+        self.assertFalse((self.w / "handoffs").exists())
+        made = capsule.build(self.repo, "App::Store", goal, home=self.home)
+        data = json.loads(Path(made["json"]).read_text(encoding="utf-8"))
+        self.assertEqual(data["status"], "PARTIAL_HANDOFF")
+        self.assertEqual(data["evidence"]["authority"], "cognicode")
+        self.assertEqual(data["observed_relations"][0]["claim_id"], "R1")
+        self.assertEqual(data["observed_relations"][0]["direction"], "incoming")
+        self.assertEqual(data["possible_impact"]["candidate_symbols"], ["App::Entry"])
+        self.assertFalse(data["possible_impact"]["impact_verified"])
+        self.assertFalse(data["possible_impact"]["edit_authorized"])
+        self.assertFalse(data["relation_scope"]["global_coverage"])
+        self.assertIn("read_file", data["receiver_contract"]["forbidden_target_access"])
+        self.assertIn("git", data["receiver_contract"]["forbidden_target_access"])
+        self.assertIn("PAUSED_NO_FALLBACK", data["receiver_contract"]["when_unavailable"])
+        self.assertIn("Vigencia del código: NO comprobada", Path(made["markdown"]).read_text())
+        self.assertNotIn("TOP_SECRET", Path(made["markdown"]).read_text())
+        self.assertEqual(capsule.build(self.repo, "App::Store", goal, home=self.home), made)
+        resumed = capsule.build(self.repo, "App::Store", goal,
+                                home=self.home, receiving=True)
+        self.assertEqual(resumed["status"], "LEDGER_MATCHES_RUNTIME_UNVERIFIED")
+        self.assertFalse(resumed["runtime_verified"])
+        self.assertEqual(resumed["next"], "revalidate-by-cognicode")
+        self.assertEqual([r["rel"] for r in moldable.project(self.w, "App::Store")["reports"]],
+                         ["open-agent-handoff"])
+        atlas_text = Path(atlas.build(self.repo, home=self.home)["markdown"]).read_text()
+        self.assertIn("Cápsulas de traspaso", atlas_text)
+        self.assertIn("Cápsula JSON para agentes", atlas_text)
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_capsule_does_not_merge_ddd_contexts_or_different_goals(self):
+        first = capsule.build(self.repo, "App::Entry", "Ajustar reintentos",
+                              context="orquestacion", home=self.home)
+        second = capsule.build(self.repo, "App::Entry", "Ajustar reintentos",
+                               context="almacen", home=self.home)
+        third = capsule.build(self.repo, "App::Entry", "Ajustar timeout",
+                              context="orquestacion", home=self.home)
+        self.assertEqual(len({first["json"], second["json"], third["json"]}), 3)
+        self.assertEqual(json.loads(Path(first["json"]).read_text())["language"]["status"], "accepted")
+        self.assertEqual(json.loads(Path(second["json"]).read_text())["language"]["status"], "candidate")
+        self.assertEqual([r["rel"] for r in moldable.project(self.w, "App::Entry",
+                                                context="orquestacion")["reports"]],
+                         ["open-agent-handoff", "open-agent-handoff"])
+
+    def test_capsule_staleness_and_unowned_file_fail_closed(self):
+        goal = "Cambiar recuperación"
+        capsule.build(self.repo, "App::Entry", goal, home=self.home)
+        atlas.build(self.repo, home=self.home)
+        queries = json.loads(self.queries.read_text())
+        queries[0]["basis"] = "revision-next"
+        self.queries.write_text(json.dumps(queries))
+        self.assertEqual(capsule.build(self.repo, "App::Entry", goal, home=self.home,
+                                       receiving=True)["status"], "STALE_DERIVED_EVIDENCE")
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
+        with self.assertRaisesRegex(Exception, "capsule stale"):
+            atlas.build(self.repo, home=self.home)
+        capsule.build(self.repo, "App::Entry", goal, home=self.home)
+        self.assertEqual(atlas.build(self.repo, home=self.home)["status"], "ATLAS_SOURCE_READY")
+        other = "No sobreescribir el documento ajeno"
+        jp, _ = capsule.paths(self.w, "App::Entry", other)
+        jp.parent.mkdir(exist_ok=True)
+        jp.write_text("not a capsule", encoding="utf-8")
+        with self.assertRaisesRegex(capsule.CapsuleError, "unowned"):
+            capsule.build(self.repo, "App::Entry", other, home=self.home)
+        self.assertEqual(jp.read_text(), "not a capsule")
+
+    def test_capsule_never_uses_non_cognicode_source_or_multiline_goal(self):
+        with self.assertRaisesRegex(capsule.CapsuleError, "one line"):
+            capsule.build(self.repo, "App::Entry", "primera" + chr(10) + "segunda",
+                          home=self.home)
+        data = json.loads(self.queries.read_text())
+        data[0]["source"] = "github"
+        self.queries.write_text(json.dumps(data))
+        with self.assertRaisesRegex(report.ReportError, "corroborated"):
+            capsule.build(self.repo, "App::Entry", "Modificar reintentos", home=self.home)
+
     def test_change_impact_separates_structural_fact_from_hypothesis(self):
         goal = "Cambiar la persistencia de datos sin romper clientes"
         before = (self.repo / "SENTINEL_DO_NOT_READ").read_bytes()
@@ -239,6 +320,32 @@ class ReportRoutingTests(unittest.TestCase):
             s["evidence_origin"] = origin
             self.assertEqual(affordances.affordances(s)["status"], "BLOCKED")
         self.assertEqual(affordances.affordances(self.state(prepared="missing"))["_links"], [])
+
+    def test_m5_sender_receiver_hateoas_never_claims_live_code_verified(self):
+        s = {"intent": "handoff", "workspace": "ready", "evidence_origin": "cognicode",
+             "handoff": {"symbol": "App::Entry", "goal": "Ajustar reintentos"}}
+        self.assertEqual(affordances.affordances(s)["recommended"], "inspect-handoff")
+        s["handoff"]["prepared"] = "ready"
+        self.assertEqual(affordances.affordances(s)["recommended"], "render-handoff")
+        s["handoff"]["render"] = "ready"
+        self.assertEqual(affordances.affordances(s)["recommended"], "build-atlas")
+        s["handoff"]["atlas_source"] = "ready"
+        self.assertEqual(affordances.affordances(s)["status"], "PARTIAL")
+        self.assertEqual(affordances.affordances(s)["recommended"], "handoff-capsule")
+        s["handoff"]["phase"] = "receiver"
+        self.assertEqual(affordances.affordances(s)["recommended"], "receive-handoff")
+        s["handoff"]["received"] = "ledger_matches"
+        self.assertEqual(affordances.affordances(s)["recommended"], "revalidate-handoff-via-cognicode")
+        s["handoff"]["runtime"] = "unavailable"
+        self.assertEqual(affordances.affordances(s)["status"], "BLOCKED")
+        self.assertEqual(affordances.affordances(s)["_links"], [])
+        s["handoff"]["runtime"] = "rechecked"
+        self.assertEqual(affordances.affordances(s)["status"], "PARTIAL")
+        s["evidence_origin"] = "other"
+        self.assertEqual(affordances.affordances(s)["status"], "BLOCKED")
+        s["evidence_origin"] = "cognicode"
+        with self.assertRaises(affordances.InvalidState):
+            affordances.affordances({**s, "handoff": {**s["handoff"], "goal": "X" + chr(10) + "Y"}})
 
     def test_change_impact_routes_goal_and_never_claims_verified_on_unknown_basis(self):
         s = self.state(kind="change-impact", symbol="App::Store",

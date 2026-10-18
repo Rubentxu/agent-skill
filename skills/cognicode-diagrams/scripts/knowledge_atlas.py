@@ -60,6 +60,20 @@ def inputs(workspace: Path) -> list[Path]:
                 if not p.is_file():
                     raise KnowledgeError("invalid moldable report")
                 result.append(p)
+    capsules = workspace / "handoffs"
+    _safe(capsules, workspace)
+    if capsules.exists():
+        if not capsules.is_dir():
+            raise KnowledgeError("invalid handoff directory")
+        entries = sorted(capsules.iterdir())
+        if len(entries) > 160:
+            raise KnowledgeError("too many handoff artifacts")
+        for p in entries:
+            _safe(p, workspace)
+            if p.name.endswith((".capsule.json", ".capsule.md")):
+                if not p.is_file():
+                    raise KnowledgeError("invalid handoff artifact")
+                result.append(p)
     root = workspace / "lenses"
     _safe(root, workspace)
     for lens in sorted(root.iterdir()):
@@ -291,6 +305,43 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
                          " · lenguaje: " + label(language.get("status", "unmapped")) +
                          " · claims: " + label(", ".join(ids) if ids else "ninguno"))
             lines.append("  - [JSON para agentes](" + href(report_path, workspace / "navigation") + ")")
+        lines.append("")
+    # Capsules are task-specific handoffs; never a second factual knowledge base.
+    handoffs = [p for p in inputs(workspace) if p.name.endswith(".capsule.json")]
+    if handoffs:
+        if len(handoffs) > 80:
+            raise KnowledgeError("too many agent handoffs")
+        from context_capsule import (
+            GENERATOR as CAPSULE_GENERATOR, model as capsule_model,
+            markdown as capsule_markdown, CapsuleError,
+        )
+        lines.extend(["### Cápsulas de traspaso para agentes (no verifican el checkout)", ""])
+        for jp in handoffs:
+            data = _load(jp, workspace)
+            if not isinstance(data, dict) or data.get("generator") != CAPSULE_GENERATOR or data.get("schema_version") != 1:
+                raise KnowledgeError("invalid agent handoff capsule")
+            target, task = data.get("target"), data.get("task")
+            if not isinstance(target, dict) or not isinstance(task, dict):
+                raise KnowledgeError("handoff missing target or goal")
+            try:
+                current = capsule_model(workspace, target.get("symbol_id"),
+                                        task.get("goal"), target.get("context_id"))
+            except (CapsuleError, ValueError) as exc:
+                raise KnowledgeError("handoff evidence unavailable or invalid") from exc
+            if current != data:
+                raise KnowledgeError("handoff capsule stale: revalidate with CogniCode and regenerate")
+            md = jp.with_suffix(".md")
+            _safe(md, workspace)
+            if not md.is_file() or md.read_text(encoding="utf-8") != capsule_markdown(current):
+                raise KnowledgeError("handoff Markdown missing, stale or unowned")
+            ids = current["evidence"]["claim_ids"]
+            if any(cid not in claims for cid in ids):
+                raise KnowledgeError("handoff references missing claims")
+            lines.append("- [" + label(target["symbol_id"]) + ": " +
+                         label(task["goal"]) + "](" + href(md, workspace / "navigation") + ")")
+            lines.append("  - PARTIAL_HANDOFF · código no revalidado · " +
+                         label(current["language"]["status"]))
+            lines.append("  - [Cápsula JSON para agentes](" + href(jp, workspace / "navigation") + ")")
         lines.append("")
     # Moldable pages are links to existing, reconcilable projections. Never
     # treat their labels or explanations as new architectural evidence.
