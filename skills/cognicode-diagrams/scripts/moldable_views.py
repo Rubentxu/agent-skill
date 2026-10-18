@@ -210,6 +210,34 @@ code{{overflow-wrap:anywhere}}small{{color:#46566a}}h1{{line-height:1.2}}</style
 </main></body></html>'''
 
 
+
+def current_page(root: Path, symbol: str, context: str | None = None) -> Path | None:
+    """Return ONLY a regenerated, owned local page that matches current evidence.
+
+    A file existing on disk is not proof that its links or domain label are
+    current. Reconcile the page's entire JSON AND HTML with their pure source
+    projections before advertising an actionable link from a diagram.
+    """
+    jp, hp = paths(root, symbol, context)
+    for path in (jp, hp):
+        report.safe(path, root)
+        if not path.is_file() or path.stat().st_size > MAX_BYTES:
+            return None
+    try:
+        actual = json.loads(jp.read_text(encoding="utf-8"))
+        if not isinstance(actual, dict) or actual.get("generator") != GENERATOR:
+            return None
+        expected = project(root, symbol, context)
+        if actual != expected:
+            return None
+        content = hp.read_text(encoding="utf-8")
+        if not content.startswith(MARKER) or content != html_page(expected, hp, root):
+            return None
+    except (ValueError, UnicodeError, OSError):
+        return None
+    return hp
+
+
 def owned_write(dest: Path, value: str, root: Path, *, json_file: bool = False):
     report.safe(dest, root)
     if dest.exists():

@@ -29,7 +29,7 @@ No hay API HTTP, servidor, router de comandos, base de datos ni extensión de Co
 ```
 
 - `workspace`: `unknown|absent|incomplete|ready|invalid`. `unknown` ofrece `inspect-workspace`; `absent|incomplete` ofrece `init-workspace`; `invalid` bloquea. Ver [workspace.md](workspace.md). `catalog` y `setup` quedan exentos.
-- `intent`: `catalog|setup|scan|discover|create|interpret|translate|review|update|validate|preview|atlas|editorial`.
+- `intent`: `catalog|setup|scan|discover|create|interpret|translate|review|update|validate|preview|atlas|editorial|report|moldable`.
 - `lens`: `id` del registro de lentes. Para `catalog` puede omitirse; las lentes `planned` no se ofrecen para ejecución.
 - `environment`: `unknown|missing|cli_ready|mcp_ready|both_ready`. La observación se toma de comandos/calls, nunca de memoria.
 - `evidence`: `absent|symbols_ready|graph_ready|partial|stale`; un grafo READY exige consulta posterior que confirme su disponibilidad, no solo un stdout exit 0.
@@ -149,3 +149,7 @@ Las futuras `get-brief`, `inspect-evidence`, `expand-context`, `render-view` y `
 ## Navegación moldable por símbolo (`intent=moldable`, M3 disponible)
 
 El router HATEOAS existente admite `intent=moldable` con `moldable.symbol` (identidad CogniCode) y `moldable.context` opcional. Pasos observables: `inspect-moldable` (`scripts/moldable_views.py --check`) → `render-moldable` (HTML/JSON contextual, solo HOME) → `build-atlas` → `open-moldable` → `finish`. No anuncia un diagrama no generado ni usa documentación, nombres o `grep` como evidencia. `prepared=ready` **no** suplanta la procedencia CogniCode, solo habilita la proyección. [Contrato M3](moldable-navigation.md).
+
+## Etiquetas DDD y enlace inverso desde nodos C4 (`editorial.context`)
+
+`intent=editorial` acepta `editorial.context` opcional (slug de un contexto DDD) y lo transporta al comando `scripts/editorial.py --context <id>`. El render usa **exclusivamente** vocabulario de HOME y símbolos previamente corroborados por CogniCode. Si el término es único y aceptado, muestra su nombre; si es candidato, lo marca `(propuesto)`; ante ambigüedad, conserva el nombre técnico. El nodo SVG puede abrir su ficha contextual *solo* cuando el JSON y HTML de la ficha siguen siendo proyecciones actuales de los mismos hechos. Ausencia o caducidad ⇒ nodo sin enlace. El `symbol_id` técnico no cambia y el `--check` no escribe. [Orden operativo y límites](editorial.md#m3--etiquetas-ubicuas-y-navegación-inversa-desde-componentes-ready).

@@ -169,6 +169,9 @@ def editorial_affordances(state: dict, catalog: dict) -> dict:
     focus = view.get("focus")
     if focus is not None and (not isinstance(focus, str) or not focus.strip() or len(focus) > 400):
         raise InvalidState("editorial.focus debe ser un symbol_id existente")
+    context = view.get("context")
+    if context is not None and (not isinstance(context, str) or not SLUG.fullmatch(context)):
+        raise InvalidState("editorial.context debe ser un bounded context identificado")
     prepared = enum({"prepared": view.get("prepared", "unknown")}, "prepared",
                     {"unknown", "missing", "ready", "invalid"})
     # A ready status requires successful editorial.py --check, not a filename.
@@ -187,6 +190,8 @@ def editorial_affordances(state: dict, catalog: dict) -> dict:
     opts = {"view": view_id, "pattern": pattern, "profile": profile}
     if focus is not None:
         opts["focus"] = focus
+    if context is not None:
+        opts["context"] = context
     result = {"lens": lens_id, "presentation": opts, "certification": "presentation-only"}
     def offer(rel: str, why: str, *, status: str = "IN_PROGRESS", blockers=None) -> dict:
         link = {"rel": rel, "href": LINKS[rel], "requires_approval": False,
