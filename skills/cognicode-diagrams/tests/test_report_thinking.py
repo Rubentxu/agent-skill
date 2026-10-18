@@ -255,6 +255,17 @@ class ReportRoutingTests(unittest.TestCase):
         with self.assertRaises(affordances.InvalidState):
             affordances.affordances(self.state(kind="change-impact", goal="dos" + chr(10) + "líneas"))
 
+    def test_even_apparently_complete_impact_is_never_a_code_verification(self):
+        s = self.state(kind="change-impact", goal="Modificar contratos",
+                       prepared="ready", render="ready", atlas_source="ready",
+                       language_status="accepted")
+        s["basis"] = "current"
+        s["claim_coverage"] = "verified"
+        response = affordances.affordances(s)
+        self.assertEqual(response["status"], "PARTIAL")
+        self.assertEqual(response["recommended"], "finish")
+        self.assertIn("hypothesis", response["_links"][0]["why"])
+
     def test_workspace_and_wrong_term_are_rejected(self):
         s = self.state()
         s["workspace"] = "absent"
