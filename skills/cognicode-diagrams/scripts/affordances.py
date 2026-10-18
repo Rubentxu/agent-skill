@@ -251,7 +251,7 @@ def report_affordances(state: dict) -> dict:
         if kind == "change-impact":
             goal = r.get("goal")
             if (not isinstance(goal, str) or not goal.strip() or len(goal) > 240
-                    or "\\n" in goal or "\\t" in goal):
+                    or chr(10) in goal or chr(9) in goal):
                 raise InvalidState("change-impact requires one-line change goal")
             opts["goal"] = goal.strip()
         elif r.get("goal") is not None:
