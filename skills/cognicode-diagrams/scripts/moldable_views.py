@@ -141,6 +141,40 @@ def project(root: Path, symbol: str, context: str | None = None) -> dict:
                     "claim_ids": current["evidence"]["claim_ids"],
                     "readiness": current["change"]["readiness"]
                 })
+    # Link only existing, reconciled M5 capsules for the selected bounded context.
+    from context_capsule import model as capsule_model, markdown as capsule_md, GENERATOR as CAPSULE_GENERATOR
+    handoffs = report.safe(root / "handoffs", root)
+    if handoffs.is_dir():
+        entries = sorted(handoffs.glob("capsule-*.capsule.json"))
+        if len(entries) > MAX_VIEWS:
+            raise MoldableError("too many handoff capsules; narrow the inquiry")
+        for jp in entries:
+            report.safe(jp, root)
+            if not jp.is_file() or jp.stat().st_size > MAX_BYTES:
+                continue
+            try:
+                old = report.load(jp, root)
+                if not isinstance(old, dict) or old.get("generator") != CAPSULE_GENERATOR:
+                    continue
+                target, task = old.get("target"), old.get("task")
+                if (not isinstance(target, dict) or not isinstance(task, dict) or
+                        target.get("symbol_id") != symbol or target.get("context_id") != context):
+                    continue
+                fresh = capsule_model(root, symbol, task.get("goal"), context)
+                md = jp.with_suffix(".md")
+                report.safe(md, root)
+                if old != fresh or not md.is_file() or md.read_text(encoding="utf-8") != capsule_md(fresh):
+                    continue
+            except (ValueError, UnicodeError, OSError):
+                continue
+            report_links.append({
+                "rel": "open-agent-handoff", "kind": "agent-handoff",
+                "label": "Traspasar a otro agente: " + task["goal"],
+                "goal": task["goal"], "status": "PARTIAL_HANDOFF",
+                "json": str(jp.relative_to(root)),
+                "markdown": str(md.relative_to(root)),
+                "claim_ids": fresh["evidence"]["claim_ids"]
+            })
     views = []
     lens = report.safe(root / "lenses" / "c4" / "reports", root)
     if lens.is_dir():
