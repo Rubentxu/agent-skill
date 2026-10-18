@@ -237,6 +237,15 @@ class EditorialHateoasTests(unittest.TestCase):
         self.assertEqual(result["_links"][0]["inputs"]["focus"], "pkg::API")
         self.assertNotIn("query-cognicode", rels(self.state(prepared="ready")))
 
+    def test_editorial_routes_context_without_mutating_symbol_identity(self):
+        state = self.state(prepared="ready", context="orquestacion", focus="App::Entry")
+        out = engine.affordances(state)
+        self.assertEqual(out["recommended"], "render-editorial")
+        self.assertEqual(out["_links"][0]["inputs"]["context"], "orquestacion")
+        self.assertEqual(out["_links"][0]["inputs"]["focus"], "App::Entry")
+        with self.assertRaises(engine.InvalidState):
+            engine.affordances(self.state(context="../checkout"))
+
     def test_traceable_decomposition_routes_to_provenance_mode(self):
         state = self.state(prepared="ready", question_kind="traceable_decomposition")
         self.assertEqual(engine.affordances(state)["presentation"]["pattern"], "traceability")
