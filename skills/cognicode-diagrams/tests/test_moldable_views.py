@@ -169,6 +169,34 @@ class MoldableNavigationTests(unittest.TestCase):
         out = editorial.render(self.repo, "context", context="almacen", home=self.home)
         self.assertNotIn('class="node-link"', Path(out["svg"]).read_text())
 
+    def test_change_brief_appears_only_when_current_for_exact_symbol_and_context(self):
+        prepared = report.build(self.repo, "change-impact", symbol="App::Entry",
+                                context="orquestacion", goal="Modificar reintentos",
+                                home=self.home)
+        m = moldable.project(self.w, "App::Entry", context="orquestacion")
+        self.assertEqual([x["rel"] for x in m["reports"]], ["open-change-impact"])
+        self.assertEqual(m["reports"][0]["goal"], "Modificar reintentos")
+        self.assertEqual(m["reports"][0]["readiness"], "PARTIAL_RESEARCH_REQUIRED")
+        out = moldable.build(self.repo, "App::Entry", context="orquestacion",
+                             home=self.home)
+        html = Path(out["html"]).read_text(encoding="utf-8")
+        self.assertIn("Preparar cambio:", html)
+        self.assertIn("change-impact-", html)
+        self.assertNotIn("SECRET_IN_TARGET", html)
+        self.assertFalse(moldable.project(self.w, "App::Entry", context="almacen")["reports"])
+        changed = json.loads(self.v.read_text())
+        changed[0]["definition"] = "Responsabilidad redefinida"
+        self.v.write_text(json.dumps(changed))
+        self.assertNotIn("open-change-impact",
+                         [x["rel"] for x in moldable.project(self.w, "App::Entry",
+                                                             context="orquestacion")["reports"]])
+        report.build(self.repo, "change-impact", symbol="App::Entry",
+                     context="orquestacion", goal="Modificar reintentos", home=self.home)
+        self.assertEqual([x["rel"] for x in moldable.project(self.w, "App::Entry",
+                                                             context="orquestacion")["reports"]],
+                         ["open-change-impact"])
+        self.assertTrue(Path(prepared["json"]).exists())
+
     def test_unselected_context_preserves_ambiguity(self):
         page = moldable.project(self.w, "App::Entry")
         self.assertEqual(page["language"]["label"], "App::Entry")
