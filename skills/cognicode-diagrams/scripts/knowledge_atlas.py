@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from evidence_contract import corroborated, index_queries
 
 MAX_INPUT = 8 * 1024 * 1024
 MAX_CLAIMS = 250
@@ -108,9 +109,10 @@ def inputs(workspace: Path) -> list[Path]:
     return result
 
 
-def fingerprints(workspace: Path) -> dict[str, str]:
+def fingerprints(workspace: Path, *, known_inputs: list[Path] | None = None) -> dict[str, str]:
+    """Hash existing artifacts without rediscovering the same workspace N times."""
     result = {}
-    for p in inputs(workspace):
+    for p in (inputs(workspace) if known_inputs is None else known_inputs):
         if p.stat().st_size > MAX_INPUT:
             raise KnowledgeError("knowledge input too large")
         result[str(p.relative_to(workspace))] = hashlib.sha256(p.read_bytes()).hexdigest()
@@ -129,7 +131,8 @@ def _load(path: Path, workspace: Path):
 
 def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dict, int, int]:
     """Produce Markmap branches linking claims to *existing* source/render assets."""
-    digests = fingerprints(workspace)
+    discovered = inputs(workspace)
+    digests = fingerprints(workspace, known_inputs=discovered)
     ledger = workspace / "evidence" / "claims.json"
     qfile = workspace / "evidence" / "queries.json"
     claims_raw = _load(ledger, workspace) if ledger.is_file() else []
@@ -169,19 +172,18 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             raise KnowledgeError("unsupported evidence coverage")
         claims[cid] = c
 
+    queries = {}
     if qfile.is_file():
-        qraw = _load(qfile, workspace)
-        if isinstance(qraw, dict):
-            qraw = qraw.get("queries")
-        if not isinstance(qraw, list):
-            raise KnowledgeError("queries must be an array")
-        qids = {q.get("query_id", q.get("id")) for q in qraw if isinstance(q, dict)}
-        if any(qid not in qids for c in claims.values() for qid in c.get("query_ids", [])):
+        try:
+            queries = index_queries(_load(qfile, workspace))
+        except ValueError as exc:
+            raise KnowledgeError("invalid queries: " + str(exc)) from exc
+        if any(qid not in queries for c in claims.values() for qid in c.get("query_ids", [])):
             raise KnowledgeError("claim references nonexistent query")
 
     by_claim = {}
     bound = 0
-    for p in inputs(workspace):
+    for p in discovered:
         if not p.name.endswith(".atlas.json"):
             continue
         view = _load(p, workspace)
@@ -201,6 +203,8 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             raise KnowledgeError("view has unknown plane")
         if any((claims[cid].get("category", "symbol") == "intent") != (plane == "intent") for cid in ids):
             raise KnowledgeError("intent-only claim cannot justify an implementation diagram")
+        if plane == "implementation" and any(not corroborated(claims[cid], queries) for cid in ids):
+            raise KnowledgeError("implementation view needs corroborated CogniCode code claims")
         if any(not isinstance(a, str) or a not in allowed for a in assets):
             raise KnowledgeError("view references ungenerated/external asset")
         for cid in ids:
@@ -228,8 +232,9 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
                 provenance = c.get("provenance", c.get("status", "UNKNOWN"))
                 ids = c.get("query_ids", [])
                 # A legacy "observed" without resolvable queries is a *candidate*, never verified evidence.
-                effective = ("UNKNOWN (sin query)" if provenance in IMPLEMENTATION | {"CODE_DOC"} and (not ids or not qfile.is_file())
-                             else provenance)
+                effective = ("UNKNOWN (sin corroborar)" if provenance in IMPLEMENTATION and not corroborated(c, queries)
+                             else "UNKNOWN (sin query)" if provenance == "CODE_DOC" and
+                             (not ids or not qfile.is_file()) else provenance)
                 plane = "intent" if category == "intent" else c.get("plane", "static")
                 coverage = c.get("coverage", "unknown")
                 lines.append(f"- {label(name)} [{label(effective)} · {label(plane)} · cobertura:{label(coverage)}]")
@@ -256,7 +261,7 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             lines.append("")
     # Index *only* owned report projections and link back to their claims.
     # Never interpret natural language in reports as implementation evidence.
-    report_files = [p for p in inputs(workspace) if p.name.endswith(".report.json")]
+    report_files = [p for p in discovered if p.name.endswith(".report.json")]
     if report_files:
         if len(report_files) > 100:
             raise KnowledgeError("too many moldable reports; narrow the workspace")
@@ -307,7 +312,7 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             lines.append("  - [JSON para agentes](" + href(report_path, workspace / "navigation") + ")")
         lines.append("")
     # Capsules are task-specific handoffs; never a second factual knowledge base.
-    handoffs = [p for p in inputs(workspace) if p.name.endswith(".capsule.json")]
+    handoffs = [p for p in discovered if p.name.endswith(".capsule.json")]
     if handoffs:
         if len(handoffs) > 80:
             raise KnowledgeError("too many agent handoffs")
@@ -345,7 +350,7 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
         lines.append("")
     # Moldable pages are links to existing, reconcilable projections. Never
     # treat their labels or explanations as new architectural evidence.
-    moldable_pages = [p for p in inputs(workspace) if p.name.endswith(".moldable.json")]
+    moldable_pages = [p for p in discovered if p.name.endswith(".moldable.json")]
     if moldable_pages:
         from moldable_views import GENERATOR as MOLDABLE_GENERATOR, MARKER as MOLDABLE_MARKER, project as moldable_project
         lines.extend(["### Navegación moldable por símbolo", ""])

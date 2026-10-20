@@ -89,3 +89,8 @@ El JSON suministrado por el agente bajo HOME contiene `observation_origin=cognic
 Se rechaza cualquier `--research-snapshot` fuera del workspace derivado, archivo con symlink o input sin el formato esperado; la opción solo se admite con `--next`. Si el receptor no tiene CogniCode instalado, no crea estado ficticio: `PAUSED_NO_FALLBACK` y no lee el checkout.
 
 **UAT necesaria, no simulada:** dos agentes distintos, el segundo con `read_file`, terminal de lectura, Git/GitHub source, IDE y exploradores de subagentes bloqueados por permisos del host; A obtiene pruebas reales mediante CogniCode, B continúa únicamente mediante sus consultas y registra llamadas/tokens. La release pública `v0.101.21` existe, pero en el entorno de esta integración no se pudo descargar/ejecutar. No se acredita aún una UAT real, ni se añade un test harness permanente para suplirla.
+
+
+## Gate proporcional tras la estabilización
+
+Para validar el traspaso A → B, no usar solo una prueba unitaria ni fabricar una segunda base de datos de contexto. Ejecutar una **UAT efímera** con CogniCode instalado, permisos del receptor que bloqueen lectura directa del checkout, comparación de `claim_id/query_id`, y recepción que devuelva `PARTIAL_HANDOFF` hasta corroborar de nuevo contra el runtime. Medir llamadas y duración de A → B frente a descubrirlo todo otra vez. Liberar procesos/containers creados en el ciclo; retirar el guion temporal tras conservar el recibo. Si no hay acceso a CogniCode real, registrar `NOT_RUN`, nunca simular `PASS`.

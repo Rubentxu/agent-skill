@@ -500,11 +500,12 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
             raise InvalidState("atlas_assets inválido")
         def atlas_link(rel: str, reason: str) -> dict:
             return {"rel": rel, "href": LINKS[rel], "requires_approval": False, "why": reason}
-        if assets == "absent":
+        has_claims = bool_field(state, "atlas_claims_ready")
+        if assets == "absent" and not has_claims:
             return {"status": "BLOCKED", "lens": None, "recommended": None, "_links": [],
-                    "blockers": ["no existen diagramas: generarlos mediante lente y agente antes del atlas"]}
+                    "blockers": ["no hay diagramas ni claims; investigar con CogniCode primero"]}
         if source in {"absent", "stale"}:
-            links = [atlas_link("build-atlas", "indexar fuentes/renders ya existentes en workspace externo")]
+            links = [atlas_link("build-atlas", "indexar claims y vistas existentes en workspace externo")]
         elif html in {"absent", "stale", "failed"}:
             if renderer == "unknown":
                 links = [atlas_link("inspect-markmap", "comprobar Markmap o imagen OCI local sin instalar")]
