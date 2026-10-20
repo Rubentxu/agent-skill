@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "lenses": [
+    {
+      "id": "baseline-and-preservation",
+      "status": "ready",
+      "signal": "baseline",
+      "question": "¿Qué aplicación y datos no se pueden romper?",
+      "playbook": "references/lenses/baseline-and-preservation.md"
+    },
+    {
+      "id": "art-direction",
+      "status": "ready",
+      "signal": "art",
+      "question": "¿Qué identidad visual y escena sorprenden con propósito?",
+      "playbook": "references/lenses/art-direction.md"
+    },
+    {
+      "id": "interactive-scenes",
+      "status": "ready",
+      "signal": "scene",
+      "question": "¿Qué puede manipular realmente el estudiante?",
+      "playbook": "references/lenses/interactive-scenes.md"
+    },
+    {
+      "id": "game-state",
+      "status": "ready",
+      "signal": "state",
+      "question": "¿Qué estados/eventos y resultados son correctos?",
+      "playbook": "references/lenses/game-state.md"
+    },
+    {
+      "id": "progress-and-migration",
+      "status": "ready",
+      "signal": "storage",
+      "question": "¿Cómo guardar aprendizaje y migrar sin pérdidas?",
+      "playbook": "references/lenses/progress-and-migration.md"
+    },
+    {
+      "id": "accessibility-and-safety",
+      "status": "ready",
+      "signal": "access",
+      "question": "¿Cómo garantizar acceso y privacidad?",
+      "playbook": "references/lenses/accessibility-and-safety.md"
+    },
+    {
+      "id": "visual-qa",
+      "status": "ready",
+      "signal": "visual_review",
+      "question": "¿Está pulida la experiencia en móvil y escritorio?",
+      "playbook": "references/lenses/visual-qa.md"
+    },
+    {
+      "id": "browser-acceptance",
+      "status": "ready",
+      "signal": "browser_check",
+      "question": "¿Funcionan los controles al interactuar en navegador?",
+      "playbook": "references/lenses/browser-acceptance.md"
+    },
+    {
+      "id": "offline-experience",
+      "status": "ready",
+      "signal": "package",
+      "question": "¿Se puede distribuir y abrir sin red ni dependencias?",
+      "playbook": "references/lenses/offline-experience.md"
+    }
+  ]
+}

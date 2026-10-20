@@ -35,3 +35,11 @@ jobs:
         run: python3 -m unittest discover -s skills/distribution-first-release/tests -p 'test_*.py' -v
       - name: Check distribution-first-release navigation smoke
         run: python3 skills/distribution-first-release/scripts/affordances.py skills/distribution-first-release/examples/session-release.json
+      - name: Run playful-learning-design router tests
+        run: python3 -m unittest discover -s skills/playful-learning-design/tests -p 'test_*.py' -v
+      - name: Check playful-learning-design navigation smoke
+        run: python3 skills/playful-learning-design/scripts/affordances.py skills/playful-learning-design/examples/session-create.json
+      - name: Run learning-game-html router tests
+        run: python3 -m unittest discover -s skills/learning-game-html/tests -p 'test_*.py' -v
+      - name: Check learning-game-html navigation smoke
+        run: python3 skills/learning-game-html/scripts/affordances.py skills/learning-game-html/examples/session-create.json

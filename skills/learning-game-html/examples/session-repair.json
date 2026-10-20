@@ -1,0 +1,10 @@
+{
+  "intent": "repair",
+  "baseline": "ready",
+  "brief": "ready",
+  "state": "ready",
+  "browser_check": "not_run",
+  "storage_affected": true,
+  "storage": "unknown",
+  "package": "unknown"
+}

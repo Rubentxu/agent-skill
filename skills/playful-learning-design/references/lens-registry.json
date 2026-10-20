@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "lenses": [
+    {
+      "id": "learner-context",
+      "status": "ready",
+      "question": "¿Quién aprende y con qué apoyos?",
+      "signal": "audience",
+      "playbook": "references/lenses/learner-context.md"
+    },
+    {
+      "id": "learning-loop",
+      "status": "ready",
+      "question": "¿Qué sabrá hacer y en qué contexto?",
+      "signal": "objective",
+      "playbook": "references/lenses/learning-loop.md"
+    },
+    {
+      "id": "knowledge-and-misconceptions",
+      "status": "ready",
+      "question": "¿Qué se enseña, qué confunde y qué fuente lo respalda?",
+      "signal": "knowledge",
+      "playbook": "references/lenses/knowledge-and-misconceptions.md"
+    },
+    {
+      "id": "mechanic-selection",
+      "status": "ready",
+      "question": "¿Qué juego provoca la acción cognitiva necesaria?",
+      "signal": "mechanic",
+      "playbook": "references/lenses/mechanic-selection.md"
+    },
+    {
+      "id": "novice-scaffolding",
+      "status": "ready",
+      "question": "¿Cómo explicar, dar pistas y recuperar un fallo?",
+      "signal": "scaffolding",
+      "playbook": "references/lenses/novice-scaffolding.md"
+    },
+    {
+      "id": "ethical-motivation",
+      "status": "ready",
+      "question": "¿Cómo recompensar sin sustituir el dominio?",
+      "signal": "motivation",
+      "playbook": "references/lenses/ethical-motivation.md"
+    },
+    {
+      "id": "learning-evidence",
+      "status": "ready",
+      "question": "¿Cómo distinguir aprendizaje de XP/clics?",
+      "signal": "evidence",
+      "playbook": "references/lenses/learning-evidence.md"
+    },
+    {
+      "id": "inclusive-design",
+      "status": "ready",
+      "question": "¿Cómo adaptarse a edades, preferencias y accesibilidad?",
+      "signal": "inclusion",
+      "playbook": "references/lenses/inclusive-design.md"
+    }
+  ]
+}
