@@ -15,6 +15,7 @@ import re
 import sys
 import tempfile
 
+from evidence_contract import corroborated
 from workspace import inspect as inspect_workspace
 
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
@@ -150,7 +151,7 @@ def evidence(root: Path) -> tuple[dict, dict, dict]:
         base = {"claim_id": cid, "query_ids": qids, "coverage": coverage, "plane": "static"}
         if claim.get("kind", "entity") == "entity":
             symbol = text(claim.get("symbol_id"), "entity symbol")
-            if not any(symbol in q.get("symbol_ids", []) for q in relevant if isinstance(q.get("symbol_ids"), list)):
+            if not corroborated(claim, queries):
                 raise ReportError("entity not corroborated by CogniCode query: " + cid)
             entities.setdefault(symbol, []).append({
                 **base, "category": claim.get("category", "symbol")
@@ -159,13 +160,7 @@ def evidence(root: Path) -> tuple[dict, dict, dict]:
             src = text(claim.get("from_symbol"), "from_symbol")
             dst = text(claim.get("to_symbol"), "to_symbol")
             rel = text(claim.get("relation_id"), "relation_id")
-            if not any(
-                q.get("mode") == "structured"
-                and isinstance(q.get("symbol_ids"), list)
-                and isinstance(q.get("relation_ids"), list)
-                and src in q["symbol_ids"] and dst in q["symbol_ids"]
-                and rel in q["relation_ids"] for q in relevant
-            ):
+            if not corroborated(claim, queries):
                 raise ReportError("relation not corroborated by CogniCode query: " + cid)
             attrs = claim.get("attributes", {})
             if not isinstance(attrs, dict):

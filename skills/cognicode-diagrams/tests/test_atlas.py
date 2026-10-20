@@ -126,6 +126,10 @@ class AtlasTests(unittest.TestCase):
         self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
         atlas.build(self.repo, home=self.home)
         report = self.w / "lenses" / "c4" / "reports" / "context.atlas.json"
+        c.write_text(json.dumps([{"id": "C-2", "kind": "entity", "status": "observed",
+                                  "symbol_id": "A::run", "query_ids": ["Q-2"]}]))
+        (self.w / "evidence" / "queries.json").write_text(json.dumps([
+            {"id": "Q-2", "mode": "structured", "status": "ok", "symbol_ids": ["A::run"]}]))
         report.write_text(json.dumps({
             "schema_version": 1, "label": "Contexto",
             "claim_ids": ["C-2"],
@@ -216,7 +220,7 @@ class AtlasTests(unittest.TestCase):
             {"id": "C-LEGACY", "kind": "entity", "symbol_id": "Legacy::entry",
              "status": "OBSERVED_CODE"}]))
         out = atlas.build(self.repo, home=self.home)
-        self.assertIn("UNKNOWN  sin query", Path(out["markdown"]).read_text())
+        self.assertIn("UNKNOWN  sin corroborar", Path(out["markdown"]).read_text())
 
     def test_sync_is_idempotent_with_unchanged_claim_ledger(self):
         (self.w / "evidence" / "claims.json").write_text(json.dumps([
@@ -226,6 +230,34 @@ class AtlasTests(unittest.TestCase):
         before = md.stat().st_mtime_ns
         atlas.build(self.repo, home=self.home)
         self.assertEqual(md.stat().st_mtime_ns, before)
+
+
+    def test_unverified_claim_cannot_be_linked_as_implementation(self):
+        ledger = self.w / "evidence/claims.json"
+        queries = self.w / "evidence/queries.json"
+        view = self.w / "lenses/c4/reports/invalid.atlas.json"
+        ledger.write_text(json.dumps([{"id": "X", "kind": "entity",
+                                       "status": "INFERRED", "symbol_id": "No::code"}]))
+        view.write_text(json.dumps({"schema_version": 1, "label": "Wrong",
+                                    "claim_ids": ["X"], "assets": ["lenses/c4/renders/context.svg"]}))
+        with self.assertRaisesRegex(atlas.KnowledgeError, "corroborated"):
+            atlas.build(self.repo, home=self.home)
+        ledger.write_text(json.dumps([{"id": "X", "kind": "entity",
+                                       "status": "OBSERVED_CODE", "symbol_id": "No::code",
+                                       "query_ids": ["Q-X"]}]))
+        queries.write_text(json.dumps([{"id": "Q-X", "mode": "structured", "status": "failed",
+                                       "symbol_ids": ["No::code"]}]))
+        with self.assertRaisesRegex(atlas.KnowledgeError, "corroborated"):
+            atlas.build(self.repo, home=self.home)
+        queries.write_text(json.dumps([{"id": "Q-X", "mode": "structured", "status": "ok",
+                                       "symbol_ids": ["No::code"], "source": "cognicode"}]))
+        atlas.build(self.repo, home=self.home)
+
+    def test_router_supports_atlas_from_claims_before_diagrams(self):
+        import affordances
+        result = affordances.affordances({"intent": "atlas", "workspace": "ready",
+               "atlas_assets": "absent", "atlas_claims_ready": True, "atlas_source": "absent"})
+        self.assertEqual(result["recommended"], "build-atlas")
 
     def test_html_render_requires_current_atlas(self):
         with self.assertRaises(render_markmap.RenderError):

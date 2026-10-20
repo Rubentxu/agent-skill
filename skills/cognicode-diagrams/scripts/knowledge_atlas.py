@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from evidence_contract import corroborated, index_queries
 
 MAX_INPUT = 8 * 1024 * 1024
 MAX_CLAIMS = 250
@@ -169,14 +170,13 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             raise KnowledgeError("unsupported evidence coverage")
         claims[cid] = c
 
+    queries = {}
     if qfile.is_file():
-        qraw = _load(qfile, workspace)
-        if isinstance(qraw, dict):
-            qraw = qraw.get("queries")
-        if not isinstance(qraw, list):
-            raise KnowledgeError("queries must be an array")
-        qids = {q.get("query_id", q.get("id")) for q in qraw if isinstance(q, dict)}
-        if any(qid not in qids for c in claims.values() for qid in c.get("query_ids", [])):
+        try:
+            queries = index_queries(_load(qfile, workspace))
+        except ValueError as exc:
+            raise KnowledgeError("invalid queries: " + str(exc)) from exc
+        if any(qid not in queries for c in claims.values() for qid in c.get("query_ids", [])):
             raise KnowledgeError("claim references nonexistent query")
 
     by_claim = {}
@@ -201,6 +201,8 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
             raise KnowledgeError("view has unknown plane")
         if any((claims[cid].get("category", "symbol") == "intent") != (plane == "intent") for cid in ids):
             raise KnowledgeError("intent-only claim cannot justify an implementation diagram")
+        if plane == "implementation" and any(not corroborated(claims[cid], queries) for cid in ids):
+            raise KnowledgeError("implementation view needs corroborated CogniCode code claims")
         if any(not isinstance(a, str) or a not in allowed for a in assets):
             raise KnowledgeError("view references ungenerated/external asset")
         for cid in ids:
@@ -228,8 +230,9 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
                 provenance = c.get("provenance", c.get("status", "UNKNOWN"))
                 ids = c.get("query_ids", [])
                 # A legacy "observed" without resolvable queries is a *candidate*, never verified evidence.
-                effective = ("UNKNOWN (sin query)" if provenance in IMPLEMENTATION | {"CODE_DOC"} and (not ids or not qfile.is_file())
-                             else provenance)
+                effective = ("UNKNOWN (sin corroborar)" if provenance in IMPLEMENTATION and not corroborated(c, queries)
+                             else "UNKNOWN (sin query)" if provenance == "CODE_DOC" and
+                             (not ids or not qfile.is_file()) else provenance)
                 plane = "intent" if category == "intent" else c.get("plane", "static")
                 coverage = c.get("coverage", "unknown")
                 lines.append(f"- {label(name)} [{label(effective)} · {label(plane)} · cobertura:{label(coverage)}]")
