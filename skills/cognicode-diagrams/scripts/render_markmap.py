@@ -7,6 +7,7 @@ An HTML render is an auxiliary projection, not a semantic architecture proof.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -83,7 +84,10 @@ def render(repo: Path, *, engine: str = "podman", image: str = CONTAINER_IMAGE,
         html = temp.read_text(encoding="utf-8")
         if "<html" not in html.lower() or "</html>" not in html.lower() or "<script" not in html.lower():
             raise RenderError("Markmap no devolvió un HTML interactivo válido")
-        temp.write_text("<!-- cognicode-diagrams markmap -->\n" + html, encoding="utf-8")
+        source_digest = hashlib.sha256((nav / "atlas.md").read_bytes()).hexdigest()
+        temp.write_text("<!-- cognicode-diagrams markmap -->\n"
+                        + f"<!-- atlas-source-sha256:{source_digest} -->\n" + html,
+                        encoding="utf-8")
         os.chmod(temp, 0o644)
         os.replace(temp, output)
         return {"status": "RENDERED_NOT_VISUALLY_REVIEWED", "html": str(output),

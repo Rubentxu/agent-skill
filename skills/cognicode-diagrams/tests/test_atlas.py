@@ -136,7 +136,7 @@ class AtlasTests(unittest.TestCase):
             "assets": ["lenses/c4/sources/workspace.dsl", "lenses/c4/renders/context.svg"]}))
         self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
         result = atlas.build(self.repo, home=self.home)
-        self.assertIn("B::save", Path(result["markdown"]).read_text())
+        self.assertIn("A::run", Path(result["markdown"]).read_text())
         self.assertIn("context.svg", Path(result["markdown"]).read_text())
         self.assertEqual(result["linked_views"], 1)
 
