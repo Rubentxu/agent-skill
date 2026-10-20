@@ -15,6 +15,8 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | [`pipelinek-local-ci`](skills/pipelinek-local-ci/SKILL.md) | Bootstrap con mise/asdf, diseña/revisa/migra `pipeline.kts` y opera PipelineK como CI/CD local agent-first con DSL Jenkins-familiar, eventos y gates. | Disponible |
 | [`agent-secretless`](skills/agent-secretless/SKILL.md) | Opera Agent Secretless Vault como control plane de credenciales: descubre capacidades por `asv agent discover --json`, ejecuta trabajo secretless y diagnostica instalación sin exponer secretos. | Disponible |
 | [`mosat-technology-learning`](skills/mosat-technology-learning/SKILL.md) | Investigación y aprendizaje tecnológico con MOSAT: perspectivas disciplina/proceso/producto, 7P, fichas trazables, modelos sistémicos, validación y gaps agent-first. | Disponible |
+| [`playful-learning-design`](skills/playful-learning-design/SKILL.md) | Diseña experiencias educativas gamificadas con objetivos, errores frecuentes, aprendizaje activo, motivación ética y lentes de autodescubrimiento. | Disponible (router + 8 lentes) |
+| [`learning-game-html`](skills/learning-game-html/SKILL.md) | Construye y refina juegos educativos HTML visuales, interactivos, accesibles y offline, con QA de navegador, persistencia y 9 lentes. | Disponible (router + 9 lentes) |
 | [`agentchanges-review`](skills/agentchanges-review/SKILL.md) | Revisa diffs entre refs con agentchanges: notas ancladas por hash de contenido, elección de kind/status, previsualización, aplicación y verificación de parches sin perder al revisor de vista. | Disponible |
 
 Consulta el README de [la skill genérica de calidad](skills/code-quality-evidence-review/README.md) y la [skill CogniCode](skills/cognicode-diagrams/README.md). **La skill antigua `cognicode-quality-investigator` ha sido retirada**; no usar sus instrucciones, rutas ni fallback de lectura directa. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
@@ -48,6 +50,12 @@ npx skills add Rubentxu/agent-skill --skill mosat-technology-learning --agent op
 
 # Revisar diffs con notas ancladas y parches verificados
 npx skills add Rubentxu/agent-skill --skill agentchanges-review --agent opencode
+
+# Diseñar experiencias de aprendizaje gamificadas
+npx skills add Rubentxu/agent-skill --skill playful-learning-design --agent opencode
+
+# Construir juegos educativos HTML interactivos, visuales y offline
+npx skills add Rubentxu/agent-skill --skill learning-game-html --agent opencode
 
 # O instalar la skill genérica globalmente en OpenCode
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode --global
@@ -95,6 +103,8 @@ python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'te
 python3 -m unittest discover -s skills/cognicode-diagrams/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/delivery-first-testing/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/distribution-first-release/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/playful-learning-design/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/learning-game-html/tests -p 'test_*.py'
 ```
 
 El workflow de GitHub Actions ejecuta estas comprobaciones para cada PR y push. Los tests de una skill nueva deben registrarse en CI cuando se añada.

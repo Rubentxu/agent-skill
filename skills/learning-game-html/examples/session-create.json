@@ -1,0 +1,12 @@
+{
+  "intent": "create",
+  "brief": "ready",
+  "art": "missing",
+  "scene": "missing",
+  "state": "missing",
+  "storage": "missing",
+  "access": "missing",
+  "visual_review": "not_run",
+  "browser_check": "not_run",
+  "package": "missing"
+}
