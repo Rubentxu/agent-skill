@@ -102,7 +102,8 @@ class ProjectorTests(unittest.TestCase):
         html.write_text("<!-- cognicode-diagrams markmap -->\n"
                         + f"<!-- atlas-source-sha256:{digest} -->\n<html></html>")
         engine.verify_sources(p)
-        (self.external / "evidence/claims.json").write_text("[]")
+        (self.external / "evidence/claims.json").write_text(
+            '[{"id":"NEW","kind":"entity","status":"UNKNOWN","symbol_id":"new::symbol"}]')
         with self.assertRaisesRegex(engine.ProjectorError, "evidencia actual"):
             engine.verify_sources(p)
         build_atlas(self.repo, home=self.home)

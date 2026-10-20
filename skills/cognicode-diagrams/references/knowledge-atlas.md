@@ -45,3 +45,12 @@ Sin DB, sin daemon, sin segundo MCP, sin inferencia a partir de nombres de fiche
 ## Semántica tipada
 
 Cada rama procede de `claim.category` explícito, no de los nombres de archivo. El atlas muestra `query_ids`, `plane`, `coverage`, `provenance`, y únicamente los atributos de relación observados. `CODE_DOC`/`CURATED_INTENT` se ubican en intención; la asociación de una vista de implementación a un claim de intención se rechaza. Véase [contrato de procedencia](visual-evidence.md).
+
+
+## Estabilización de la corroboración y del visor (2026-10)
+
+Un manifiesto `plane=implementation` enlaza únicamente claims que pasan `scripts/evidence_contract.py:corroborated`: una consulta estructurada CogniCode con éxito o parcial identifica exactamente el símbolo o la arista de grafo. Un `reference_link`, un ID presente sin relación observada, una consulta fallida o una inferencia siguen navegables como incertidumbre, pero **no** justifican un diagrama de implementación.
+
+La navegación local se sirve desde rutas de artefactos generados permitidas (informes, cápsulas, fichas moldables y renders) sin abrir el checkout. El HTML de Markmap lleva la huella SHA-256 del Markdown del que se generó; si el Markdown cambia, el visor devuelve error de obsolescencia, y `projectors.py start` exige un atlas local actual. Esto no demuestra la vigencia del código fuente: la revalidación corresponde a CogniCode.
+
+`atlas.py sync` sigue siendo regenerable e idempotente, pero utiliza una sola enumeración de entradas derivadas por sincronización y una huella de sus archivos. No se añaden índices persistentes, cron, servidores de análisis ni suites E2E permanentes.

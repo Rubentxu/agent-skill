@@ -259,6 +259,12 @@ class AtlasTests(unittest.TestCase):
                "atlas_assets": "absent", "atlas_claims_ready": True, "atlas_source": "absent"})
         self.assertEqual(result["recommended"], "build-atlas")
 
+    def test_atlas_discovers_derived_inputs_once_per_sync(self):
+        import knowledge_atlas
+        with patch.object(knowledge_atlas, "inputs", wraps=knowledge_atlas.inputs) as discovered:
+            atlas.build(self.repo, home=self.home)
+        self.assertEqual(discovered.call_count, 1)
+
     def test_html_render_requires_current_atlas(self):
         with self.assertRaises(render_markmap.RenderError):
             render_markmap.render(self.repo,home=self.home)
