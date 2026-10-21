@@ -4,6 +4,12 @@ Antes de aceptar un PASS comprobar: qué comando o interacción se ejecutó, qu�
 
 Un `exit 0` de shell puede ocultar un fallo por `|| true`, pipe sin `pipefail`, `exit` prematuro o pruebas omitidas. Una compilación contra binario antiguo no valida un commit reciente. Un checksum de assets existentes no garantiza completitud de una release. Un assert de existencia sin comprobar contenido puede pasar aunque el producto esté roto. No multiplicar pruebas anti-vacuidad: una comprobación discriminante sobre la frontera correcta basta si protege varias suites.
 
+### Comprobación de reducción y aceptación
+
+Antes de retirar una prueba, identificar la garantía, un fallo que ella detectaba, qué test restante la detecta y la comparación rojo/verde o mutación focalizada cuando aporte valor. La reducción se mide por tiempo y mantenimiento recuperado, no por cantidad de métodos. Parametrización no reduce automáticamente ejecuciones.
+
+En UAT efímero registrar el ID de sesión, artefacto/commit, escenario y aserción discriminante, salida/errores y prueba permanente sustituta cuando exista. Registrar la aceptación *antes* de borrar escenarios; nunca versionar logs sensibles. El harness puede conservar recibos locales ignorados por Git, y el proyecto puede trasladar las evidencias sanadas a su registro autorizado.
+
 ### Recibo mínimo (texto, no ledger nuevo)
 
 ```text
@@ -12,7 +18,7 @@ Fuente/artefacto: SHA + clean/dirty o digest
 Comprobación: comando real y escenario observable
 Resultado: PASSED | FAILED | BLOCKED | NOT_RUN
 Cobertura: casos que corrieron; skips y exclusiones
-UAT efímero: qué comprobó; decisión RETIRE | PROMOTE | REPLACE
+UAT efímero: run_id, qué comprobó; decisión RETIRE | PROMOTE | REPLACE | DEFER
 Evidencia permanente: test y garantía (si procede)
 Riesgos residuales / siguiente acción de entrega: ...
 ```

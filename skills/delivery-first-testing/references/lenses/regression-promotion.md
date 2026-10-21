@@ -1,7 +1,11 @@
-# Lente: promoción/retirada de regresiones
+# Lente: promoción, sustitución y retirada de regresiones
 
-**Pregunta:** ¿cuál es el menor test duradero que impediría repetir el defecto importante? Clasificar cada UAT `PROMOTE` (mantener mínimo), `REPLACE` (contrato/componente más barato), `RETIRE` (duplicado, exploratorio o detalle interno), o `DEFER` (riesgo aún no resuelto). Explorar si ya existe cobertura. Relacionar cada candidato con una garantía, fallo que discrimina, estabilidad bajo refactor seguro y coste estimado.
+**Pregunta:** ¿cuál es la menor protección duradera que habría detectado el fallo relevante?
 
-Nunca eliminar un test de seguridad, aislamiento, integridad, concurrencia o recuperación solo porque es frágil: cambiar seam o reemplazar primero. Nunca inflar suite con un E2E por cada variación de fixture. Tras refactor compatible el contrato debe seguir verde. El agente **propone** borrados, ejecuta solo si autorizado y se asegura de no dejar garantías sin observador.
+Por cada UAT o test candidato: identificar garantía, fallo sensible, nivel adecuado (unitario, propiedad, contrato, integración, smoke real), coste y protección existente. Decidir `PROMOTE` (mínimo permanente), `REPLACE` (seam más barato), `RETIRE` (exploratorio o redundante) o `DEFER` (riesgo sin resolver).
 
-**Cierre:** decisión por test candidato, prueba sustituta si aplica y aceptación de feature registrada fuera de pruebas temporales.
+**Regla de seguridad de retirada:** no borrar una prueba por tener el mismo nombre/fixture que otra. Demostrar equivalencia de garantía con un caso rojo discriminante, una variación dirigida o mutación focalizada, preferiblemente sobre el test que permanecerá. Si el test original ve un riesgo que la sustituta no detecta, conservarlo hasta cerrar el hueco. La cobertura por líneas nunca demuestra esta equivalencia.
+
+Agrupar variaciones homogéneas en data-driven con límites representativos, conservando identificadores y mensajes por caso. Usar propiedades para reglas generales y contracts para fronteras. No promocionar automáticamente un E2E efímero: registrar aceptación y eliminar el escenario tras decidir. No cambiar producción para que pase un test acoplado a internos.
+
+**Cierre:** `garantía | original | sustituto o justificación | evidencia | decisión | coste | riesgo`, resultado asociado a artefacto/HEAD vigente. Si falta herramienta/evidencia → `DEFER` o `BLOCKED`, nunca `RETIRE` silencioso.

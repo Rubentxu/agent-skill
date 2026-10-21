@@ -10,9 +10,10 @@ Una lente es un playbook de decisión, no un agente autónomo ni subservicio. Nu
 4. Añadir evaluación manual del agente y al menos un test de router/catalogo, incluyendo que `planned` no se ofrece como activo.
 5. Retirar la lente si deja de aportar una decisión nueva; no conservar catálogos históricos como obligación de release.
 
-## Propuestas futuras (NO disponibles en el catálogo)
+## Evoluciones futuras (no activadas salvo indicación de `ready` en el catálogo)
 
-- `mutation-guidance`: recomendar mutantes sobre contratos críticos cuando evidencia de eficacia sea dudosa. No exigir mutation testing en cada feature.
+La lente `mutation-guidance` ya está implementada y debe utilizarse de forma selectiva, no como gate global.
+
 - `historical-test-impact`: seleccionar por relación histórica entre cambios, tests y defectos; necesita repos suficientes y medición de falsos negativos.
 - `cross-repo-consumer`: validar compatibilidad Fabric/PipelineK mediante consumidores reales; requiere versiones fijadas y matriz mínima.
 

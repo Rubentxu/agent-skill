@@ -31,6 +31,8 @@ jobs:
         run: python3 -m unittest discover -s skills/delivery-first-testing/tests -p 'test_*.py' -v
       - name: Check delivery-first-testing navigation smoke
         run: python3 skills/delivery-first-testing/scripts/affordances.py skills/delivery-first-testing/examples/session-feature.json
+      - name: Check ephemeral harness lifecycle
+        run: bash skills/delivery-first-testing/tests/test_harness.sh
       - name: Run distribution-first-release tests
         run: python3 -m unittest discover -s skills/distribution-first-release/tests -p 'test_*.py' -v
       - name: Check distribution-first-release navigation smoke

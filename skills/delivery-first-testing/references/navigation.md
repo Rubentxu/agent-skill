@@ -28,6 +28,10 @@ Tipos:
 - `artifact`: `unknown|ready|missing` para release; `evidence_commit`: SHA o identificador si existe, opcional.
 - `uat_reason` requerido para `not_needed`; `regression_reason` requerido para `decided`. Los campos omitidos no equivalen a PASS.
 
+## Señales complementarias de diseño
+
+La recomendación de **lentes** filtra ahora por señales reales. Una lente sin señales es transversal, pero no se activan data-driven, mutation o UAT GUI por coincidencia de intención cuando el cambio no las justifica. Data-driven orienta diseño de casos; mutation-guidance guía una comprobación bajo demanda o en auditoría, **no** añade un gate global al router. La selección real y el criterio de cierre de pruebas permanecen bajo el ejecutor del proyecto.
+
 ## Prioridad y acciones
 
 1. **catalog**: descubrir lentes; sin comandos de construcción.
