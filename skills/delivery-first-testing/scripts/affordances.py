@@ -137,6 +137,7 @@ def parse_state(state: dict) -> dict:
 
 
 def recommended_lenses(parsed: dict, catalog: dict[str, dict]) -> list[dict]:
+    """Relevant, ready playbooks only. Routing cannot validate test execution."""
     intent = parsed['intent']
     if intent == 'catalog':
         return []
@@ -145,15 +146,24 @@ def recommended_lenses(parsed: dict, catalog: dict[str, dict]) -> list[dict]:
     for lens in catalog.values():
         if lens['status'] != 'ready' or intent not in lens['intents']:
             continue
-        if lens['id'] == 'failure-triage' and not any(parsed[k] in {'failed', 'blocked'} for k in ('affected','merge_checks','integration_checks','release_checks')) and parsed['uat'] != 'failed':
+        name = lens['id']
+        if name == 'failure-triage' and not any(
+            parsed[k] in {'failed', 'blocked'}
+            for k in ('affected', 'merge_checks', 'integration_checks', 'release_checks')
+        ) and parsed['uat'] != 'failed':
             continue
-        if lens['id'] == 'ephemeral-uat' and parsed['uat'] == 'not_needed':
+        if name == 'ephemeral-uat' and parsed['uat'] != 'pending':
             continue
-        if lens['id'] == 'harness-economics' and intent != 'audit' and not signals.intersection({'harness', 'ci'}):
+        if name == 'regression-promotion' and parsed['regression'] == 'decided':
             continue
-        # A lens with signals is still relevant when it owns the intent and is
-        # essential even if the caller cannot classify individual paths yet.
-        routed.append({'id': lens['id'], 'playbook': lens['playbook'], 'question': lens['question']})
+        if name == 'mutation-guidance' and intent == 'feature' and parsed['risk'] == 'routine':
+            # Mutation is a targeted quality probe, not the default feature gate.
+            continue
+        # Harness economics is the core of a portfolio audit even with no change labels.
+        audit_portfolio = name == 'harness-economics' and intent == 'audit'
+        if lens['signals'] and not signals.intersection(lens['signals']) and not audit_portfolio:
+            continue
+        routed.append({'id': name, 'playbook': lens['playbook'], 'question': lens['question']})
     return routed
 
 

@@ -30,7 +30,7 @@ class RegistryTests(unittest.TestCase):
         self.assertGreaterEqual(sum(l['status']=='ready' for l in cat.values()),7)
         self.assertIn('cross-repo-consumer',cat)
     def test_planned_not_active(self):
-        self.assertEqual(router.read_catalog()['mutation-guidance']['status'],'planned')
+        self.assertEqual(router.read_catalog()['mutation-guidance']['status'],'ready')
         self.assertNotIn('mutation-guidance',[l['id'] for l in router.affordances(s())['lenses']])
     def test_no_link_escapes_skill(self):
         for p in router.ACTIONS.values():
