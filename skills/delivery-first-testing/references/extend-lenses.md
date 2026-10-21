@@ -12,7 +12,7 @@ Una lente es un playbook de decisión, no un agente autónomo ni subservicio. Nu
 
 ## Propuestas futuras (NO disponibles en el catálogo)
 
-- `mutation-guidance`: recomendar mutantes sobre contratos críticos cuando evidencia de eficacia sea dudosa. No exigir mutation testing en cada feature.
+- `mutation-guidance` ya está implementada; ampliar solo tras demostrar valor en proyectos reales, sin exigir mutation testing en cada feature.
 - `historical-test-impact`: seleccionar por relación histórica entre cambios, tests y defectos; necesita repos suficientes y medición de falsos negativos.
 - `cross-repo-consumer`: validar compatibilidad Fabric/PipelineK mediante consumidores reales; requiere versiones fijadas y matriz mínima.
 

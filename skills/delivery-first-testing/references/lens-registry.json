@@ -19,7 +19,9 @@
         "ui",
         "ci",
         "harness",
-        "unknown"
+        "unknown",
+        "docs",
+        "release"
       ]
     },
     {
@@ -105,15 +107,18 @@
     },
     {
       "id": "mutation-guidance",
-      "status": "planned",
+      "status": "ready",
       "question": "Medir eficacia de tests críticos sin exigir mutation constante",
-      "playbook": "references/extend-lenses.md",
+      "playbook": "references/lenses/mutation-guidance.md",
       "intents": [
-        "audit"
+        "audit",
+        "feature"
       ],
       "signals": [
+        "domain",
         "security",
-        "persistence"
+        "persistence",
+        "protocol"
       ]
     },
     {
@@ -139,6 +144,22 @@
       "signals": [
         "protocol",
         "api"
+      ]
+    },
+    {
+      "id": "data-driven-design",
+      "status": "ready",
+      "question": "Diseñar casos mínimos con particiones, límites y propiedades",
+      "playbook": "references/lenses/data-driven-design.md",
+      "intents": [
+        "feature",
+        "audit"
+      ],
+      "signals": [
+        "domain",
+        "api",
+        "protocol",
+        "persistence"
       ]
     }
   ]

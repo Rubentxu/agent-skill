@@ -12,6 +12,8 @@ description: "Orquesta verificación rápida orientada a entrega de valor en cam
 - **Capacidad**: comportamiento observable que importa al consumidor. **Garantía**: propiedad que no puede romperse. **Prueba**: instrumento para contrastarla; nunca la identidad de una garantía.
 - **UAT efímero**: exploración o aceptación vinculada a una feature, descartable al cerrar el ciclo **después** de registrar el resultado y decidir si hace falta protección permanente.
 - **Regresión permanente**: comprobación pequeña, determinista y discriminante de una garantía crítica o sin cobertura equivalente. No promocionar automáticamente todos los UAT.
+- **Harness Base**: fixtures, drivers, perfiles, observadores y limpieza reutilizables; vive versionado en el proyecto. **Escenario efímero**: aceptación propia del ciclo, reproducible durante el bloque pero retirada tras decidir la regresión. **Evidencia**: constancia de qué se ejecutó, con qué artefacto y resultado; no equivale a conservar el script.
+- **Caso data-driven**: fila con entrada, resultado esperado y partición; parametrizar reduce duplicación de código, no necesariamente ejecuciones. **Mutante**: perturbación intencional del código para comprobar el poder discriminante; un mutante superviviente es una hipótesis a investigar, no prueba automática de un defecto.
 - **Lente**: pregunta especializada sobre el cambio. No es una skill instalada ni ejecutor. **Affordance**: acción que puede hacerse ahora según datos observados, con `rel` + `href` local a una guía; NO es URL HTTP ni implica ejecución.
 - **Evidencia vigente**: resultado asociado a código/revisión/artefacto y alcance observados. No llamar verde a `SKIP`, caché sin contexto, binario obsoleto, falsa salida cero ni prueba no ejecutada.
 
@@ -20,11 +22,12 @@ description: "Orquesta verificación rápida orientada a entrega de valor en cam
 1. Reconocer intención `feature | merge | integration | release | audit | catalog`, garantías afectadas, riesgo, consumidor y política real del proyecto. Leer primero wrappers reales de Cargo/Gradle/Vitest/Playwright/PipelineK; no inventar comandos ni un segundo orquestador CI.
 2. Usar [lens-registry.json](references/lens-registry.json), el [descubrimiento de skills disponibles](references/related-skills.md) y [navegación](references/navigation.md) para seleccionar lenses `ready` según señales y precondiciones. `planned` no es ejecutable. Helper **puro** opcional: `python3 scripts/affordances.py examples/session-feature.json` (solo calcula enlaces, nunca ejecuta tareas).
 3. Leer únicamente el playbook de la lente anunciada y los archivos productivos realmente necesarios. El catálogo sugiere; el agente contrasta código, dependencias, riesgo y evidencias. Si el helper no está disponible, aplicar las mismas reglas manualmente sin inventar estados.
-4. Ejecutar **solo pruebas afectadas y contratos críticos relacionados** en desarrollo. Los cambios transversales, seguridad, persistencia, identidad, despliegue y compatibilidad pueden exigir más fidelidad. No usar selección heurística para afirmar que un riesgo desconocido está cubierto.
-5. Para una feature, crear y usar escenarios UAT **temporales** si requieren demostración real; preferir herramienta existente o exploración CLI/browser a crear E2E permanente. Confirmar observabilidad: asserts sobre comportamiento, timeout limitado, entorno aislado y fallo discriminante. Nada de sleeps fijos, snapshots globales ni readme-tests para justificar una feature.
-6. Al cerrar feature, decidir `promote | replace | retire`: conservar la menor prueba que proteja una garantía sin cobertura; registrar por qué un UAT se descarta y qué evidencia de aceptación produjo. Nunca borrar tests legacy automáticamente ni perder protección de fallos críticos.
-7. En merge usar [impacto](references/lenses/change-impact.md) y verificación selectiva [merge](references/lenses/merge-assurance.md). Suite completa en integración o RC según autoridad del proyecto; certificación de instalación/publicación solo sobre artefacto real. **La integración puede fallar y requerir revert o arreglo antes de release**.
-8. Reinspeccionar después de cada acción; no declarar `PASS` por una intención o un plan. Informe final mínimo: capacidad, revisión/artefacto, garantía, comprobación ejecutada/no ejecutada, resultado, UAT retirados/promovidos, riesgos residuales, siguiente acción para entregar.
+4. Primero diseñar pruebas compactas: particiones de equivalencia, límites, parámetros, propiedades/invariantes y combinaciones t-way si existe interacción. Reducir pruebas redundantes solo tras demostrar una garantía sustituta, nunca por porcentaje de reducción.
+5. Ejecutar **solo pruebas afectadas y contratos críticos relacionados** en desarrollo. Los cambios transversales, seguridad, persistencia, identidad, despliegue y compatibilidad pueden exigir más fidelidad. No usar selección heurística para afirmar que un riesgo desconocido está cubierto.
+6. Para una feature, crear y usar escenarios UAT **temporales** si requieren demostración real; reutilizar primero el Harness Base del proyecto o la [plantilla portable](assets/test-harness-base/README.md), sin imponer un runner nuevo ni generar una suite histórica. Preferir herramienta existente o exploración CLI/browser a crear E2E permanente. Confirmar observabilidad: asserts sobre comportamiento, timeout limitado, entorno aislado y fallo discriminante. Nada de sleeps fijos, snapshots globales ni readme-tests para justificar una feature.
+7. Al cerrar feature, decidir `promote | replace | retire`: conservar la menor prueba que proteja una garantía sin cobertura; registrar por qué un UAT se descarta y qué evidencia de aceptación produjo. Nunca borrar tests legacy automáticamente ni perder protección de fallos críticos.
+8. En merge usar [impacto](references/lenses/change-impact.md) y verificación selectiva [merge](references/lenses/merge-assurance.md). Suite completa en integración o RC según autoridad del proyecto; certificación de instalación/publicación solo sobre artefacto real. **La integración puede fallar y requerir revert o arreglo antes de release**.
+9. Reinspeccionar después de cada acción; no declarar `PASS` por una intención o un plan. Informe final mínimo: capacidad, revisión/artefacto, garantía, comprobación ejecutada/no ejecutada, resultado, UAT retirados/promovidos, riesgos residuales, siguiente acción para entregar.
 
 ## Contratos no negociables
 
@@ -35,6 +38,9 @@ description: "Orquesta verificación rápida orientada a entrega de valor en cam
 - Mantener CI existente como autoridad única; esta skill no crea nuevos pipelines, catálogos normativos ni archivos de estado dentro del repositorio por defecto. Scripts temporales/evidencias sensibles fuera de Git, bajo directorio temporal aislado de la sesión (y con limpieza explícita tras comprobación).
 - **No borrar, instalar, publicar, hacer push ni merge sin la autorización correspondiente.** El helper no ejecuta acciones. No transmitir datos privados a servicios externos.
 - Si falta herramienta/artefacto, una prueba queda `BLOCKED`/`NOT_RUN`, nunca aprobada por defecto. Todo `SKIP` relevante requiere razón.
+- Objetivo de diseño: suite automatizada aplicable <=15 min y código de tests no superior al productivo, como guardarraíl de crecimiento, nunca excusa para borrar garantías críticas. Medir p50/p95, flakiness, escapes y costes antes de afirmar mejoras.
+- No ejecutar mutation testing completo por defecto. Aplicar mutación focalizada en código crítico, regresiones promovidas o consolidaciones dudosas, con presupuesto y análisis de mutantes equivalentes/inviables.
+- La base reutilizable persiste, pero las sesiones de aceptación nunca comparten estado mutable, puertos fijos ni procesos huérfanos. El ciclo es PREPARE → EXECUTE → ASSERT → EVIDENCE → CLEANUP; limpieza incluso al fallar y artefacto/HEAD identificable.
 - No obligar a `--rerun-tasks --no-build-cache` en el inner loop. Usar caché correcta y procedencia verificable; escalar sólo cuando la identidad o el contexto invalidan la evidencia.
 
 ## Rutas disponibles (leer solo la necesaria)
@@ -47,6 +53,8 @@ description: "Orquesta verificación rápida orientada a entrega de valor en cam
 | Release | [release](references/lenses/release-assurance.md) | artefacto de distribución realmente instalado/ejecutado y verificado |
 | Fallos repetidos | [triaje](references/lenses/failure-triage.md) | causa clasificada + corrección o cuarentena controlada |
 | Harness pesado | [economía](references/lenses/harness-economics.md) | duplicidades/tiempos medidos + eliminación o reubicación justificada |
+| Casos repetidos | [data-driven](references/lenses/data-driven-design.md) | particiones/límites e invariantes con aserciones discriminantes |
+| Eficacia dudosa | [mutación selectiva](references/lenses/mutation-guidance.md) | mutantes relevantes observados y analizados con presupuesto |
 | Diseñar nuevas lentes | [extensión](references/extend-lenses.md) | preguntas, señales, contraejemplos y tests de routing |
 
 ## Definición de valor entregado
