@@ -30,9 +30,11 @@ Esta política es normativa para `SKILL.md`, lentes, formatos, ejemplos, scripts
 
 Cada entidad/arista debe enlazar a un `claim_id` en `evidence/claims.json` o un informe equivalente:
 
-`{ "claim_id":"R-1", "kind":"relation", "from":"A", "to":"B", "plane":"static", "status":"OBSERVED_CODE", "query_id":"Q-3", "symbols":["A::serve","B::execute"], "code_refs":[{"path":"src/a.rs","line":42}], "limitations":[], "coverage":"partial" }`
+`{ "claim_id":"R-1", "kind":"relation", "relation_source":"graph_edge", "relation_id":"edge-7", "plane":"static", "provenance":"OBSERVED_CODE", "query_ids":["Q-3"], "from_symbol":"A::serve", "to_symbol":"B::execute", "coverage":"partial", "limitations":[] }`
 
 La ruta/linea **solo referencia la respuesta de CogniCode**; el agente no abre ese archivo. Para afirmaciones de despliegue o runtime, la arista necesita prueba del plano correcto suministrada por CogniCode. Un simple `calls` no lo demuestra.
+
+La forma completa del ledger, con un ejemplo que las pruebas ejecutan, está en [evidencia](evidence.md#la-forma-que-es-una-sola). Lo que la afirmación dice de sí misma (`provenance`) y lo que las consultas la corroboran son dos hechos distintos: `provenance` lo escribe quien investigó; la corroboración la deducen las consultas. Una afirmación puede estar observada y no corroborada, y eso no es lo mismo que no haberla observado.
 
 Guardar, de forma limitada y sin secretos, un ledger con `query_id`, interface, tool real, argumentos/scope, resumen de salida, snapshot/basis si se proporciona, omisiones, errores y decisiones posteriores. No copiar código masivamente.
 

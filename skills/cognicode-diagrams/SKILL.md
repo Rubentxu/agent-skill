@@ -65,13 +65,14 @@ Para explicar una topología C4 ya investigada con claridad visual, seleccionar 
 ## Atlas incremental y visual thinking (obligatorio)
 
 - **Durante** la investigación, consolidar claims/queries CogniCode en el ledger externo y sincronizar el atlas **tras cada observación útil**, antes de crear diagramas: `python3 scripts/atlas.py sync --repo <raiz>`.
+- **Antes de publicar el ledger**, comprobarlo: `python3 scripts/evidence.py --repo <raiz> --check` dice, afirmación por afirmación, **qué sostiene la evidencia y qué falta**, y falla cuando una afirmación dice `OBSERVED_CODE` y ninguna consulta la corrobora. Con `--emit` deja el veredicto derivado junto al ledger, para que se publique con la afirmación y no solo la afirmación. Lo que el writer escribió (`provenance`) y lo que las consultas corroboran son dos hechos distintos, y los dos se publican. [Contrato de evidencia](references/evidence.md#la-forma-que-es-una-sola).
 - **Cada vista nueva** vincula `claim_ids` con sus fuentes y renders reales en `lenses/<lens>/reports/<vista>.atlas.json`; sincronizar de nuevo. Reutilizar todos los recursos generados sin duplicar ni reinterpretar conocimiento.
 - En Agent Teams un integrador único consolida el ledger y actualiza el atlas mientras otros agentes investigan/renderizan vistas independientes. No hay escrituras simultáneas al mismo ledger ni una base de datos añadida.
 - Renderizar HTML Markmap al revisar visualmente o al cerrar un bloque, **no en cada consulta**. El atlas ofrece navegación `símbolo → claim → evidencia → proyecciones`; no sustituye el grafo CogniCode ni certifica frescura del código. [Contrato operativo](references/knowledge-atlas.md).
 
 ## Procedencia visual, taxonomía y vistas honestas
 
-La skill clasifica **solo conceptos respaldados** mediante `claim.category`: `system`, `module`, `surface`, `external`, `store`, `signal`, `coverage`, `glossary` o `symbol`. Estas categorías son opt-in, **no** nuevas consultas obligatorias ni inferencias a partir de archivos/renderers. Para cada entidad se conserva `claim_id`, `query_ids`, `plane=static|runtime|deployment` y `coverage=complete|partial|unknown`; un antiguo `observed` sin consulta acreditada queda como `UNKNOWN`.
+La skill clasifica **solo conceptos respaldados** mediante `claim.category`: `system`, `module`, `surface`, `external`, `store`, `signal`, `coverage`, `glossary` o `symbol`. Estas categorías son opt-in, **no** nuevas consultas obligatorias ni inferencias a partir de archivos/renderers. Para cada entidad se conserva `claim_id`, `query_ids`, `plane=static|runtime|deployment` y `coverage=complete|partial|unknown`; una observación que ninguna consulta corrobora se publica como **observada y sin corroborar**, que no es lo mismo que decir que no se observó.
 
 La rama `intent` solo acepta `CODE_DOC` (docstring/KDoc extraído mediante CogniCode) o `CURATED_INTENT` (usuario/curador identificado). `DOC_INTENT` por lectura directa de documentación del checkout no se permite. La intención no justifica una vista `plane=implementation`; para vista curada usar `plane=intent`. El HTML de Markmap o un diagrama LikeC4 válido tampoco certifican arquitectura.
 
