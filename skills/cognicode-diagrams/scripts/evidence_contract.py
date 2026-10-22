@@ -45,6 +45,17 @@ QUERY_STATUSES = ("ok", "partial")
 QUERY_SOURCES = ("cognicode",)
 QUERY_PLANES = ("static",)
 
+# The revision of the repository a query was looking at when it ran. It is
+# optional: a query that does not declare it is still a valid query, and
+# what it omits stays unknown instead of being assumed.
+REPOSITORY_REVISION = "repository_revision"
+
+# Optional fields a query may declare. They are read, never required: a
+# query without them is still a valid query, and every projection that
+# cites it has to carry what it omits instead of filling it in.
+QUERY_OPTIONAL = ("limitations", "symbol_locations", "impact",
+                  REPOSITORY_REVISION)
+
 # Provenance: what the observation *was*. The writer says this.
 IMPLEMENTATION_PROVENANCE = ("OBSERVED_CODE", "observed")
 INTENT_PROVENANCE = ("CODE_DOC", "CURATED_INTENT")
@@ -121,6 +132,21 @@ def provenance_of(claim: dict) -> str:
     """The provenance a claim asserts, or UNKNOWN when it asserts nothing."""
     value = claim.get("provenance", claim.get("status"))
     return value if isinstance(value, str) and value else "UNKNOWN"
+
+
+def revision_of(query: dict) -> str | None:
+    """The repository revision a query declares, or None when it declares none.
+
+    The revision travels with the query that observed it: it is declared by
+    whoever collected the evidence, and only that declaration counts. It is
+    never guessed, never resolved from the checkout and never asked to Git,
+    so an absent declaration means the revision is unknown, not that it is
+    the revision the code has now.
+    """
+    if not isinstance(query, dict):
+        return None
+    value = query.get(REPOSITORY_REVISION)
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def corroborated(claim: dict, queries: dict[str, dict]) -> bool:

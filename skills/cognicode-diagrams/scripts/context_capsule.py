@@ -129,6 +129,19 @@ def literal(value):
             .replace("|", "\\|").replace("\n", " "))
 
 
+def revision_del_capsula(basis):
+    """La revision del codigo analizado, si las consultas la declararon.
+
+    Se declara lo que las consultas dijeron, nunca lo que se supone: que
+    esa revision sea la que tiene ahora el checkout no se comprueba aqui.
+    """
+    revision = basis.get("revision") if isinstance(basis, dict) else None
+    if not revision:
+        return "Revision del codigo analizado: NO declarada."
+    return ("Revision del codigo analizado: " + literal(revision) +
+            " (declarada por las consultas; su correspondencia con el checkout no esta comprobada).")
+
+
 def markdown(data):
     e, language = data["evidence"], data["language"]
     scope = data["relation_scope"]
@@ -162,8 +175,9 @@ def markdown(data):
               "3. Consultar solo contratos o relaciones todavía necesarios usando CogniCode.",
               "4. Si no hay CogniCode: **PAUSED**, nunca lectura directa ni fallback.",
               "", "No autoriza editar ni verifica impacto runtime.",
-              "Revisión declarada: " + literal(e["basis"]["identity"]) +
+              "Identidad declarada: " + literal(e["basis"]["identity"]) +
               " (" + literal(e["basis"]["status"]) + ").",
+              revision_del_capsula(e["basis"]),
               "Vigencia del código: NO comprobada.", ""]
     return "\n".join(lines)
 

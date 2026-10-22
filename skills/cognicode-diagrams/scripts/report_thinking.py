@@ -15,7 +15,7 @@ import re
 import sys
 import tempfile
 
-from evidence_contract import corroborated, reference_corroborated
+from evidence_contract import corroborated, reference_corroborated, revision_of
 from workspace import inspect as inspect_workspace
 
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
@@ -217,14 +217,42 @@ def evidence(root: Path) -> dict:
             "uses": uses, "uncorroborated": uncorroborated}
 
 
+def declared_revision(queries: dict, ids: set[str]) -> str | None:
+    """The revision every supporting query declares, or None when unknown.
+
+    Strict on purpose: the revision is published only when *all* the
+    queries that support the brief declare the same one. Queries that
+    disagree publish nothing, and so do queries that do not all declare
+    it: a partial declaration cannot describe the whole analysis, and a
+    conflict is never resolved by picking one of the declared revisions.
+    """
+    declared = [revision_of(queries.get(i, {})) for i in ids]
+    if not declared or any(item is None for item in declared):
+        return None
+    unique = set(declared)
+    return next(iter(unique)) if len(unique) == 1 else None
+
+
 def basis_of(queries: dict, ids: set[str]) -> dict:
-    """No guessed SHA or currency: only matching identities supplied by CogniCode."""
+    """No guessed SHA or currency: only matching identities supplied by CogniCode.
+
+    The revision is *collected* from the evidence, never guessed: it is the
+    revision the supporting queries declare they were looking at, and the
+    basis publishes it only when every one of them declares the same one.
+    A missing key means the revision is unknown, so nobody has to assume
+    it, and the report says what is known instead of what is supposed.
+    """
     values = {queries[i].get("basis") for i in ids if isinstance(queries[i].get("basis"), str)}
     if not values:
-        return {"identity": None, "status": "unknown"}
-    if len(values) != 1:
-        return {"identity": None, "status": "conflict"}
-    return {"identity": next(iter(values)), "status": "reported_unverified"}
+        basis = {"identity": None, "status": "unknown"}
+    elif len(values) != 1:
+        basis = {"identity": None, "status": "conflict"}
+    else:
+        basis = {"identity": next(iter(values)), "status": "reported_unverified"}
+    revision = declared_revision(queries, ids)
+    if revision is not None:
+        basis["revision"] = revision
+    return basis
 
 
 def project(root: Path, kind: str, *, symbol: str | None = None,
@@ -446,6 +474,16 @@ def markdown(data: dict) -> str:
         return str(s).replace("\\", "\\\\").replace("<", "&lt;").replace(">", "&gt;").replace(
             "[", "\\[").replace("]", "\\]").replace("*", "\\*").replace("_", "\\_").replace(
             "`", "\\`").replace("|", "\\|").replace("\n", " ")
+    # The revision is stated as what the evidence declared, never as what it
+    # is: nothing here compares it with the checkout the reader may have.
+    revision = e["basis"].get("revision")
+    revision_line = (
+        "Revisión del código analizado, declarada por las consultas que lo sostienen: " +
+        literal(revision) + ". Su correspondencia con el checkout no está comprobada."
+        if revision else
+        "Revisión del código analizado: las consultas que lo sostienen no declaran una "
+        "revisión común, así que el informe no afirma nada sobre ella."
+    )
     lines = [
         MARKER,
         "# " + literal(v["label"]), "",
@@ -461,7 +499,8 @@ def markdown(data: dict) -> str:
         "Claims: " + ", ".join(literal(s) for s in e["claim_ids"]),
         "Consultas CogniCode: " + ", ".join(literal(s) for s in e["query_ids"]),
         "Cobertura: " + literal(e["coverage"]),
-        "Versión: " + literal(e["basis"]["identity"]) + " (" + literal(e["basis"]["status"]) + ")", "",
+        "Versión: " + literal(e["basis"]["identity"]) + " (" + literal(e["basis"]["status"]) + ")",
+        revision_line, "",
         "## Relaciones estáticas acreditadas", ""
     ]
     if e["relations"]:
