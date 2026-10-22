@@ -24,3 +24,9 @@ Riesgos residuales / siguiente acción de entrega: ...
 ```
 
 Guardarlo en el sistema de registro ya existente si el proyecto lo exige. No crear un directorio de recibos dentro del repo de forma automática. Sin recolección real, informar `NOT_RUN`.
+
+## Pruebas parametrizadas y límites de evidencia
+
+- Reportar **número esperado, seleccionadas, ejecutadas, fallidas y saltadas** por *revisión exacta*; una factoría que produce cero casos no acredita la garantía. Los ID de los casos deben permitir identificar cuál quedó rojo.
+- Una reproducción aislada con compilador, JUnit simulado o stubs ajenos al build sirve para explorar el oráculo, pero su estado es **PROBE_ONLY**; el gate oficial permanece `NOT_RUN`. No convertir una prueba de sintaxis o mutación local en resultado Gradle/JUnit certificado ni fusionar bajo esa premisa.
+- La mutación `KILLED` exige que el runner llegara al test y **fallara una aserción relacionada**; un error de compilación, dependencia ausente, timeout no explicado o suite no descubierta es `INVALID/NOT_MEASURED`, no mutante eliminado.

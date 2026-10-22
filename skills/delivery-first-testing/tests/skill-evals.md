@@ -30,3 +30,7 @@ Estas evaluaciones requieren agentes reales y repositorios externos para acredit
 23. Selección de E2E con falta de dependencias: `BLOCKED`, no reutilizar binario antiguo ni contenedor de CI previo.
 24. Combinaciones pairwise: identificar un riesgo conocido de tres parámetros y añadirlo explícitamente, no certificar pairwise como exhaustivo.
 25. Harness con proceso descendiente: limpiar el grupo propio en éxito, fallo y señal; nunca `pkill` por nombre.
+
+26. Factoría de JUnit `@TestFactory` que devuelve lista vacía tras consolidación 3×2: exigir no-vacuidad (6 combinaciones, sin duplicados), y no contar el verde de factoría sin casos como PASS.
+27. Se compila una copia aislada con shim de JUnit, pero no hay Gradle oficial ni dependencias del repo: describir `PROBE_ONLY`; gate real `NOT_RUN`, jamás fusionar diciendo que el build completo pasó.
+28. Mutation testing devuelve error de compilación al cambiar una rama: debe clasificarse `INVALID/NOT_MEASURED`, no `KILLED` aunque el comando tenga exit no cero.
