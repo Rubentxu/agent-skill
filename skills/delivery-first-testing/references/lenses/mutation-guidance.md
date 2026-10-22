@@ -4,7 +4,7 @@
 
 1. Seleccionar un **seam crítico o modificado** (permisos, persistencia, orden de eventos, protocolos, identidad) o el test sustituto tras una consolidación. Fijar HEAD, comando y presupuesto temporal explícito; no ejecutar un sweep global en cada feature.
 2. Exigir una baseline verde y un oráculo que observe salida/comportamiento. Ejecutar solo mutantes relevantes del módulo/fuente o el diff, usando el runner del proyecto. Si faltan herramientas, `NOT_RUN`, sin instalarlas en silencio.
-3. Clasificar `KILLED` (test detecta defecto), `SURVIVED` (investigar debilidad), `TIMEOUT`, `NO_COVERAGE`, `EQUIVALENT/INVALID`. Un mutante superviviente **no prueba automáticamente un defecto** y un score alto no garantiza calidad.
+3. Clasificar `KILLED` (**la prueba ejecutó y una aserción relevante quedó roja**), `SURVIVED` (investigar debilidad), `TIMEOUT`, `NO_COVERAGE`, `EQUIVALENT/INVALID`. Si el código mutado no compila o falta el runner, registrar `INVALID/NOT_MEASURED`, **nunca** sumar el error de compilación como mutante eliminado. Un mutante superviviente **no prueba automáticamente un defecto** y un score alto no garantiza calidad.
 4. Para sobrevivientes útiles, escribir o afinar la aserción más barata; reejecutar solo lo afectado. Si el mutante es equivalente/inviable, documentarlo y excluirlo de conclusiones. No inventar porcentajes ni gates globales.
 5. Detenerse ante presupuesto consumido, coste desproporcionado o falta de beneficio. Priorizar mutantes de comparadores, validaciones, condiciones, serialización y transiciones de estado, no cambios cosméticos.
 
