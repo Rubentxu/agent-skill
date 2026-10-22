@@ -7,7 +7,7 @@
 3. Definir criterios de cierre, evidencia mínima y límites operativos. Nunca atribuir ejecuciones, mediciones, permisos o verificaciones inexistentes.
 4. No instalar herramientas, ejecutar cargas destructivas o enviar código/secretos a terceros sin autorización. Si hay scripts, deben describir sus efectos y tener tests aislados.
 5. Añadir evaluaciones de activación y casos positivos, negativos y ambiguos; añadir tests para scripts. Los comandos de instalación de terceros son **sugerencias**, no prerequisitos implícitos.
-6. Actualizar el catálogo del README raíz y, en su caso, el workflow para ejecutar los nuevos tests. Evitar referencias a rutas de otras skills.
+6. Actualizar el catálogo del README raíz. Los tests de una skill nueva entran en CI sin tocar el workflow: basta con dejarlos en `skills/<slug>/tests/`. Evitar referencias a rutas de otras skills.
 
 ## Flujo de cambios
 

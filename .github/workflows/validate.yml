@@ -21,5 +21,11 @@ jobs:
         run: python3 scripts/validate_skills.py
       - name: Run collection validator tests
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-      - name: Run skill utility tests
-        run: python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py' -v
+      - name: Run the tests of every skill that ships them
+        run: |
+          for dir in skills/*/tests; do
+            compgen -G "$dir/test_*.py" > /dev/null || continue
+            echo "::group::$dir"
+            python3 -m unittest discover -s "$dir" -p 'test_*.py' -v
+            echo "::endgroup::"
+          done

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "related_skills": [
+    {
+      "id": "pipelinek-local-ci",
+      "intents": [
+        "merge",
+        "integration",
+        "release"
+      ],
+      "signals": [
+        "ci",
+        "protocol",
+        "release"
+      ],
+      "purpose": "Ejecutar gates locales con identidad PipelineK sin crear CI paralela"
+    },
+    {
+      "id": "cognicode-quality-investigator",
+      "intents": [
+        "feature",
+        "audit"
+      ],
+      "signals": [
+        "domain",
+        "api",
+        "unknown"
+      ],
+      "purpose": "Inspeccionar relaciones y consumidores con evidencia CogniCode"
+    },
+    {
+      "id": "retrospective-cycle-audit",
+      "intents": [
+        "audit",
+        "feature"
+      ],
+      "signals": [
+        "harness",
+        "ci"
+      ],
+      "purpose": "Refutar falsos verdes y reconstruir causa de ciclos bloqueados"
+    },
+    {
+      "id": "agentchanges-review",
+      "intents": [
+        "feature",
+        "merge"
+      ],
+      "signals": [
+        "ui",
+        "domain"
+      ],
+      "purpose": "Revisar cambios y notas entre refs sin perder identidad"
+    },
+    {
+      "id": "playwright-cli",
+      "intents": [
+        "feature"
+      ],
+      "signals": [
+        "ui"
+      ],
+      "purpose": "Explorar interfaz real durante UAT efímero sin crear suite permanente"
+    }
+  ]
+}

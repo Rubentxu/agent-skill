@@ -1,0 +1,19 @@
+# Local-only Kroki rendering stack. Run explicitly with user authorization:
+# docker compose -f assets/kroki-compose.yml up -d
+# docker compose -f assets/kroki-compose.yml down
+services:
+  kroki:
+    image: yuzutech/kroki
+    restart: unless-stopped
+    environment:
+      KROKI_MERMAID_HOST: mermaid
+      KROKI_SAFE_MODE: SECURE
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - mermaid
+  mermaid:
+    image: yuzutech/kroki-mermaid
+    restart: unless-stopped
+    expose:
+      - "8002"

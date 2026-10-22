@@ -1,0 +1,23 @@
+// Ejemplo sintético para comprobar el visor; NO representa el repositorio real.
+specification {
+  element actor
+  element system
+  element container
+}
+model {
+  visitor = actor 'Visitor'
+  portal = system 'Example Portal' {
+    web = container 'Web Interface'
+    api = container 'Backend API'
+    web -> api 'requests'
+  }
+  visitor -> portal.web 'uses'
+}
+views {
+  view index {
+    include *
+  }
+  view of portal {
+    include *
+  }
+}

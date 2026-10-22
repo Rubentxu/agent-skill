@@ -1,0 +1,12 @@
+{
+  "intent": "release",
+  "inventory": "ready",
+  "impact": "none",
+  "basis": "current",
+  "changed": [
+    "release"
+  ],
+  "risk": "high",
+  "artifact": "ready",
+  "release_checks": "not_run"
+}

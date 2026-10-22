@@ -1,0 +1,125 @@
+{
+  "intent": "create",
+  "lens": "c4",
+  "formats": [
+    "mermaid",
+    "structurizr"
+  ],
+  "environment": "mcp_ready",
+  "evidence": "graph_ready",
+  "basis": "current",
+  "model": "absent",
+  "has_input_diagram": false,
+  "reconciled": false,
+  "artifacts": {
+    "mermaid": "absent",
+    "structurizr": "absent"
+  },
+  "validators": {
+    "mermaid": "missing",
+    "structurizr": "missing"
+  },
+  "approval": {
+    "install": false,
+    "write_project": false
+  },
+  "workspace": "ready",
+  "evidence_origin": "cognicode",
+  "claim_coverage": "partial",
+  "research": {
+    "catalog": "observed",
+    "question": {
+      "id": "RQ-1",
+      "text": "Cuál es la responsabilidad implementada?",
+      "kind": "responsibilities",
+      "language": "rust",
+      "target": "module::run"
+    },
+    "capabilities": [
+      {
+        "name": "query_symbol_index",
+        "role": "symbol_index",
+        "languages": [
+          "rust"
+        ],
+        "advertised": true,
+        "schema_observed": true,
+        "probes": {
+          "rust": {
+            "status": "usable",
+            "query_id": "P-1",
+            "symbol_id": "module::run",
+            "location": "src/main.rs:12",
+            "context": "present",
+            "relations": "unknown",
+            "coverage": "partial"
+          }
+        },
+        "requires_graph": false,
+        "requires_persistence": false,
+        "stability": "stable"
+      }
+    ],
+    "queries": [
+      {
+        "id": "Q-1",
+        "question_id": "RQ-1",
+        "target": "module::run",
+        "capability": "query_symbol_index",
+        "mode": "structured",
+        "status": "ok",
+        "coverage": "partial",
+        "observation_plane": "static",
+        "symbol_ids": [
+          "module::run"
+        ],
+        "relation_ids": []
+      }
+    ],
+    "claims": [
+      {
+        "id": "C-1",
+        "question_id": "RQ-1",
+        "kind": "entity",
+        "status": "observed",
+        "plane": "static",
+        "symbol_id": "module::run",
+        "query_ids": [
+          "Q-1"
+        ]
+      }
+    ],
+    "diagram_claim_ids": [
+      "C-1"
+    ],
+    "scope": {
+      "source": "cognicode",
+      "report_id": "COV-1",
+      "languages": [
+        "rust"
+      ],
+      "coverage": "complete",
+      "omissions_complete": true,
+      "omitted_files": []
+    },
+    "language_registry": {
+      "source": "cognicode",
+      "version": "synthetic-1",
+      "support": "supported",
+      "language": "rust"
+    },
+    "session": {
+      "id": "mcp-1",
+      "transport": "mcp",
+      "graph_state": "absent",
+      "graph_owner": null,
+      "graph_basis": null,
+      "persistence": "absent",
+      "graph_attempts": 0
+    },
+    "view": {
+      "node_count": 2,
+      "max_nodes": 15
+    }
+  }
+}

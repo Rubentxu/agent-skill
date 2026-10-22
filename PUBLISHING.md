@@ -7,7 +7,10 @@ Repositorio público existente: <https://github.com/Rubentxu/agent-skill>.
 ```bash
 python3 scripts/validate_skills.py
 python3 -m unittest discover -s tests -p 'test_*.py' -v
-python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py' -v
+for dir in skills/*/tests; do
+  compgen -G "$dir/test_*.py" > /dev/null || continue
+  python3 -m unittest discover -s "$dir" -p 'test_*.py' -v
+done
 ```
 
 ## Clonar y actualizar (repositorio existente)
