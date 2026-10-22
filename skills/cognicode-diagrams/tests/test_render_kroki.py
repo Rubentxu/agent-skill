@@ -1,6 +1,7 @@
 """Offline tests; mock Kroki's HTTP contract, never pull containers or hit public network."""
 from __future__ import annotations
 
+import gc
 import importlib.util
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -8,6 +9,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+import warnings
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -152,6 +154,16 @@ class KrokiTests(unittest.TestCase):
     def test_unreachable_local_returns_error(self):
         with self.assertRaisesRegex(module.RenderError, "no disponible"):
             module.render(self.source, self.target, "mermaid", "svg", "http://127.0.0.1:1", timeout=0.3)
+
+    def test_refused_response_leaves_no_socket_open(self):
+        Handler.responses = [(400, "text/plain", b"bad C4", {})]
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            with self.assertRaisesRegex(module.RenderError, "HTTP 400"):
+                module.render(self.source, self.target, "mermaid", "svg", self.url)
+            gc.collect()
+        leaked = [w for w in caught if issubclass(w.category, ResourceWarning)]
+        self.assertEqual(leaked, [], f"la respuesta rechazada quedó sin cerrar: {leaked}")
 
 
 if __name__ == "__main__":

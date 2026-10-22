@@ -234,7 +234,12 @@ def http_ready(port: int) -> bool:
     try:
         with opener.open(Request(f"http://127.0.0.1:{port}/", method="GET"), timeout=3) as response:
             return 200 <= response.status < 300
-    except (URLError, HTTPError, TimeoutError, OSError):
+    except HTTPError as e:
+        # Un error HTTP arrastra abierto el socket de respuesta: cerrarlo
+        # evita dejar conexiones colgando hasta que pase el recolector.
+        e.close()
+        return False
+    except (URLError, TimeoutError, OSError):
         return False
 
 

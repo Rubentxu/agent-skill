@@ -45,6 +45,23 @@ class ValidateSkillsTests(unittest.TestCase):
             errors = validator.validate_skill(skill)
             self.assertEqual(len([e for e in errors if "enlace local roto" in e]), 2)
 
+    def test_skill_with_scripts_needs_tests(self):
+        with tempfile.TemporaryDirectory() as temp:
+            skill = self.make_skill(Path(temp))
+            (skill / "scripts").mkdir()
+            (skill / "scripts" / "tool.py").write_text("print('ok')\n", encoding="utf-8")
+            errors = validator.validate_skill(skill)
+            self.assertTrue(any("scripts sin pruebas" in e for e in errors))
+
+    def test_skill_with_scripts_and_tests_is_accepted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            skill = self.make_skill(Path(temp))
+            (skill / "scripts").mkdir()
+            (skill / "scripts" / "tool.py").write_text("print('ok')\n", encoding="utf-8")
+            (skill / "tests").mkdir()
+            (skill / "tests" / "test_tool.py").write_text("", encoding="utf-8")
+            self.assertEqual(validator.validate_skill(skill), [])
+
 
 if __name__ == "__main__":
     unittest.main()

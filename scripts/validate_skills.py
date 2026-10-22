@@ -16,6 +16,19 @@ LOCAL_LINK = re.compile(r"(?<!!)\[[^\]\n]+\]\(([^)]+)\)")
 EXCLUDED = {"http://", "https://", "mailto:", "#"}
 
 
+def untested_scripts(skill: Path) -> list[str]:
+    """Una skill con utilidades necesita pruebas que la confronten.
+
+    Un script sin prueba es una afirmación sin comprobar: parece fiable
+    porque se ejecuta, y no lo es porque nadie lo ve fallar.
+    """
+    scripts = sorted((skill / "scripts").glob("*.py")) if (skill / "scripts").is_dir() else []
+    tests = sorted((skill / "tests").glob("test_*.py")) if (skill / "tests").is_dir() else []
+    if scripts and not tests:
+        return [f"{skill}: hay scripts sin pruebas en {skill / 'tests'}"]
+    return []
+
+
 def validate_skill(skill: Path) -> list[str]:
     errors: list[str] = []
     root = skill.resolve()
@@ -24,6 +37,7 @@ def validate_skill(skill: Path) -> list[str]:
     entry = skill / "SKILL.md"
     if not entry.is_file():
         return [f"{skill}: falta SKILL.md"]
+    errors.extend(untested_scripts(skill))
     body = entry.read_text(encoding="utf-8")
     front = re.match(r"\A---\s*\n(.*?)\n---\s*\n", body, re.S)
     if not front:

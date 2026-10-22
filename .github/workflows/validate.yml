@@ -21,6 +21,8 @@ jobs:
         run: python3 scripts/validate_skills.py
       - name: Run collection validator tests
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run gate vocabulary reachability tests
+        run: python3 -m unittest discover -s skills/gate-vocabulary-reachability/tests -p 'test_*.py' -v
       - name: Run skill utility tests
         run: python3 -m unittest discover -s skills/code-quality-evidence-review/tests -p 'test_*.py' -v
       - name: Run CogniCode diagrams router tests
