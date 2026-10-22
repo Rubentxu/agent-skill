@@ -11,7 +11,7 @@ Tras registrar cada observación útil, sincronizar el [atlas incremental](knowl
 Conservar en `~/.cognicode-diagrams/workspaces/<id>/evidence/` un `queries.json` y `claims.json` (o informe equivalente), con metadatos mínimos:
 
 - `query_id`, interfaz `cli|mcp`, versión y operación **descubierta**, `mode`, argumentos/scope, `symbol_ids` resueltos, resultado observado, error, cobertura y omisiones.
-- `basis`: workspace/revisión/dirty/snapshot **solo cuando CogniCode lo comunique**; `UNKNOWN` en caso contrario. No consultar Git por separado.
+- `basis`: workspace/revisión/dirty/snapshot **solo cuando CogniCode lo comunique**; `UNKNOWN` en caso contrario. No consultar Git por separado. La revisión concreta que se estaba mirando se declara aparte, en `repository_revision`.
 - `claim_id`, tipo `entity|relation`, `symbol_id` o arista, referencia archivo:línea **devuelta por CogniCode** y `query_ids` concretos.
 - `plane` = `static|runtime|deployment`; `provenance` = `OBSERVED_CODE|INFERRED|UNKNOWN`; limitación explícita y cobertura del claim.
 - `next_question` si falta un extremo, precisión, storage, protocolo o distinción entre biblioteca/proceso.
@@ -28,6 +28,21 @@ Una consulta puede declarar además estos campos opcionales, y entonces toda pro
 - `limitations`: lo que la respuesta **no** cubre. Un informe que calla el límite de su consulta exagera lo que sabe; por eso el límite viaja con la consulta hasta el lector.
 - `symbol_locations`: dónde resolvió cada símbolo. Es lo que permite separar dos símbolos homónimos que comparten nombre: el nombre no basta, la posición sí.
 - `impact`: lo que el motor declara del impacto de cambiar un símbolo (`risk_level`, `direct_dependents`, `total_impacted_symbols`, `impacted_files_count`, `affected_symbols`, `affected_files`). Es un **hecho sobre el análisis del motor**, y es transitivo: no es una arista, ni un fallo, ni una dependencia en ejecución.
+- `repository_revision`: la revisión del repositorio que se estaba mirando cuando se hizo esa consulta. La declara quien recogió la evidencia —el operador o el agente que corrió las consultas—; la skill no la produce, no la deduce, no la pide al checkout y no la resuelve con Git. Es opcional: una consulta que no la declara sigue siendo una consulta válida, y entonces el informe no dice nada sobre la revisión.
+
+### La base del informe: lo que se sabe y lo que no
+
+El informe declara su base en `evidence.basis` y describe únicamente lo que la evidencia le da:
+
+```json
+{"identity": "cognicode-cli 0.101.21 sha=... source=...", "status": "reported_unverified", "revision": "rev-abc123"}
+```
+
+- `identity`: la identidad del motor, tal como la declaran las consultas que sostienen el informe.
+- `status`: `reported_unverified` cuando esas consultas declaran la misma identidad, `unknown` cuando ninguna la declara y `conflict` cuando declaran identidades distintas. Un conflicto no se resuelve eligiendo una.
+- `revision` (opcional): la revisión del repositorio que declaran las consultas que sostienen el informe. Se publica **solo cuando todas ellas declaran la misma**. Si las que la declaran no coinciden entre sí, o si alguna no la declara, la clave **no aparece**: la base se queda con `identity` y `status`, y su ausencia significa que no se sabe, no que el análisis sea el del código que hay ahora. La revisión viaja desde la evidencia hasta el informe; nunca se adivina ni se lee del repositorio.
+
+Nadie tiene que suponerla: quien recibe el informe puede compararla con la revisión que observa del repositorio, y si la base no la declara, sabe que no puede saberlo.
 
 Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contrato dejan de coincidir, la suite falla.
 
@@ -37,14 +52,17 @@ Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contra
     {"query_id": "Q-1", "mode": "structured", "status": "ok", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
      "relation_ids": ["edge-1"],
+     "repository_revision": "rev-abc123",
      "symbol_locations": {"App::Entry": {"path": "src/entry.rs", "line": 10},
                           "App::Store": {"path": "src/store.rs", "line": 4}},
      "limitations": ["El grafo consultado cubre el ambito declarado, no el repositorio entero."]},
     {"query_id": "Q-2", "mode": "structured", "status": "ok", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
+     "repository_revision": "rev-abc123",
      "reference_hits": [{"index": 0, "path": "src/entry.rs", "line": 42}]},
     {"query_id": "Q-3", "mode": "structured", "status": "partial", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Store"],
+     "repository_revision": "rev-abc123",
      "impact": {"risk_level": "HIGH", "direct_dependents": 1,
                 "total_impacted_symbols": 2, "impacted_files_count": 1,
                 "affected_symbols": ["App::Entry"], "affected_files": ["src/entry.rs"]},

@@ -53,6 +53,8 @@ Las salidas tienen nombres estables `reports/change-impact-<digest>.report.json`
 
 **Preparación no es ejecución:** el informe puede evitar lecturas redundantes y orientar el análisis de un agente, pero nunca autoriza editar código ni sustituye una comprobación de contratos y pruebas afectadas. `report_affordances` devuelve `PARTIAL` para el Change Impact Brief incluso si un llamador declara `basis=current`, cobertura verificada y término aceptado: ninguna arista estática demuestra por sí sola el efecto de una modificación.
 
+**La base del brief:** `evidence.basis` describe lo que declaran las consultas que lo sostienen: `identity` (la identidad del motor), `status` (`reported_unverified`, `unknown` o `conflict`) y, cuando **todas** esas consultas declaran la misma `repository_revision`, `revision`. La revisión es **opcional**: si falta —porque ninguna consulta la declara o porque las que la declaran no coinciden— la clave no está, y entonces el brief **no puede declarar nada sobre la vigencia del análisis**: solo consta que no se sabe. La revisión viaja desde la evidencia hasta el brief; nunca se adivina ni se lee del repositorio.
+
 ## Router y diseño moldable
 
 El mismo router existente usa `intent=report` con `report.kind=change-impact`, `report.symbol`, `report.goal` (obligatorio, una sola línea, máximo 240 caracteres), y `report.context` opcional. Enlaces según estado: `inspect-report-evidence → render-report → build-atlas → finish`. **No** añade un router nuevo, una base de datos, un indexador, un plugin MCP ni un harness de tests. Un `prepared=missing|invalid` o una procedencia distinta de CogniCode bloquea; el preflight real es `--check` sobre HOME.

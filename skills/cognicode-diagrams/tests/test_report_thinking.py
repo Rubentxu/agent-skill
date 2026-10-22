@@ -11,6 +11,7 @@ import atlas
 import affordances
 import report_thinking as report
 import context_capsule as capsule
+import evidence_contract as contract
 import moldable_views as moldable
 import workspace
 
@@ -451,6 +452,113 @@ class ReportThinkingTests(unittest.TestCase):
         data[0]["definition"] = "Una operación independiente."
         self.terms.write_text(json.dumps(data), encoding="utf-8")
         self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
+
+
+class ReportBasisRevisionTests(unittest.TestCase):
+    """The revision travels from the evidence; it is never assumed."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.repo = self.root / "code"
+        self.repo.mkdir()
+        self.home = self.root / "home"
+        self.home.mkdir()
+        workspace.init(self.repo, home=self.home)
+        self.w = Path(workspace.inspect(self.repo, home=self.home)["workspace"])
+        self.queries = self.w / "evidence/queries.json"
+        self.claims = self.w / "evidence/claims.json"
+        self.queries.write_text(json.dumps([
+            {"query_id": "Q1", "mode": "structured", "status": "ok",
+             "source": "cognicode", "observation_plane": "static",
+             "basis": "cognicode-cli 0.101.21 sha=9f3c source=cli",
+             "symbol_ids": ["App::Entry", "App::Store"], "relation_ids": ["edge-1"]}
+        ]), encoding="utf-8")
+        self.claims.write_text(json.dumps([
+            {"claim_id": "C1", "kind": "entity", "provenance": "OBSERVED_CODE",
+             "symbol_id": "App::Entry", "query_ids": ["Q1"], "coverage": "complete"}
+        ]), encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def declare(self, query_id, revision=None):
+        """Add a supporting query that may declare the revision it looked at."""
+        queries = json.loads(self.queries.read_text())
+        query = {"query_id": query_id, "mode": "structured", "status": "ok",
+                 "source": "cognicode", "observation_plane": "static",
+                 "basis": "cognicode-cli 0.101.21 sha=9f3c source=cli",
+                 "symbol_ids": ["App::Entry"]}
+        if revision is not None:
+            query["repository_revision"] = revision
+        queries.append(query)
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
+        claims = json.loads(self.claims.read_text())
+        claims.append({"claim_id": "C-" + query_id, "kind": "entity",
+                       "provenance": "OBSERVED_CODE", "symbol_id": "App::Entry",
+                       "query_ids": [query_id], "coverage": "complete"})
+        self.claims.write_text(json.dumps(claims), encoding="utf-8")
+
+    def basis(self):
+        return report.project(self.w, "symbol-passport", symbol="App::Entry")["evidence"]["basis"]
+
+    def test_queries_declaring_the_same_revision_publish_it_in_the_basis(self):
+        self.declare("Q2", revision="rev-abc123")
+        queries = json.loads(self.queries.read_text())
+        queries[0]["repository_revision"] = "rev-abc123"
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
+        self.assertEqual(self.basis(),
+                         {"identity": "cognicode-cli 0.101.21 sha=9f3c source=cli",
+                          "status": "reported_unverified", "revision": "rev-abc123"})
+        # The revision does not depend on the engine identity being declared.
+        without_identity = [{k: v for k, v in q.items() if k != "basis"} for q in queries]
+        self.queries.write_text(json.dumps(without_identity), encoding="utf-8")
+        self.assertEqual(self.basis(),
+                         {"identity": None, "status": "unknown", "revision": "rev-abc123"})
+
+    def test_queries_declaring_different_revisions_publish_no_revision(self):
+        self.declare("Q2", revision="rev-def456")
+        queries = json.loads(self.queries.read_text())
+        queries[0]["repository_revision"] = "rev-abc123"
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
+        basis = self.basis()
+        # A conflict is never resolved by choosing one of the declared revisions.
+        self.assertNotIn("revision", basis)
+        self.assertEqual(basis["status"], "reported_unverified")
+
+    def test_queries_declaring_no_revision_leave_the_basis_key_absent(self):
+        self.declare("Q2")
+        basis = self.basis()
+        # The key is absent, not null: its absence means the revision is unknown.
+        self.assertNotIn("revision", basis)
+        self.assertEqual(basis, {"identity": "cognicode-cli 0.101.21 sha=9f3c source=cli",
+                                 "status": "reported_unverified"})
+
+    def test_a_query_with_a_revision_is_still_valid_for_the_evidence_contract(self):
+        queries = json.loads(self.queries.read_text())
+        queries[0]["repository_revision"] = "rev-abc123"
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
+        self.assertIn("repository_revision", contract.QUERY_OPTIONAL)
+        indexed = contract.index_queries(queries)
+        claims = contract.index_claims(json.loads(self.claims.read_text()))
+        for cid, claim in claims.items():
+            with self.subTest(claim=cid):
+                self.assertEqual(contract.verdict(claim, indexed)[0], contract.CORROBORATED)
+        # A query that omits the optional field is still a valid query.
+        without = [{k: v for k, v in q.items() if k != "repository_revision"}
+                   for q in queries]
+        self.assertTrue(contract.index_queries(without))
+
+    def test_the_report_states_the_declared_revision_without_calling_it_current(self):
+        queries = json.loads(self.queries.read_text())
+        queries[0]["repository_revision"] = "rev-abc123"
+        self.queries.write_text(json.dumps(queries), encoding="utf-8")
+        built = report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
+        markdown = Path(built["markdown"]).read_text(encoding="utf-8")
+        lines = [line for line in markdown.splitlines() if "rev-abc123" in line]
+        self.assertEqual(len(lines), 1)
+        for word in ("vigente", "actual"):
+            self.assertNotIn(word, lines[0])
 
 
 class ReportRoutingTests(unittest.TestCase):
