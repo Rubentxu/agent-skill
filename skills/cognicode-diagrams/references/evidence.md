@@ -23,6 +23,12 @@ Los nombres de campo de arriba están escritos como los entiende el motor, no co
 - Una **consulta** declara `query_id`, `mode` (`structured|symbol_context`), `status` (`ok|partial`), `source` (`cognicode`), `observation_plane` (`static`), `symbol_ids` con los símbolos que la respuesta resolvió, `relation_ids` cuando la respuesta trajo relaciones, y `reference_hits` con las filas de uso cuando la respuesta fue de usos.
 - Una **afirmación** declara `claim_id`, `kind` (`entity|relation`), `provenance` (`OBSERVED_CODE|INFERRED|UNKNOWN|CODE_DOC|CURATED_INTENT`), `plane`, `coverage` (`complete|partial|unknown`) y `query_ids`. Si es una entidad, declara `symbol_id`; si es una relación, declara `relation_source` (`graph_edge|reference_link`), sus dos extremos y, según la procedencia, `relation_id` o `reference`.
 
+Una consulta puede declarar además estos campos opcionales, y entonces toda proyección que la cite tiene que tenerlos en cuenta:
+
+- `limitations`: lo que la respuesta **no** cubre. Un informe que calla el límite de su consulta exagera lo que sabe; por eso el límite viaja con la consulta hasta el lector.
+- `symbol_locations`: dónde resolvió cada símbolo. Es lo que permite separar dos símbolos homónimos que comparten nombre: el nombre no basta, la posición sí.
+- `impact`: lo que el motor declara del impacto de cambiar un símbolo (`risk_level`, `direct_dependents`, `total_impacted_symbols`, `impacted_files_count`, `affected_symbols`, `affected_files`). Es un **hecho sobre el análisis del motor**, y es transitivo: no es una arista, ni un fallo, ni una dependencia en ejecución.
+
 Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contrato dejan de coincidir, la suite falla.
 
 ```json canonical
@@ -30,10 +36,19 @@ Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contra
   "queries": [
     {"query_id": "Q-1", "mode": "structured", "status": "ok", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
-     "relation_ids": ["edge-1"]},
+     "relation_ids": ["edge-1"],
+     "symbol_locations": {"App::Entry": {"path": "src/entry.rs", "line": 10},
+                          "App::Store": {"path": "src/store.rs", "line": 4}},
+     "limitations": ["El grafo consultado cubre el ambito declarado, no el repositorio entero."]},
     {"query_id": "Q-2", "mode": "structured", "status": "ok", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
-     "reference_hits": [{"index": 0, "path": "src/entry.rs", "line": 42}]}
+     "reference_hits": [{"index": 0, "path": "src/entry.rs", "line": 42}]},
+    {"query_id": "Q-3", "mode": "structured", "status": "partial", "source": "cognicode",
+     "observation_plane": "static", "symbol_ids": ["App::Store"],
+     "impact": {"risk_level": "HIGH", "direct_dependents": 1,
+                "total_impacted_symbols": 2, "impacted_files_count": 1,
+                "affected_symbols": ["App::Entry"], "affected_files": ["src/entry.rs"]},
+     "limitations": ["El impacto declarado es transitivo: no distingue una llamada directa de un efecto a varios saltos."]}
   ],
   "claims": [
     {"claim_id": "C-1", "kind": "entity", "provenance": "OBSERVED_CODE", "plane": "static",
