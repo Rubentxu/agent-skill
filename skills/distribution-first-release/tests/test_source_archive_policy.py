@@ -20,6 +20,12 @@ class ExportIgnoreTests(unittest.TestCase):
             git("init", "-q")
             git("config", "user.name", "Skill Test")
             git("config", "user.email", "test@example.invalid")
+            # This test is about what an archive contains, not about who may
+            # commit. Whatever commit policy the machine is configured with
+            # must not decide the result, so the temporary repository
+            # detaches from it.
+            git("config", "hook.git-control-commit-msg.command", "true")
+            git("config", "hook.git-control-reference-transaction.command", "true")
             for name in ["docs/old.md", "test-harness/run.sh", "src/main.py", "LICENSE"]:
                 p = root / name
                 p.parent.mkdir(parents=True, exist_ok=True)
@@ -29,7 +35,7 @@ class ExportIgnoreTests(unittest.TestCase):
                 "test-harness/** export-ignore\n"
             )
             git("add", ".")
-            git("commit", "-qm", "sample")
+            git("commit", "-qm", "chore: sample")
             archive = git("archive", "--format=tar", "HEAD")
             with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
                 files = {m.name for m in tar.getmembers() if m.isfile()}

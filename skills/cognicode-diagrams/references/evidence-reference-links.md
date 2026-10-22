@@ -6,16 +6,19 @@ Ejemplo **sintético**:
 
 ```json
 {
-  "claim": {
-    "id":"R-7","kind":"relation","relation_source":"reference_link","relation_id":null,
-    "plane":"static","from_symbol":"Caller::run","to_symbol":"Service::save",
-    "reference":{"query_id":"Q-2","index":0,"path":"src/Caller.java","line":42},
-    "query_ids":["Q-1","Q-2"]
-  },
+  "claims": [
+    {"claim_id":"R-7", "kind":"relation", "relation_source":"reference_link", "relation_id":null,
+     "plane":"static", "provenance":"OBSERVED_CODE", "coverage":"partial",
+     "from_symbol":"Caller::run", "to_symbol":"Service::save",
+     "reference":{"query_id":"Q-2","index":0,"path":"src/Caller.java","line":42},
+     "query_ids":["Q-1","Q-2"]}
+  ],
   "queries":[
-    {"id":"Q-1","capability":"get_symbol_code","mode":"symbol_context","status":"ok",
+    {"query_id":"Q-1","capability":"get_symbol_code","mode":"symbol_context","status":"ok",
+     "source":"cognicode","observation_plane":"static",
      "symbol_ids":["Caller::run","Service::save"]},
-    {"id":"Q-2","capability":"find_usages","mode":"structured","status":"ok",
+    {"query_id":"Q-2","capability":"find_usages","mode":"structured","status":"ok",
+     "source":"cognicode","observation_plane":"static",
      "symbol_ids":["Service::save"],
      "reference_hits":[{"index":0,"path":"src/Caller.java","line":42}]}
   ]
@@ -23,6 +26,8 @@ Ejemplo **sintético**:
 ```
 
 Validez: la referencia debe estar realmente en la respuesta estructurada y en `query.reference_hits`; el `query_id` debe existir, los extremos deben figurar en consultas estructuradas de esa pregunta, y la fila `index`/archivo/línea debe coincidir. La prueba por símbolo del caller debe permitir identificar el origen real; si se desconoce, no inventarlo. No equiparar `precision_floor=ast-heuristic` a LSP exacto. Un match textual aislado no funda `reference_link`.
+
+Una relación de este tipo **sí** está corroborada cuando se cumplen esas condiciones: es la segunda procedencia del contrato, y el motor la comprueba aparte de la del grafo. Lo que sigue sin ser cierto es cualquier cosa que vaya más allá de «hubo un uso aquí»: un uso no demuestra llamada, dependencia ni relación de despliegue.
 
 Diferencias de procedencia:
 

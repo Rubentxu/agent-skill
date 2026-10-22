@@ -7,7 +7,13 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from evidence_contract import corroborated, index_queries
+from evidence_contract import (
+    CORROBORATED,
+    OBSERVED_NOT_CORROBORATED,
+    corroborated,
+    index_queries,
+    verdict,
+)
 
 MAX_INPUT = 8 * 1024 * 1024
 MAX_CLAIMS = 250
@@ -231,10 +237,19 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
                 name = f"{cid} · {source}" + (f" → {relation}" if isinstance(relation, str) else "")
                 provenance = c.get("provenance", c.get("status", "UNKNOWN"))
                 ids = c.get("query_ids", [])
-                # A legacy "observed" without resolvable queries is a *candidate*, never verified evidence.
-                effective = ("UNKNOWN (sin corroborar)" if provenance in IMPLEMENTATION and not corroborated(c, queries)
-                             else "UNKNOWN (sin query)" if provenance == "CODE_DOC" and
-                             (not ids or not qfile.is_file()) else provenance)
+                # What the writer said and what the queries prove are two
+                # facts. An observation that no query corroborates was still
+                # observed: saying "unknown" would deny it, and saying
+                # nothing would overstate it. So both are published.
+                derived, _ = verdict(c, queries)
+                if derived == CORROBORATED:
+                    effective = f"{provenance} (corroborada)"
+                elif derived == OBSERVED_NOT_CORROBORATED:
+                    effective = f"{provenance} (sin corroborar)"
+                elif provenance == "CODE_DOC" and (not ids or not qfile.is_file()):
+                    effective = "UNKNOWN (sin query)"
+                else:
+                    effective = provenance
                 plane = "intent" if category == "intent" else c.get("plane", "static")
                 coverage = c.get("coverage", "unknown")
                 lines.append(f"- {label(name)} [{label(effective)} · {label(plane)} · cobertura:{label(coverage)}]")

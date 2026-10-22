@@ -123,6 +123,21 @@ class RoutingTests(unittest.TestCase):
     def test_ready_graph_leads_to_discovery(self):
         self.assertEqual(rels(fixture()), ['discover-model'])
 
+    def test_afirmaciones_sin_corroborar_piden_el_informe(self):
+        # The agent reports what the ledger check found. When the claims
+        # are not corroborated, the router says so instead of letting the
+        # flow continue as if they were.
+        result = engine.affordances(fixture(corroboration='not_corroborated'))
+        self.assertIn('check-evidence', rels(fixture(corroboration='not_corroborated')))
+        self.assertTrue(result['blockers'])
+
+    def test_afirmaciones_corrobadas_no_piden_nada(self):
+        self.assertNotIn('check-evidence', rels(fixture(corroboration='corroborated')))
+
+    def test_un_veredicto_desconocido_no_es_un_veredicto(self):
+        with self.assertRaises(engine.InvalidState):
+            engine.affordances(fixture(corroboration='perhaps'))
+
     def test_model_ready_offers_both_renderers(self):
         self.assertEqual(rels(fixture(model='reviewed')), ['render-mermaid','render-structurizr'])
 

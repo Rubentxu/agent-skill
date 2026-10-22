@@ -10,11 +10,55 @@ Tras registrar cada observación útil, sincronizar el [atlas incremental](knowl
 
 Conservar en `~/.cognicode-diagrams/workspaces/<id>/evidence/` un `queries.json` y `claims.json` (o informe equivalente), con metadatos mínimos:
 
-- `query_id`, interfaz `cli|mcp`, versión y operación **descubierta**, argumentos/scope, resultado observado, error, cobertura y omisiones.
+- `query_id`, interfaz `cli|mcp`, versión y operación **descubierta**, `mode`, argumentos/scope, `symbol_ids` resueltos, resultado observado, error, cobertura y omisiones.
 - `basis`: workspace/revisión/dirty/snapshot **solo cuando CogniCode lo comunique**; `UNKNOWN` en caso contrario. No consultar Git por separado.
-- `claim_id`, tipo `entity|relation`, `symbol_ids` o arista, referencia archivo:línea **devuelta por CogniCode** y `query_ids` concretos.
-- `plane` = `static|runtime|deployment`; `status` = `OBSERVED_CODE|INFERRED|UNKNOWN`; limitación explícita y cobertura del claim.
+- `claim_id`, tipo `entity|relation`, `symbol_id` o arista, referencia archivo:línea **devuelta por CogniCode** y `query_ids` concretos.
+- `plane` = `static|runtime|deployment`; `provenance` = `OBSERVED_CODE|INFERRED|UNKNOWN`; limitación explícita y cobertura del claim.
 - `next_question` si falta un extremo, precisión, storage, protocolo o distinción entre biblioteca/proceso.
+
+### La forma, que es una sola
+
+Los nombres de campo de arriba están escritos como los entiende el motor, no como los entiende el contrato. El contrato tiene una forma única, y el ledger debe usarla:
+
+- Una **consulta** declara `query_id`, `mode` (`structured|symbol_context`), `status` (`ok|partial`), `source` (`cognicode`), `observation_plane` (`static`), `symbol_ids` con los símbolos que la respuesta resolvió, `relation_ids` cuando la respuesta trajo relaciones, y `reference_hits` con las filas de uso cuando la respuesta fue de usos.
+- Una **afirmación** declara `claim_id`, `kind` (`entity|relation`), `provenance` (`OBSERVED_CODE|INFERRED|UNKNOWN|CODE_DOC|CURATED_INTENT`), `plane`, `coverage` (`complete|partial|unknown`) y `query_ids`. Si es una entidad, declara `symbol_id`; si es una relación, declara `relation_source` (`graph_edge|reference_link`), sus dos extremos y, según la procedencia, `relation_id` o `reference`.
+
+Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contrato dejan de coincidir, la suite falla.
+
+```json canonical
+{
+  "queries": [
+    {"query_id": "Q-1", "mode": "structured", "status": "ok", "source": "cognicode",
+     "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
+     "relation_ids": ["edge-1"]},
+    {"query_id": "Q-2", "mode": "structured", "status": "ok", "source": "cognicode",
+     "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
+     "reference_hits": [{"index": 0, "path": "src/entry.rs", "line": 42}]}
+  ],
+  "claims": [
+    {"claim_id": "C-1", "kind": "entity", "provenance": "OBSERVED_CODE", "plane": "static",
+     "coverage": "complete", "symbol_id": "App::Entry", "query_ids": ["Q-1"]},
+    {"claim_id": "R-1", "kind": "relation", "provenance": "OBSERVED_CODE", "plane": "static",
+     "coverage": "partial", "relation_source": "graph_edge", "relation_id": "edge-1",
+     "from_symbol": "App::Entry", "to_symbol": "App::Store", "query_ids": ["Q-1"]},
+    {"claim_id": "R-2", "kind": "relation", "provenance": "OBSERVED_CODE", "plane": "static",
+     "coverage": "partial", "relation_source": "reference_link",
+     "from_symbol": "App::Entry", "to_symbol": "App::Store",
+     "reference": {"query_id": "Q-2", "index": 0, "path": "src/entry.rs", "line": 42},
+     "query_ids": ["Q-1", "Q-2"]}
+  ]
+}
+```
+
+`python3 scripts/evidence.py --repo <raíz> --check` dice, afirmación por afirmación, qué sostiene la evidencia y qué falta para sostenerla más.
+
+### Lo que se escribe y lo que se deduce
+
+`provenance` dice **qué se observó**. Es de quien investigó, y por eso lo escribe. Si lo que se observó fue una inferencia, se escribe `INFERRED`; si no se pudo observar, `UNKNOWN`. Una inferencia nunca se etiqueta `OBSERVED_CODE`.
+
+La **corroboración** es otra cosa, y no la escribe nadie: la deducen las consultas. Una afirmación está corroborada cuando una consulta estructurada identifica lo que la afirmación sostiene: el símbolo, o el identificador de relación que devolvió el grafo, o la fila de uso con su sitio exacto en el disco. `python3 scripts/evidence.py --repo <raíz> --check` falla cuando una afirmación dice `OBSERVED_CODE` y ninguna consulta la corrobora, y dice qué falta.
+
+Por eso una afirmación puede estar **observada y no corroborada**: se vio algo, pero lo que se vio no se puede volver a señalar con una consulta. Eso no es lo mismo que no haberlo visto, y no se confunde.
 
 La misma consulta CLI y MCP al mismo backend no equivale a corroboración independiente. Código mostrado por CogniCode puede respaldar una afirmación **solo en el plano que realmente demuestra**. Una inferencia debe indicarse como tal, no etiquetarse `OBSERVED_CODE`.
 

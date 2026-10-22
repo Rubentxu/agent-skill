@@ -52,6 +52,7 @@ LINKS = {
     "assess-omissions": "references/research-protocol.md",
     "interpret-input": "references/interpret.md",
     "review-model": "references/evidence.md",
+    "check-evidence": "references/evidence.md",
     "reconcile": "references/interpret.md",
     "validate": "references/validate.md",
     "inspect-kroki": "references/kroki.md",
@@ -542,6 +543,8 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     model = enum(state, "model", MODELS)
     has_input = bool_field(state, "has_input_diagram")
     reconciled = bool_field(state, "reconciled")
+    corroboration = enum({"corroboration": state.get("corroboration", "unknown")},
+                         "corroboration", {"unknown", "corroborated", "not_corroborated"})
     scan_depth = enum({"scan_depth": state.get("scan_depth", "symbols")}, "scan_depth", {"symbols", "graph"})
     formats = state.get("formats", [])
     if not isinstance(formats, list) or any(not isinstance(x, str) for x in formats) or len(set(formats)) != len(formats) or set(formats) - known_formats:
@@ -721,6 +724,14 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if model == "draft" and not (detail_requested or evidence_insufficient or untrusted_evidence) and intent in {"discover", "create", "interpret", "translate", "review", "update"}:
         link("review-model", "revisar consistencia y límites de evidencia")
 
+    # What the writer said and what the queries prove are two facts, and
+    # only the queries can settle the second. Until the ledger has been
+    # checked, nobody knows which claims stand on their own.
+    if requires_code and usable and evidence in {"symbols_ready", "graph_ready", "partial"} \
+            and corroboration == "not_corroborated":
+        link("check-evidence", "las afirmaciones no están corroboradas: el informe dice qué falta")
+        blockers.append("las afirmaciones del ledger no están corroboradas por ninguna consulta estructurada")
+
     can_render = intent in {"translate", "create", "update"} and model != "absent"
     if intent == "update" and (not reconciled or basis != "current"):
         can_render = False
@@ -746,7 +757,7 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     if achieved:
         link("finish", "el objetivo solicitado está disponible; declarar límites y validaciones")
 
-    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "formulate-question", "discover-capabilities", "probe-capability", "query-structured", "justify-claims", "assess-coverage", "assess-omissions", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "render-mermaid", "render-structurizr", "validate", "finish"]
+    order = ["list-lenses", "interpret-input", "inspect-environment", "install-cognicode", "formulate-question", "discover-capabilities", "probe-capability", "query-structured", "justify-claims", "assess-coverage", "assess-omissions", "query-cognicode", "scan-symbols", "build-graph", "discover-model", "reconcile", "review-model", "check-evidence", "render-mermaid", "render-structurizr", "validate", "finish"]
     # Los renderizadores de nuevas lentes/formatos se insertan sin modificar esta lista.
     links.sort(key=lambda l: (order.index(l["rel"]) if l["rel"] in order else order.index("validate") - 0.5))
     recommended = links[0]["rel"] if links else None

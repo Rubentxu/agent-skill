@@ -215,12 +215,17 @@ class AtlasTests(unittest.TestCase):
         with self.assertRaises(atlas.KnowledgeError):
             atlas.build(self.repo, home=self.home)
 
-    def test_legacy_implementation_without_query_is_downgraded(self):
+    def test_una_observacion_sin_corroborar_no_se_declara_desconocida(self):
+        # It was observed; nothing corroborates it. Publishing it as
+        # "unknown" would deny what happened, and publishing it as plain
+        # OBSERVED_CODE would overstate it. Both facts go out together.
         (self.w / "evidence" / "claims.json").write_text(json.dumps([
             {"id": "C-LEGACY", "kind": "entity", "symbol_id": "Legacy::entry",
              "status": "OBSERVED_CODE"}]))
         out = atlas.build(self.repo, home=self.home)
-        self.assertIn("UNKNOWN  sin corroborar", Path(out["markdown"]).read_text())
+        content = Path(out["markdown"]).read_text()
+        self.assertIn("OBSERVED CODE  sin corroborar", content)
+        self.assertNotIn("UNKNOWN  sin corroborar", content)
 
     def test_sync_is_idempotent_with_unchanged_claim_ledger(self):
         (self.w / "evidence" / "claims.json").write_text(json.dumps([
