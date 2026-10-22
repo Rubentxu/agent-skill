@@ -101,15 +101,24 @@ class ReportThinkingTests(unittest.TestCase):
             report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
 
     def test_query_id_is_not_sufficient_to_forge_entity_or_edge(self):
+        # A claim nobody corroborates is never presented as a fact: it leaves the
+        # facts and is named as unproven, so a reader can see the gap.
         data = json.loads(self.queries.read_text())
         data[0]["relation_ids"] = []
         self.queries.write_text(json.dumps(data))
-        with self.assertRaisesRegex(report.ReportError, "relation not corroborated"):
-            report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
+        built = report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
+        forged = json.loads(Path(built["json"]).read_text())
+        self.assertNotIn("R1", forged["evidence"]["claim_ids"])
+        self.assertEqual(forged["evidence"]["relations"], [])
+        self.assertEqual([c["claim_id"] for c in forged["evidence"]["uncorroborated_claims"]], ["R1"])
+        markdown = Path(built["markdown"]).read_text()
+        self.assertNotIn("App::Entry → App::Store", markdown)
+        self.assertIn("R1", markdown)
         data[0]["relation_ids"] = ["edge-1"]
         data[0]["symbol_ids"] = ["Other"]
         self.queries.write_text(json.dumps(data))
-        with self.assertRaisesRegex(report.ReportError, "entity not corroborated"):
+        # Without corroborated entity evidence for the target there is no report.
+        with self.assertRaisesRegex(report.ReportError, "lacks corroborated"):
             report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
 
     def test_unsupported_source_cannot_validate_fact(self):
@@ -304,6 +313,96 @@ class ReportThinkingTests(unittest.TestCase):
         self.assertIn("No encontrar relaciones entrantes aquí NO demuestra ausencia de consumidores.", d["change"]["unknowns"])
         self.assertEqual(d["language"]["status"], "accepted")
 
+    def _with_use(self, *, reference_hits=None):
+        queries = json.loads(self.queries.read_text())
+        queries.append({
+            "query_id": "Q2", "mode": "symbol_context", "status": "ok",
+            "source": "cognicode", "observation_plane": "static",
+            "symbol_ids": ["App::Entry", "App::Store"],
+            "reference_hits": [{"index": 0, "path": "src/entry.rs", "line": 42}]
+            if reference_hits is None else reference_hits,
+        })
+        self.queries.write_text(json.dumps(queries))
+        claims = json.loads(self.claims.read_text())
+        claims.append({
+            "claim_id": "U1", "kind": "relation", "provenance": "OBSERVED_CODE",
+            "relation_source": "reference_link", "from_symbol": "App::Entry",
+            "to_symbol": "App::Store",
+            "reference": {"query_id": "Q2", "index": 0, "path": "src/entry.rs", "line": 42},
+            "query_ids": ["Q1", "Q2"], "coverage": "partial",
+        })
+        self.claims.write_text(json.dumps(claims))
+
+    def test_localised_use_reaches_the_brief_as_a_hypothesis_and_never_as_an_edge(self):
+        self._with_use()
+        built = report.build(self.repo, "change-impact", symbol="App::Store",
+                             goal="Cambiar la persistencia", home=self.home)
+        data = json.loads(Path(built["json"]).read_text())
+        # It is a use, not an edge.
+        self.assertEqual([u["claim_id"] for u in data["evidence"]["uses"]], ["U1"])
+        self.assertNotIn("U1", [r["claim_id"] for r in data["evidence"]["relations"]])
+        # The brief keeps both classes apart and labels them.
+        statuses = {a["relation_claim_id"]: a["status"] for a in data["change"]["potentially_affected"]}
+        self.assertEqual(statuses["R1"], "HYPOTHESIS_NOT_VALIDATED")
+        self.assertEqual(statuses["U1"], "HYPOTHESIS_REFERENCE_USE_NOT_CALL")
+        use = [a for a in data["change"]["potentially_affected"] if a["relation_claim_id"] == "U1"][0]
+        self.assertEqual(use["symbol_id"], "App::Entry")
+        self.assertEqual(use["reference"],
+                         {"query_id": "Q2", "path": "src/entry.rs", "line": 42})
+        markdown = Path(built["markdown"]).read_text()
+        self.assertIn("Usos entrantes observados", markdown)
+        self.assertIn("NO llamadas", markdown)
+        self.assertIn("Un uso acredita que un símbolo aparece en ese sitio.", markdown)
+
+    def test_use_without_its_row_leaves_the_facts_and_is_named(self):
+        self._with_use(reference_hits=[])
+        built = report.build(self.repo, "change-impact", symbol="App::Store",
+                             goal="Cambiar la persistencia", home=self.home)
+        data = json.loads(Path(built["json"]).read_text())
+        self.assertEqual(data["evidence"]["uses"], [])
+        self.assertNotIn("U1", data["evidence"]["claim_ids"])
+        self.assertEqual([c["claim_id"] for c in data["evidence"]["uncorroborated_claims"]], ["U1"])
+        self.assertNotIn("Usos entrantes observados (posibles consumidores, NO llamadas)\n\n- App::Entry",
+                         Path(built["markdown"]).read_text())
+
+    def test_engine_impact_declaration_is_shown_and_stays_a_hypothesis(self):
+        queries = json.loads(self.queries.read_text())
+        queries.append({
+            "query_id": "Q3", "mode": "structured", "status": "partial",
+            "source": "cognicode", "observation_plane": "static",
+            "symbol_ids": ["App::Store"],
+            "impact": {"risk_level": "HIGH", "direct_dependents": 1,
+                       "total_impacted_symbols": 2, "impacted_files_count": 1,
+                       "affected_symbols": ["App::Entry", "App::Store"],
+                       "affected_files": ["src/app.rs"]},
+            "limitations": ["El impacto declarado es transitivo."],
+        })
+        self.queries.write_text(json.dumps(queries))
+        built = report.build(self.repo, "change-impact", symbol="App::Store",
+                             goal="Cambiar la persistencia", home=self.home)
+        data = json.loads(Path(built["json"]).read_text())
+        self.assertEqual(data["change"]["observed_impact"][0]["risk_level"], "HIGH")
+        # The query is cited even though no claim cites it.
+        self.assertIn("Q3", data["evidence"]["query_ids"])
+        candidates = [a for a in data["change"]["potentially_affected"]
+                      if a["status"] == "HYPOTHESIS_ENGINE_IMPACT_TRANSITIVE"]
+        self.assertEqual([a["symbol_id"] for a in candidates], ["App::Entry"])
+        # The target itself is not a candidate to review.
+        self.assertNotIn("App::Store", [a["symbol_id"] for a in candidates])
+        markdown = Path(built["markdown"]).read_text()
+        self.assertIn("Hechos de impacto declarados por CogniCode", markdown)
+        self.assertIn("nivel de riesgo HIGH", markdown)
+        self.assertIn("El impacto declarado es transitivo.", markdown)
+
+    def test_query_limitations_reach_the_reader(self):
+        queries = json.loads(self.queries.read_text())
+        queries[0]["limitations"] = ["La respuesta es parcial."]
+        self.queries.write_text(json.dumps(queries))
+        built = report.build(self.repo, "symbol-passport", symbol="App::Entry", home=self.home)
+        markdown = Path(built["markdown"]).read_text()
+        self.assertIn("Límites de las consultas que lo sostienen", markdown)
+        self.assertIn("La respuesta es parcial.", markdown)
+
     def test_missing_goal_and_malicious_query_never_produce_brief(self):
         with self.assertRaisesRegex(report.ReportError, "change goal"):
             report.build(self.repo, "change-impact", symbol="App::Entry", home=self.home)
@@ -316,9 +415,15 @@ class ReportThinkingTests(unittest.TestCase):
         q = json.loads(self.queries.read_text())
         q[0]["relation_ids"] = []
         self.queries.write_text(json.dumps(q))
-        with self.assertRaisesRegex(report.ReportError, "relation not corroborated"):
-            report.build(self.repo, "change-impact", symbol="App::Entry",
-                         goal="Cambiar persistencia", home=self.home)
+        built = report.build(self.repo, "change-impact", symbol="App::Entry",
+                             goal="Cambiar persistencia", home=self.home)
+        data = json.loads(Path(built["json"]).read_text())
+        # The brief is produced, but it never shows an uncorroborated edge.
+        self.assertEqual(data["change"]["observed_incoming"], [])
+        self.assertEqual(data["change"]["potentially_affected"], [])
+        self.assertNotIn("R1", data["evidence"]["claim_ids"])
+        self.assertIn("No hay ninguna arista de grafo corroborada en este ámbito: "
+                      "solo se han observado usos localizados.", data["change"]["unknowns"])
 
     def test_changed_ledger_invalidates_existing_change_impact_in_atlas(self):
         created = report.build(self.repo, "change-impact", symbol="App::Entry",

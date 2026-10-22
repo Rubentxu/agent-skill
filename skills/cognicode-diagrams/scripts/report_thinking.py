@@ -15,7 +15,7 @@ import re
 import sys
 import tempfile
 
-from evidence_contract import corroborated
+from evidence_contract import corroborated, reference_corroborated
 from workspace import inspect as inspect_workspace
 
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
@@ -123,10 +123,25 @@ def vocab(root: Path) -> dict:
     return terms
 
 
-def evidence(root: Path) -> tuple[dict, dict, dict]:
+def evidence(root: Path) -> dict:
+    """What the ledger actually supports, split by what each claim earns.
+
+    Four classes, never merged:
+
+    - ``entities`` and ``relations``: corroborated facts. A relation is a fact
+      only when the graph operation returned its own identifier.
+    - ``uses``: corroborated *localised uses*. A use is not an edge; it proves
+      that a symbol appears at a site, never that it is called or depended on.
+    - ``uncorroborated``: claims that no structured query backs. They are
+      reported, never presented as facts, and they never abort the projection:
+      a claim about an unrelated symbol must not block the report about this
+      one, and a reader must be able to see that the ledger holds something
+      unproven.
+    """
     queries = indexed(load(root / "evidence" / "queries.json", root), "queries", "query_id")
     claims = indexed(load(root / "evidence" / "claims.json", root), "claims", "claim_id")
-    entities, relations = {}, {}
+    entities, relations, uses = {}, {}, {}
+    uncorroborated = []
     for cid, claim in claims.items():
         if claim.get("provenance", claim.get("status")) not in {"OBSERVED_CODE", "observed"}:
             continue  # Intention/inference never establishes implementation.
@@ -137,41 +152,69 @@ def evidence(root: Path) -> tuple[dict, dict, dict]:
             raise ReportError("code claim missing or duplicate query IDs: " + cid)
         if any(qid not in queries for qid in qids):
             raise ReportError("code claim references missing query: " + cid)
-        selected = [queries[q] for q in qids]
-        relevant = [
-            q for q in selected
-            if q.get("mode") in {"structured", "symbol_context"}
-            and q.get("status") in {"ok", "partial"}
-            and q.get("observation_plane", "static") == "static"
-            and q.get("source", "cognicode") == "cognicode"
-        ]
         coverage = claim.get("coverage", "unknown")
         if coverage not in {"complete", "partial", "unknown"}:
             raise ReportError("invalid claim coverage: " + cid)
         base = {"claim_id": cid, "query_ids": qids, "coverage": coverage, "plane": "static"}
-        if claim.get("kind", "entity") == "entity":
+        kind = claim.get("kind", "entity")
+        if kind == "entity":
             symbol = text(claim.get("symbol_id"), "entity symbol")
             if not corroborated(claim, queries):
-                raise ReportError("entity not corroborated by CogniCode query: " + cid)
+                uncorroborated.append({
+                    "claim_id": cid, "kind": "entity", "symbol_id": symbol,
+                    "reason": "ninguna consulta estructurada identifica este simbolo",
+                })
+                continue
             entities.setdefault(symbol, []).append({
                 **base, "category": claim.get("category", "symbol")
             })
-        elif claim.get("kind") == "relation" and claim.get("relation_source") == "graph_edge":
-            src = text(claim.get("from_symbol"), "from_symbol")
-            dst = text(claim.get("to_symbol"), "to_symbol")
-            rel = text(claim.get("relation_id"), "relation_id")
-            if not corroborated(claim, queries):
-                raise ReportError("relation not corroborated by CogniCode query: " + cid)
-            attrs = claim.get("attributes", {})
-            if not isinstance(attrs, dict):
-                raise ReportError("invalid relation attributes: " + cid)
-            relations[cid] = {
-                **base, "from_symbol": src, "to_symbol": dst,
-                "relation_id": rel,
-                "kind": text(attrs.get("kind", "relation"), "relation kind", 120)
-            }
-        # reference_link is NOT a call-graph edge; do not depict it as such.
-    return queries, entities, relations
+        elif kind == "relation":
+            source = claim.get("relation_source")
+            if source == "graph_edge":
+                if not corroborated(claim, queries):
+                    uncorroborated.append({
+                        "claim_id": cid, "kind": "relation", "relation_source": source,
+                        "reason": "ninguna consulta estructurada devuelve el identificador de esta arista",
+                    })
+                    continue
+                src = text(claim.get("from_symbol"), "from_symbol")
+                dst = text(claim.get("to_symbol"), "to_symbol")
+                rel = text(claim.get("relation_id"), "relation_id")
+                attrs = claim.get("attributes", {})
+                if not isinstance(attrs, dict):
+                    raise ReportError("invalid relation attributes: " + cid)
+                relations[cid] = {
+                    **base, "from_symbol": src, "to_symbol": dst,
+                    "relation_id": rel,
+                    "kind": text(attrs.get("kind", "relation"), "relation kind", 120)
+                }
+            elif source == "reference_link":
+                if not reference_corroborated(claim, queries):
+                    uncorroborated.append({
+                        "claim_id": cid, "kind": "relation", "relation_source": source,
+                        "reason": "la fila de uso que lo sostiene no aparece en la respuesta de la consulta",
+                    })
+                    continue
+                reference = claim.get("reference", {})
+                uses[cid] = {
+                    **base,
+                    "from_symbol": text(claim.get("from_symbol"), "from_symbol"),
+                    "to_symbol": text(claim.get("to_symbol"), "to_symbol"),
+                    "relation_source": source,
+                    "reference": {
+                        "query_id": reference.get("query_id"),
+                        "path": reference.get("path"),
+                        "line": reference.get("line"),
+                    },
+                    "kind": "use",
+                }
+            else:
+                uncorroborated.append({
+                    "claim_id": cid, "kind": "relation", "relation_source": source,
+                    "reason": "la procedencia de la relacion no es una del contrato",
+                })
+    return {"queries": queries, "entities": entities, "relations": relations,
+            "uses": uses, "uncorroborated": uncorroborated}
 
 
 def basis_of(queries: dict, ids: set[str]) -> dict:
@@ -195,7 +238,9 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
             raise ReportError("change goal must be one line")
     elif goal is not None:
         raise ReportError("--goal only valid for change-impact")
-    queries, entities, relations = evidence(root)
+    found = evidence(root)
+    queries, entities, relations = found["queries"], found["entities"], found["relations"]
+    uses = found["uses"]
     terms = vocab(root)
     selected_term = None
     if kind == "term-card":
@@ -211,7 +256,8 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
             raise ReportError("symbol-passport/change-impact requires --symbol and optional --context")
         symbol = text(symbol, "symbol_id")
         if symbol not in entities:
-            raise ReportError("symbol lacks corroborated CogniCode entity evidence")
+            raise ReportError("symbol lacks corroborated CogniCode entity evidence: " +
+                               symbol + " is not corroborated by any structured query")
         if context is not None:
             slug(context, "context")
         target_symbols = [symbol]
@@ -228,10 +274,33 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
     # A budget is explicit. Never imply we returned the entire graph.
     shown = edges[:12]
     truncated = len(edges) > len(shown)
-    claim_ids = sorted({c["claim_id"] for c in claims + shown})
-    query_ids = sorted({q for c in claims + shown for q in c["query_ids"]})
-    complete = (bool(claims) and all(c["coverage"] == "complete" for c in claims + shown)
-                and not truncated and basis_of(queries, set(query_ids))["status"] != "conflict")
+    # Localised uses are shown apart from edges: they are not edges.
+    touching_uses = [u for u in uses.values()
+                     if u["from_symbol"] in target_symbols or u["to_symbol"] in target_symbols]
+    touching_uses.sort(key=lambda x: x["claim_id"])
+    shown_uses = touching_uses[:12]
+    uses_truncated = len(touching_uses) > len(shown_uses)
+    claim_ids = sorted({c["claim_id"] for c in claims + shown + shown_uses})
+    query_ids = sorted({q for c in claims + shown + shown_uses for q in c["query_ids"]})
+    # An impact query is about the target even when no claim cites it: the
+    # engine's own impact analysis is a fact about the target, and hiding it
+    # would leave the brief saying "nothing observed" next to a ledger that
+    # says otherwise.
+    impacts = []
+    for qid, query in queries.items():
+        impact = query.get("impact")
+        if not isinstance(impact, dict):
+            continue
+        symbols = query.get("symbol_ids")
+        if not isinstance(symbols, list) or not any(s in target_symbols for s in symbols):
+            continue
+        impacts.append({"query_id": qid, **impact})
+        if qid not in query_ids:
+            query_ids = sorted(query_ids + [qid])
+    impacts.sort(key=lambda i: i["query_id"])
+    complete = (bool(claims) and all(c["coverage"] == "complete" for c in claims + shown + shown_uses)
+                and not truncated and not uses_truncated
+                and basis_of(queries, set(query_ids))["status"] != "conflict")
     label = term_view["label"] if term_view else target_id
     language = {
         "label": label, "context_id": term_view["context_id"] if term_view else None,
@@ -267,8 +336,15 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
             "basis": basis_of(queries, set(query_ids)),
             "coverage": "scoped" if complete else "partial_or_unknown",
             "claim_ids": claim_ids, "query_ids": query_ids,
-            "entities": claims, "relations": shown,
+            "entities": claims, "relations": shown, "uses": shown_uses,
             "related_total": len(edges), "related_truncated": truncated,
+            "use_total": len(touching_uses), "use_truncated": uses_truncated,
+            "uncorroborated_claims": found["uncorroborated"],
+            "query_limitations": {
+                qid: queries[qid]["limitations"] for qid in query_ids
+                if isinstance(queries.get(qid, {}).get("limitations"), list)
+                and queries[qid]["limitations"]
+            },
             "unverified_symbol_ids": sorted(s for s in target_symbols if s not in entities)
         },
         "status": "GROUNDED_SCOPED" if claims else "LANGUAGE_ONLY",
@@ -279,24 +355,66 @@ def project(root: Path, kind: str, *, symbol: str | None = None,
         # is a HYPOTHESIS, never a semantic or runtime conclusion.
         incoming = [r for r in shown if r["to_symbol"] == symbol]
         outgoing = [r for r in shown if r["from_symbol"] == symbol]
+        # A localised use is a candidate consumer, and only that: it is not an
+        # edge, not a call, and not a dependency in execution.
+        uses_in = [u for u in shown_uses if u["to_symbol"] == symbol]
+        uses_out = [u for u in shown_uses if u["from_symbol"] == symbol]
         unknown = ["No se ha demostrado qué comportamientos modifica la petición.",
                    "El grafo estático no demuestra impacto runtime ni compatibilidad.",
                    "La lista solo cubre las relaciones corroboradas en el ledger disponible."]
         if truncated:
             unknown.append("Se omitieron relaciones por el presupuesto de presentación.")
+        if uses_truncated:
+            unknown.append("Se omitieron usos por el presupuesto de presentación.")
         if not incoming:
+            unknown.append("No hay ninguna arista de grafo corroborada en este ámbito: "
+                           "solo se han observado usos localizados.")
+        if not incoming and not uses_in:
             unknown.append("No encontrar relaciones entrantes aquí NO demuestra ausencia de consumidores.")
-        if not outgoing:
+        if not outgoing and not uses_out:
             unknown.append("No encontrar relaciones salientes aquí NO demuestra independencia.")
+        if uses_in or uses_out:
+            unknown.append("Un uso localizado prueba que un símbolo aparece en un sitio; "
+                           "no prueba una llamada, una dependencia ni un orden de ejecución.")
+        if impacts:
+            unknown.append("El impacto que declara CogniCode es transitivo: no distingue una "
+                           "llamada directa de un efecto a varios saltos.")
+        if found["uncorroborated"]:
+            unknown.append("El ledger tiene " + str(len(found["uncorroborated"])) +
+                           " afirmaciones que ninguna consulta corrobora: no se muestran como hechos.")
+        candidates = [
+            {"symbol_id": r["from_symbol"], "relation_claim_id": r["claim_id"],
+             "status": "HYPOTHESIS_NOT_VALIDATED"}
+            for r in incoming
+        ] + [
+            {"symbol_id": u["from_symbol"], "relation_claim_id": u["claim_id"],
+             "reference": u["reference"],
+             "status": "HYPOTHESIS_REFERENCE_USE_NOT_CALL"}
+            for u in uses_in
+        ]
+        for imp in impacts:
+            for name in imp.get("affected_symbols", []):
+                if name in target_symbols:
+                    continue
+                candidates.append({"symbol_id": name, "impact_query_id": imp["query_id"],
+                                   "status": "HYPOTHESIS_ENGINE_IMPACT_TRANSITIVE"})
+        seen, unique = set(), []
+        for candidate in candidates:
+            key = (candidate["symbol_id"], candidate["status"])
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(candidate)
+        affected_total = len(unique)
         output["change"] = {
             "goal": goal,
             "question_status": "USER_INTENT_NOT_CODE_EVIDENCE",
             "observed_incoming": incoming, "observed_outgoing": outgoing,
-            "potentially_affected": [
-                {"symbol_id": r["from_symbol"], "relation_claim_id": r["claim_id"],
-                 "status": "HYPOTHESIS_NOT_VALIDATED"}
-                for r in incoming
-            ],
+            "observed_uses_incoming": uses_in, "observed_uses_outgoing": uses_out,
+            "observed_impact": impacts,
+            "potentially_affected": unique[:12],
+            "potentially_affected_total": affected_total,
+            "potentially_affected_truncated": affected_total > 12,
             "unknowns": unknown,
             "next_questions": [
                 {"question": "¿Qué consumidores y referencias estructuradas tiene el símbolo en el ámbito pertinente?",
@@ -352,6 +470,28 @@ def markdown(data: dict) -> str:
                          " (" + literal(r["kind"]) + "; claim " + literal(r["claim_id"]) + ")")
     else:
         lines.append("No hay relaciones acreditadas en esta ficha.")
+    lines += ["", "## Usos localizados acreditados (no son aristas)", ""]
+    if e["uses"]:
+        for u in e["uses"]:
+            lines.append("- " + literal(u["from_symbol"]) + " → " + literal(u["to_symbol"]) +
+                         " (" + literal(u["reference"]["path"]) + ":" +
+                         literal(u["reference"]["line"]) + "; claim " + literal(u["claim_id"]) + ")")
+    else:
+        lines.append("No hay usos localizados acreditados en esta ficha.")
+    lines += ["", "Un uso acredita que un símbolo aparece en ese sitio. No acredita una llamada, "
+                  "una dependencia ni un orden de ejecución.", ""]
+    if e["uncorroborated_claims"]:
+        lines += ["## Afirmaciones que no están corroboradas", ""]
+        for c in e["uncorroborated_claims"]:
+            lines.append("- " + literal(c["claim_id"]) + " (" + literal(c["kind"]) + "): " +
+                         literal(c["reason"]) + ". No se muestra como hecho.")
+        lines.append("")
+    if e["query_limitations"]:
+        lines += ["## Límites de las consultas que lo sostienen", ""]
+        for qid, limitations in e["query_limitations"].items():
+            for limitation in limitations:
+                lines.append("- " + literal(qid) + ": " + literal(limitation))
+        lines.append("")
     lines += [
         "", "## ¿Qué desconocemos?", "", literal(beginner["what_we_do_not_know"]), "",
         "Una relación estática no demuestra orden temporal ni comportamiento en ejecución.",
@@ -361,6 +501,9 @@ def markdown(data: dict) -> str:
     if e["related_truncated"]:
         lines.append("**Aviso:** se muestran solo 12 de " + str(e["related_total"]) +
                      " relaciones corroboradas. Ampliar por consulta focalizada.\n")
+    if e["use_truncated"]:
+        lines.append("**Aviso:** se muestran solo 12 de " + str(e["use_total"]) +
+                     " usos corroborados. Ampliar por consulta focalizada.\n")
     if v["alternative_contexts"]:
         lines.extend(["## Términos de otros contextos", ""])
         for a in v["alternative_contexts"]:
@@ -370,8 +513,18 @@ def markdown(data: dict) -> str:
         change = data["change"]
         # The goal is user intent, NOT proof of the code behaviour.
         lines += ["", "## Cambio solicitado (intención del usuario)", "",
-                  literal(change["goal"]), "",
-                  "## Relaciones entrantes observadas (posibles consumidores)", ""]
+                  literal(change["goal"]), ""]
+        if change["observed_impact"]:
+            lines += ["## Hechos de impacto declarados por CogniCode", ""]
+            for imp in change["observed_impact"]:
+                lines.append("- Consulta " + literal(imp["query_id"]) + ": nivel de riesgo " +
+                             literal(imp.get("risk_level")) + ", " +
+                             literal(imp.get("direct_dependents")) + " dependientes directos, " +
+                             literal(imp.get("total_impacted_symbols")) +
+                             " símbolos afectados en " +
+                             literal(imp.get("impacted_files_count")) + " fichero(s).")
+            lines.append("")
+        lines += ["## Relaciones entrantes observadas (posibles consumidores)", ""]
         lines += (["- " + literal(r["from_symbol"]) + " → " + literal(r["to_symbol"]) +
                    " (claim " + literal(r["claim_id"]) + "; consulta " +
                    literal(", ".join(r["query_ids"])) + ")" for r in change["observed_incoming"]]
@@ -380,11 +533,33 @@ def markdown(data: dict) -> str:
         lines += (["- " + literal(r["from_symbol"]) + " → " + literal(r["to_symbol"]) +
                    " (claim " + literal(r["claim_id"]) + ")" for r in change["observed_outgoing"]]
                   or ["Ninguna observada en este ámbito; no implica independencia."])
+        lines += ["", "## Usos entrantes observados (posibles consumidores, NO llamadas)", ""]
+        lines += (["- " + literal(u["from_symbol"]) + " → " + literal(u["to_symbol"]) +
+                   " (" + literal(u["reference"]["path"]) + ":" + literal(u["reference"]["line"]) +
+                   "; claim " + literal(u["claim_id"]) + ")" for u in change["observed_uses_incoming"]]
+                  or ["Ninguno observado en el ámbito disponible. **NO significa que no haya consumidores.**"])
+        lines += ["", "## Usos salientes observados (colaboradores, NO llamadas)", ""]
+        lines += (["- " + literal(u["from_symbol"]) + " → " + literal(u["to_symbol"]) +
+                   " (" + literal(u["reference"]["path"]) + ":" + literal(u["reference"]["line"]) +
+                   "; claim " + literal(u["claim_id"]) + ")" for u in change["observed_uses_outgoing"]]
+                  or ["Ninguno observado en este ámbito; no implica independencia."])
         lines += ["", "## Hipótesis, NO fallos demostrados", ""]
+
+        def origin(hypothesis):
+            if hypothesis.get("relation_claim_id"):
+                return "claim " + literal(hypothesis["relation_claim_id"])
+            if hypothesis.get("impact_query_id"):
+                return "consulta " + literal(hypothesis["impact_query_id"])
+            return "sin origen declarado"
+
         lines += (["- Podría necesitar revisión: " + literal(h["symbol_id"]) +
-                   " (relación " + literal(h["relation_claim_id"]) + ")."
+                   " (" + origin(h) + "; " + literal(h["status"]) + ")."
                    for h in change["potentially_affected"]]
                   or ["No se identificaron candidatos en las relaciones entrantes observadas."])
+        if change["potentially_affected_truncated"]:
+            lines.append("")
+            lines.append("**Aviso:** se muestran 12 de " + str(change["potentially_affected_total"]) +
+                         " candidatos. Ampliar por consulta focalizada.")
         lines += ["", "## Qué preguntar a CogniCode antes de modificar", ""]
         lines += ["- " + literal(q["question"]) + " — " + literal(q["purpose"])
                   for q in change["next_questions"]]
