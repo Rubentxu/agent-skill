@@ -18,6 +18,8 @@ Colección modular de **skills para agentes de IA**, mantenidas por separado e i
 | [`playful-learning-design`](skills/playful-learning-design/SKILL.md) | Diseña experiencias educativas gamificadas con objetivos, errores frecuentes, aprendizaje activo, motivación ética y lentes de autodescubrimiento. | Disponible (router + 8 lentes) |
 | [`learning-game-html`](skills/learning-game-html/SKILL.md) | Construye y refina juegos educativos HTML visuales, interactivos, accesibles y offline, con QA de navegador, persistencia y 9 lentes. | Disponible (router + 9 lentes) |
 | [`agentchanges-review`](skills/agentchanges-review/SKILL.md) | Revisa diffs entre refs con agentchanges: notas ancladas por hash de contenido, elección de kind/status, previsualización, aplicación y verificación de parches sin perder al revisor de vista. | Disponible |
+| [`gate-vocabulary-reachability`](skills/gate-vocabulary-reachability/SKILL.md) | Audita que cada elemento del vocabulario de autorización declarado sea alcanzable desde el código de producción, y que los defaults sean fail-closed: enumera acciones, roles, permisos y códigos, y separa los que se construyen de los que solo existen en el mapa o en tests. | Disponible (auditor) |
+| [`retrospective-cycle-audit`](skills/retrospective-cycle-audit/SKILL.md) | Investiga un ciclo ya escrito antes de continuar: reconstruye lo hecho, delimita el radio de impacto, formula hipótesis y las refuta primero, caza falsos éxitos y tests que no pueden fallar, y corrige solo lo confirmado. | Disponible |
 
 Consulta el README de [la skill genérica de calidad](skills/code-quality-evidence-review/README.md) y la [skill CogniCode](skills/cognicode-diagrams/README.md). **La skill antigua `cognicode-quality-investigator` ha sido retirada**; no usar sus instrucciones, rutas ni fallback de lectura directa. Las herramientas de terceros descritas en sus anexos **no se instalan automáticamente**.
 
@@ -57,6 +59,12 @@ npx skills add Rubentxu/agent-skill --skill playful-learning-design --agent open
 # Construir juegos educativos HTML interactivos, visuales y offline
 npx skills add Rubentxu/agent-skill --skill learning-game-html --agent opencode
 
+# Auditar que el vocabulario de autorización sea alcanzable de verdad
+npx skills add Rubentxu/agent-skill --skill gate-vocabulary-reachability --agent opencode
+
+# Reconstruir y refutar un ciclo ya escrito antes de continuar
+npx skills add Rubentxu/agent-skill --skill retrospective-cycle-audit --agent opencode
+
 # O instalar la skill genérica globalmente en OpenCode
 npx skills add Rubentxu/agent-skill --skill code-quality-evidence-review --agent opencode --global
 ```
@@ -80,11 +88,24 @@ agent-skill/
         ├── examples/                  # Ejemplos sintéticos
         ├── scripts/                   # Utilidades opcionales
         └── tests/                     # Pruebas y evaluaciones
-    └── pipelinek-local-ci/
-        ├── SKILL.md                   # CI local agent-first con PipelineK
+    ├── pipelinek-local-ci/
+    │   ├── SKILL.md                   # CI local agent-first con PipelineK
+    │   ├── README.md
+    │   ├── references/                # Bootstrap, decision tree, Jenkins mapping, authoring y diagnóstico
+    │   ├── examples/                  # Starters reales Gradle/Maven/Node/Rust/Python/Go/Jenkins-familiar
+    │   └── tests/                     # Evaluaciones manuales de activación
+    ├── gate-vocabulary-reachability/
+    │   ├── SKILL.md                   # Auditoría del vocabulario de autorización
+    │   ├── README.md
+    │   ├── references/                # Árbol de decisión, extracción, alcance y defaults fail-closed
+    │   ├── scripts/                   # Auditor de alcanzabilidad
+    │   ├── worked-example.md          # Caso trabajado
+    │   └── tests/                     # Pruebas y evaluaciones de activación
+    └── retrospective-cycle-audit/
+        ├── SKILL.md                   # Auditoría retrospectiva de un ciclo ya escrito
         ├── README.md
-        ├── references/                # Bootstrap, decision tree, Jenkins mapping, authoring y diagnóstico
-        ├── examples/                  # Starters reales Gradle/Maven/Node/Rust/Python/Go/Jenkins-familiar
+        ├── references/                # Reconstrucción, falsación, falsos éxitos y cierre
+        ├── worked-example.md          # Caso trabajado
         └── tests/                     # Evaluaciones manuales de activación
 ```
 
@@ -105,9 +126,10 @@ python3 -m unittest discover -s skills/delivery-first-testing/tests -p 'test_*.p
 python3 -m unittest discover -s skills/distribution-first-release/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/playful-learning-design/tests -p 'test_*.py'
 python3 -m unittest discover -s skills/learning-game-html/tests -p 'test_*.py'
+python3 -m unittest discover -s skills/gate-vocabulary-reachability/tests -p 'test_*.py'
 ```
 
-El workflow de GitHub Actions ejecuta estas comprobaciones para cada PR y push. Los tests de una skill nueva deben registrarse en CI cuando se añada.
+El workflow de GitHub Actions ejecuta estas comprobaciones para cada PR y push. Los tests de una skill nueva deben registrarse en CI cuando se añada. El validador rechaza además una skill que traiga scripts sin pruebas: una utilidad sin test es una afirmación que nadie comprueba.
 
 ## Licencia
 

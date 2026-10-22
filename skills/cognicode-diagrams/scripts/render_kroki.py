@@ -113,7 +113,11 @@ def render(source_file: Path, output: Path, diagram_type: str, image_format: str
             verify_image(body, image_format, response.headers.get("Content-Type", ""))
     except HTTPError as e:
         detail = e.read(2048).decode("utf-8", errors="replace").strip()
-        raise RenderError(f"Kroki HTTP {e.code}: {detail[:400]}") from e
+        code = e.code
+        # El error HTTP arrastra abierto el socket de respuesta: cerrarlo
+        # evita dejar conexiones colgando hasta que pase el recolector.
+        e.close()
+        raise RenderError(f"Kroki HTTP {code}: {detail[:400]}") from e
     except (URLError, TimeoutError, OSError) as e:
         raise RenderError(f"Kroki local no disponible: {e}") from e
 

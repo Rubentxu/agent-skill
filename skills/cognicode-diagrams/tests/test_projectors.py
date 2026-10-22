@@ -276,4 +276,39 @@ class ProjectorTests(unittest.TestCase):
         self.assertTrue(Path(p['source']).is_relative_to(self.external))
 
 
+class HttpProbeTests(unittest.TestCase):
+    """La sonda de disponibilidad habla con un puerto real: si el puerto
+    rechaza, la respuesta se cierra y no se deja una conexión colgando."""
+
+    def test_refused_probe_leaves_no_socket_open(self):
+        import gc
+        import threading
+        import warnings
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        class Refusing(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b'no')
+
+            def log_message(self, *args):
+                pass
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Refusing)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                self.assertFalse(engine.http_ready(server.server_port))
+                gc.collect()
+            leaked = [w for w in caught if issubclass(w.category, ResourceWarning)]
+            self.assertEqual(leaked, [], f'la sonda rechazada quedó sin cerrar: {leaked}')
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+
 if __name__=='__main__': unittest.main()
