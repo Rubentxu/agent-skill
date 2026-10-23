@@ -20,6 +20,7 @@ Conservar en `~/.cognicode-diagrams/workspaces/<id>/evidence/` un `queries.json`
 
 Los nombres de campo de arriba están escritos como los entiende el motor, no como los entiende el contrato. El contrato tiene una forma única, y el ledger debe usarla:
 
+- El ledger **declara la versión del contrato que sigue** (`schema_version`). Declararla es una promesa: la versión dice qué forma es la que se ha escrito, y quien lo comprueba la verifica. Un ledger que declara otra versión es un ledger de otro contrato, y este no lo puede leer. Un ledger que no declara ninguna tampoco cumple la promesa: se puede leer, pero quien lo lea tiene que saber que no se sabe qué forma sigue.
 - Una **consulta** declara `query_id`, `mode` (`structured|symbol_context`), `status` (`ok|partial`), `source` (`cognicode`), `observation_plane` (`static`), `symbol_ids` con los símbolos que la respuesta resolvió, `relation_ids` cuando la respuesta trajo relaciones, y `reference_hits` con las filas de uso cuando la respuesta fue de usos.
 - Una **afirmación** declara `claim_id`, `kind` (`entity|relation`), `provenance` (`OBSERVED_CODE|INFERRED|UNKNOWN|CODE_DOC|CURATED_INTENT`), `plane`, `coverage` (`complete|partial|unknown`) y `query_ids`. Si es una entidad, declara `symbol_id`; si es una relación, declara `relation_source` (`graph_edge|reference_link`), sus dos extremos y, según la procedencia, `relation_id` o `reference`.
 
@@ -48,6 +49,7 @@ Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contra
 
 ```json canonical
 {
+  "schema_version": 1,
   "queries": [
     {"query_id": "Q-1", "mode": "structured", "status": "ok", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
@@ -100,11 +102,21 @@ La misma consulta CLI y MCP al mismo backend no equivale a corroboración indepe
 La corroboración no se queda en quien la comprobó: se escribe junto al material, en `evidence/corroboration.json`, para que pueda publicarse con la afirmación y no solo la afirmación. Su forma es parte del contrato:
 
 - `schema_version`, `generator` y `workspace`: quién lo escribió y de qué workspace.
+- `status`: si este contrato ha podido leer el material (`current`) o no (`unreadable`). Un veredicto sin material legible no lleva veredictos: lleva el motivo.
+- `gaps`: lo que el material no dice de sí mismo, cuando no lo dice. Vive en el veredicto porque el veredicto es lo que se publica: si la forma no es la que se prometió, el motivo tiene que viajar con lo que se publica.
 - `inputs`: las sumas `sha256` de los ficheros que se leyeron (`evidence/claims.json` y `evidence/queries.json`). **El veredicto declara de qué material salió.** Quien lo lee compara esas sumas con el material que tiene delante: si no cuadran, el veredicto habla de otro material y no del que se está mirando.
-- `claims`: por afirmación, `claim_id`, `kind`, `provenance`, `verdict` (`corroborated`, `observed_not_corroborated`, `not_implementation`), `verdict_label` y `missing`, que nombra lo que falta para sostenerla más.
+- `claims`: por afirmación, `claim_id`, `kind`, `provenance`, `verdict` (`corroborated`, `observed_not_corroborated`, `not_implementation`, `not_checkable`), `verdict_label` y `missing`, que nombra lo que falta para sostenerla más.
 - `counts`: cuántas afirmaciones hay de cada tipo.
 
 Sin `inputs` el veredicto se puede leer, pero no se puede **atribuir**: quien lo lee no puede saber si habla del material que tiene delante. Un veredicto sin origen se publica como lo que es, y no como el veredicto de este material.
+
+### Lo que no se pudo mirar no es lo mismo que lo que no se sostiene
+
+`observed_not_corroborated` y `not_checkable` parecen lo mismo y no lo son. La primera dice: **se miró** la afirmación y ninguna consulta estructurada la sostiene; el reproche es justo y el material tiene que arreglarlo. La segunda dice: **el material no dejó mirarla** —la consulta no declara cómo se ejecutó, o a la afirmación le falta la forma que el contrato publica—; ahí no hay nada que reprocharle al material, hay un hueco que se dice con su motivo.
+
+Decirle a un material que sus afirmaciones no están corroboradas cuando lo que pasó es que no se le pudo mirar es una acusación falsa. Por eso `not_checkable` es un veredicto aparte, con su etiqueta y con su motivo, y por eso el recuento los cuenta por separado: el que no se pudo mirar no está entre las que no se sostienen.
+
+Cuando **todo** el material es de otra versión del contrato, el veredicto no lleva ninguno: lleva `status: unreadable` y el motivo. Un veredicto sobre una forma que nadie prometió no sería un veredicto: sería una suposición.
 
 ## Contrato de suficiencia
 

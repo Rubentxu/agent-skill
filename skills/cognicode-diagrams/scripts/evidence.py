@@ -122,14 +122,39 @@ def ledger(workspace_dir: Path, report: dict, inputs: dict[str, str]) -> dict:
         "schema_version": SCHEMA_VERSION,
         "generator": GENERATOR,
         "workspace": str(workspace_dir),
+        "status": report["status"],
+        "gaps": report["gaps"],
         "inputs": inputs,
         "claims": report["claims"],
         "counts": {
             "corroborated": report["corroborated"],
             "observed_not_corroborated": report["not_corroborated"],
+            "not_checkable": report["not_checkable"],
             "not_implementation": report["not_implementation"],
         },
     }
+
+
+def estado_del_informe(report: dict) -> str:
+    """La palabra que resume lo que el material es.
+
+    Un material que este contrato no puede leer no es un hallazgo: es un
+    hueco. Una afirmacion que nadie ha podido mirar tampoco: nadie ha
+    mirado. Solo una afirmacion que se ha mirado y no queda sostenida es
+    un hallazgo, y es el unico que lo dice.
+
+    Cuando hay hueco y hallazgo a la vez, manda el hueco: decir «tus
+    afirmaciones no estan corroboradas» cuando lo que pasas es que no se
+    las ha podido mirar es una acusacion falsa. Los recuentos cuentan las
+    dos cosas, asi que nada se esconde.
+    """
+    if report["status"] != "current":
+        return "UNREADABLE"
+    if report["not_checkable"]:
+        return "NOT_CHECKABLE"
+    if report["not_corroborated"]:
+        return "NOT_CORROBORATED"
+    return "OK"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -154,13 +179,16 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "BLOCKED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
 
+    estado = estado_del_informe(report)
     result = {
-        "status": "OK" if report["not_corroborated"] == 0 else "NOT_CORROBORATED",
+        "status": estado,
         "workspace": str(workspace_dir),
+        "gaps": report["gaps"],
         "inputs": inputs,
         "counts": {
             "corroborated": report["corroborated"],
             "observed_not_corroborated": report["not_corroborated"],
+            "not_checkable": report["not_checkable"],
             "not_implementation": report["not_implementation"],
         },
         "claims": report["claims"],
@@ -180,8 +208,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # A claim that says it was observed but that nothing corroborates is a
     # defect, not a warning: the command fails so a caller cannot read a
-    # clean exit as "everything is proven".
-    if args.check and report["not_corroborated"]:
+    # clean exit as "everything is proven". A claim the material does not
+    # let anyone look at is a defect too, and of another kind: it is not
+    # proven either, and the exit has to say so.
+    if args.check and (report["not_corroborated"] or report["not_checkable"]):
         return 1
     return 0
 

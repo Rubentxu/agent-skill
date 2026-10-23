@@ -27,6 +27,10 @@ QUERY_REQUIRED = ("query_id", "mode", "status", "observation_plane", "source")
 QUERY_CORROBORATING = ("symbol_ids",)
 CLAIM_REQUIRED = ("claim_id", "kind", "provenance", "plane", "coverage", "query_ids")
 
+# Los campos sin los cuales la afirmacion no se puede mirar. Los demas
+# son forma: se avisa de ellos, pero la afirmacion se sigue leyendo.
+CLAIM_BLOCKING = ("claim_id", "kind", "provenance")
+
 # Spellings seen in ledgers written before the shape was fixed. They are
 # read, so the ledger is not lost, and reported, so the drift is visible.
 CLAIM_ALIASES = {
@@ -77,11 +81,28 @@ CORROBORATED = "corroborated"
 OBSERVED_NOT_CORROBORATED = "observed_not_corroborated"
 NOT_IMPLEMENTATION = "not_implementation"
 
+# Una afirmacion que el material no deja comprobar.
+#
+# No es lo mismo que una afirmacion observada y sin corroborar: aquella se
+# miro y no la sostiene ninguna consulta, y el reproche es justo; esta no se
+# pudo mirar. Decirle a un material que sus afirmaciones no estan
+# corroboradas cuando lo que pasas es que no se le puede mirar es una
+# acusacion falsa, y por eso tiene su propio veredicto.
+NOT_CHECKABLE = "not_checkable"
+
+# La version del contrato que este modulo comprueba.
+#
+# El material declara la suya, y declararla es una promesa: la forma que se
+# comprueba es la de esta version. Un material que declara otra version no
+# es un material que este contrato pueda leer.
+CONTRACT_VERSION = 1
+
 # Labels for humans, in the language of the people who read the atlas.
 VERDICT_LABELS = {
     CORROBORATED: "corroborada por una consulta estructurada",
     OBSERVED_NOT_CORROBORATED: "observada, pero sin corroborar",
     NOT_IMPLEMENTATION: "no es una afirmacion de implementacion",
+    NOT_CHECKABLE: "no se pudo comprobar: el material no lo permite",
 }
 
 
@@ -271,8 +292,8 @@ def _query_is_structured(query: dict) -> bool:
     return True
 
 
-def shape_gaps(claim: dict, queries: dict[str, dict]) -> list[str]:
-    """What the claim and its queries do not say in the canonical shape.
+def claim_gaps(claim: dict) -> list[str]:
+    """What the claim itself does not say in the canonical shape.
 
     Reported per claim, because a claim that does not follow the shape
     cannot be corroborated by anything: there is no way to know what was
@@ -312,23 +333,91 @@ def shape_gaps(claim: dict, queries: dict[str, dict]) -> list[str]:
                 f"declara 'relation_source' '{source}', que no es una procedencia del contrato: "
                 "solo se admiten 'graph_edge' y 'reference_link'"
             )
+    return gaps
 
+
+def query_gaps(qid: str, query) -> list[str]:
+    """What a query does not say in the canonical shape.
+
+    A query that does not say how it ran cannot corroborate anything: the
+    platform would be counting as support something it cannot tell apart
+    from a query that returned nothing.
+    """
+    gaps: list[str] = []
+    if not isinstance(query, dict):
+        return [f"la consulta '{qid}' no es un objeto"]
+    for field in QUERY_REQUIRED:
+        if field in query:
+            continue
+        aliases = QUERY_ALIASES.get(field, ())
+        used = next((alias for alias in aliases if alias in query), None)
+        if used is not None:
+            gaps.append(f"la consulta '{qid}' usa '{used}' en vez de '{field}'")
+        else:
+            gaps.append(f"la consulta '{qid}' no declara '{field}'")
+    if not isinstance(query.get("symbol_ids"), list):
+        gaps.append(f"la consulta '{qid}' no declara 'symbol_ids': no identifica ningun simbolo")
+    return gaps
+
+
+def impedimentos(claim: dict, queries: dict[str, dict]) -> list[str]:
+    """What stops this claim from being looked at, if anything does.
+
+    A claim can be looked at when the platform can tell what it claims
+    and when the queries that should support it say how they ran. When
+    it cannot, there is no verdict to give: there is a hole, and the hole
+    says what is missing.
+
+    What is *not* an impediment is a claim that offers no support at all:
+    that one was seen and nothing backs it, which is a finding about the
+    claim. An old spelling is not an impediment either: the claim is
+    read, and the drift is reported.
+    """
+    impedimentos_: list[str] = []
+    if not isinstance(claim, dict):
+        return ["la afirmacion no es un objeto"]
+
+    for field in CLAIM_BLOCKING:
+        if field in claim:
+            continue
+        if any(alias in claim for alias in CLAIM_ALIASES.get(field, ())):
+            # Se lee igual. La diferencia de escritura se cuenta aparte.
+            continue
+        impedimentos_.append(f"falta '{field}'")
+    if claim.get("kind") == "entity" and "symbol_id" not in claim and "symbol_ids" not in claim:
+        impedimentos_.append("falta 'symbol_id'")
+
+    citados = [qid for qid in claim.get("query_ids", []) if isinstance(qid, str)] \
+        if isinstance(claim.get("query_ids"), list) else []
+    if not citados:
+        return impedimentos_
+    for qid in citados:
+        if qid not in queries:
+            impedimentos_.append(f"la consulta '{qid}' no existe")
+    utilizables = [qid for qid in citados
+                   if qid in queries and not query_gaps(qid, queries[qid])]
+    if not utilizables:
+        for qid in citados:
+            if qid in queries:
+                impedimentos_.extend(query_gaps(qid, queries[qid]))
+        impedimentos_.append("ninguna de sus consultas declara como se ejecuto")
+    return impedimentos_
+
+
+def shape_gaps(claim: dict, queries: dict[str, dict]) -> list[str]:
+    """What the claim and its queries do not say in the canonical shape.
+
+    Reported per claim, because a claim that does not follow the shape
+    cannot be corroborated by anything: there is no way to know what was
+    actually observed.
+    """
+    gaps = claim_gaps(claim)
     for qid in claim.get("query_ids", []) if isinstance(claim.get("query_ids"), list) else []:
         query = queries.get(qid) if isinstance(qid, str) else None
         if query is None:
             gaps.append(f"la consulta '{qid}' no existe")
             continue
-        for field in QUERY_REQUIRED:
-            if field in query:
-                continue
-            aliases = QUERY_ALIASES.get(field, ())
-            used = next((alias for alias in aliases if alias in query), None)
-            if used is not None:
-                gaps.append(f"la consulta '{qid}' usa '{used}' en vez de '{field}'")
-            else:
-                gaps.append(f"la consulta '{qid}' no declara '{field}'")
-        if not isinstance(query.get("symbol_ids"), list):
-            gaps.append(f"la consulta '{qid}' no declara 'symbol_ids': no identifica ningun simbolo")
+        gaps.extend(query_gaps(qid, query))
     return gaps
 
 
@@ -407,6 +496,10 @@ def verdict(claim: dict, queries: dict[str, dict]) -> tuple[str, list[str]]:
     The verdict is derived from the queries. A claim that says it was
     observed but cannot be corroborated is reported as such: it was seen,
     but nothing structured proves it.
+
+    When the material does not let the platform look at the claim, there
+    is no verdict at all. There is a hole, and the hole says what is
+    missing: that is a different fact, and it is not a reproach.
     """
     if not isinstance(claim, dict):
         return NOT_IMPLEMENTATION, ["la afirmacion no es un objeto"]
@@ -420,13 +513,44 @@ def verdict(claim: dict, queries: dict[str, dict]) -> tuple[str, list[str]]:
     if reference_corroborated(claim, queries):
         return CORROBORATED, []
 
+    # The shape comes before the evidence. When the material does not say
+    # enough to look at the claim, the absence of corroboration is an
+    # effect of the material, not a fact about the claim.
+    impedimentos_ = impedimentos(claim, queries)
+    if impedimentos_:
+        return NOT_CHECKABLE, impedimentos_
+
     gaps = evidence_gaps(claim, queries)
-    for gap in shape_gaps(claim, queries):
-        if gap not in gaps:
-            gaps.append(gap)
     if not gaps:
         gaps = ["ninguna consulta estructurada identifica lo que la afirmacion sostiene"]
     return OBSERVED_NOT_CORROBORATED, gaps
+
+
+def material_status(claims_raw: list | dict, queries_raw: list | dict) -> tuple[str, list[str]]:
+    """Whether this contract can read the material, and what it misses.
+
+    The version is a promise. A material that declares the contract's
+    version says it follows that shape, and the platform checks it item by
+    item. A material that declares another version is a material of
+    another contract: this contract cannot read it, and saying so is
+    better than returning verdicts that would be about a shape nobody
+    promised.
+    """
+    gaps: list[str] = []
+    otra_version = False
+    for nombre, raw in (("las afirmaciones", claims_raw), ("las consultas", queries_raw)):
+        if not isinstance(raw, dict):
+            continue
+        version = raw.get("schema_version")
+        if version is None:
+            gaps.append(f"{nombre} no declaran la version del contrato")
+        elif version != CONTRACT_VERSION:
+            otra_version = True
+            gaps.append(
+                f"{nombre} declaran la version {version} del contrato "
+                f"y este comprueba la {CONTRACT_VERSION}"
+            )
+    return ("unreadable" if otra_version else "current"), gaps
 
 
 def report(claims_raw: list | dict, queries_raw: list | dict) -> dict:
@@ -436,6 +560,7 @@ def report(claims_raw: list | dict, queries_raw: list | dict) -> dict:
     claim, whether the evidence supports it and, when it does not, exactly
     what is absent.
     """
+    status, gaps = material_status(claims_raw, queries_raw)
     queries = index_queries(queries_raw)
     claims = index_claims(claims_raw)
     entries = []
@@ -449,9 +574,16 @@ def report(claims_raw: list | dict, queries_raw: list | dict) -> dict:
             "verdict_label": VERDICT_LABELS[derived],
             "missing": missing,
         })
+    if status != "current":
+        # El material es de otro contrato: no hay nada que decir de sus
+        # afirmaciones, y decirlo seria inventar un veredicto.
+        entries = []
     return {
+        "status": status,
+        "gaps": gaps,
         "claims": entries,
         "corroborated": sum(1 for e in entries if e["verdict"] == CORROBORATED),
         "not_corroborated": sum(1 for e in entries if e["verdict"] == OBSERVED_NOT_CORROBORATED),
+        "not_checkable": sum(1 for e in entries if e["verdict"] == NOT_CHECKABLE),
         "not_implementation": sum(1 for e in entries if e["verdict"] == NOT_IMPLEMENTATION),
     }

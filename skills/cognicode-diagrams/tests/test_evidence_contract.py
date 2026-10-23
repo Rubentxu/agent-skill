@@ -141,6 +141,75 @@ class ContractShapeTests(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class MaterialShapeTests(unittest.TestCase):
+    """What the material says about itself, and what follows from it.
+
+    The distinction these tests protect: a claim that was looked at and
+    is not supported is a finding about the material; a claim that could
+    not be looked at is a hole. Reporting one as the other accuses the
+    material of something nobody checked.
+    """
+
+    def consulta_sin_declarar_como_se_ejecuto(self):
+        return {"query_id": "Q-1", "result_summary": {"entries": 1}}
+
+    def afirmacion(self, **extra):
+        claim = {"claim_id": "C-1", "kind": "entity", "provenance": "OBSERVED_CODE",
+                 "plane": "static", "coverage": "complete", "symbol_id": "App::Entry",
+                 "query_ids": ["Q-1"]}
+        claim.update(extra)
+        return claim
+
+    def test_un_material_que_no_declara_como_se_ejecutaron_las_consultas_no_se_acusa(self):
+        # The queries do not say how they ran, so nobody can say whether
+        # they support the claim. That is a hole, not an accusation.
+        queries = contract.index_queries([self.consulta_sin_declarar_como_se_ejecuto()])
+        derived, missing = contract.verdict(self.afirmacion(), queries)
+        self.assertEqual(derived, contract.NOT_CHECKABLE)
+        self.assertTrue(any("no declara 'mode'" in gap for gap in missing), missing)
+
+    def test_una_afirmacion_que_no_declara_ninguna_consulta_se_declara_observada_sin_corroborar(self):
+        # Nothing supports it, but the claim was read: that is a finding
+        # about the claim, and it is a different one.
+        derived, missing = contract.verdict(self.afirmacion(query_ids=[]), {})
+        self.assertEqual(derived, contract.OBSERVED_NOT_CORROBORATED)
+        self.assertTrue(missing, "un veredicto negativo dice que falta")
+
+    def test_el_material_de_otra_version_del_contrato_no_se_lee(self):
+        claims = {"schema_version": contract.CONTRACT_VERSION + 1,
+                  "claims": [self.afirmacion()]}
+        queries = {"schema_version": contract.CONTRACT_VERSION,
+                   "queries": [{"query_id": "Q-1", "mode": "structured", "status": "ok",
+                                "source": "cognicode", "observation_plane": "static",
+                                "symbol_ids": ["App::Entry"]}]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "unreadable")
+        self.assertEqual(report["claims"], [],
+                         "un material de otro contrato no lleva veredictos")
+        self.assertTrue(any("version" in gap for gap in report["gaps"]), report["gaps"])
+
+    def test_el_material_que_no_declara_version_sigue_pudiendo_leerse(self):
+        claims = {"claims": [self.afirmacion()]}
+        queries = {"queries": [{"query_id": "Q-1", "mode": "structured", "status": "ok",
+                                "source": "cognicode", "observation_plane": "static",
+                                "symbol_ids": ["App::Entry"]}]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "current")
+        self.assertEqual(report["corroborated"], 1)
+        self.assertTrue(any("no declaran la version" in gap for gap in report["gaps"]),
+                        report["gaps"])
+
+    def test_el_material_que_se_desvia_no_se_confunde_con_el_que_no_se_sostiene(self):
+        claims = {"schema_version": contract.CONTRACT_VERSION,
+                  "claims": [self.afirmacion()]}
+        queries = {"schema_version": contract.CONTRACT_VERSION,
+                   "queries": [self.consulta_sin_declarar_como_se_ejecuto()]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["not_checkable"], 1)
+        self.assertEqual(report["not_corroborated"], 0,
+                         "lo que no se pudo mirar no esta entre lo que no se sostiene")
+
+
 class ValidatorTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -192,6 +261,36 @@ class ValidatorTests(unittest.TestCase):
         self.assertEqual(ledger["counts"]["corroborated"], 1)
         self.assertEqual(ledger["claims"][0]["claim_id"], "C-1")
         self.assertEqual(ledger["claims"][0]["verdict"], contract.CORROBORATED)
+
+    def test_el_veredicto_derivado_publica_si_el_material_se_puede_leer(self):
+        # Quien lo lee tiene que poder saber si hay veredicto o no, sin
+        # tener que interpretarlo.
+        self.write(*self.good())
+        self.assertEqual(validator.main(["--repo", str(self.repo), "--home",
+                                          str(self.home), "--emit"]), 0)
+        ledger = json.loads((self.w / "evidence/corroboration.json").read_text(encoding="utf-8"))
+        self.assertEqual(ledger["status"], "current")
+        self.assertEqual(ledger["gaps"], [])
+
+    def test_el_validador_falla_cuando_algo_no_se_puede_comprobar(self):
+        # Una afirmacion que nadie ha podido mirar tampoco esta probada:
+        # la salida tiene que decirlo.
+        queries, claims = self.good()
+        queries[0].pop("mode")
+        self.write(queries, claims)
+        self.assertEqual(validator.main(["--repo", str(self.repo), "--home",
+                                          str(self.home), "--check"]), 1)
+
+    def test_el_validador_no_acusa_a_un_material_que_no_se_puede_mirar(self):
+        queries, claims = self.good()
+        queries[0].pop("mode")
+        self.write(queries, claims)
+        self.assertEqual(validator.main(["--repo", str(self.repo), "--home",
+                                          str(self.home), "--emit"]), 0)
+        ledger = json.loads((self.w / "evidence/corroboration.json").read_text(encoding="utf-8"))
+        self.assertEqual(ledger["counts"]["observed_not_corroborated"], 0)
+        self.assertEqual(ledger["counts"]["not_checkable"], 1)
+        self.assertEqual(ledger["claims"][0]["verdict"], contract.NOT_CHECKABLE)
 
     def test_el_veredicto_declara_de_que_material_salio(self):
         # Un veredicto que no dice de que material salio no se puede
