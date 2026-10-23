@@ -34,10 +34,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import evidence_contract as contract
 import evidence as validator
+import selection
 import workspace as ws
 from report_thinking import basis_of
 
-GENERATOR = "cognicode-diagrams-c4-view"
+GENERATOR = selection.VIEW_GENERATOR
 VIEW_SCHEMA = 1
 
 # El vocabulario C4 que la version 1 de la vista admite. Ampliarlo es un
@@ -51,11 +52,24 @@ C4_QUESTIONS = ("C1", "C2", "C3")
 # El presupuesto de legibilidad de la lente: una vista que se pasa se
 # divide, no se aprieta.
 MAX_ELEMENTS = 15
-MAX_CLAIMS = 40
-MAX_LABEL = 70
+MAX_CLAIMS = selection.MAX_CLAIMS
+MAX_LABEL = selection.MAX_LABEL
 
 CLAIMS_PATH = "evidence/claims.json"
 QUERIES_PATH = "evidence/queries.json"
+
+
+def _plane_of(planes: set[str]) -> str | None:
+    """The view's plane: the one plane its whole content shares.
+
+    A mixed set is not one plane, and an empty set is no plane at all:
+    both leave the field out instead of inventing an answer (SPEC-ST-002
+    says every view declares its plane; declaring nothing is still more
+    honest than guessing one).
+    """
+    if len(planes) == 1:
+        return next(iter(planes))
+    return None
 
 
 class ViewError(ValueError):
@@ -70,15 +84,13 @@ def load_selection(workspace_dir: Path, view: str) -> dict:
     path = workspace_dir / "lenses" / "c4" / "reports" / f"{view}.atlas.json"
     if not path.is_file():
         raise ViewError(f"no hay seleccion de vista '{view}': falta {path.name}")
+    # La forma compartida la decide su dueño: el proyector no vuelve a
+    # inventar unas reglas que el atlas y la editorial ya aplican.
     try:
-        seleccion = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise ViewError(f"la seleccion de vista '{view}' no se pudo leer: {exc}") from exc
-    if not isinstance(seleccion, dict):
-        raise ViewError(f"la seleccion de vista '{view}' no es un objeto")
+        seleccion = selection.load(path)
+    except selection.SelectionError as exc:
+        raise ViewError(f"la seleccion de vista '{view}' no es valida: {exc}") from exc
 
-    if seleccion.get("schema_version") != 1:
-        raise ViewError("la seleccion declara una version que esta vista no conoce")
     if seleccion.get("lens") != "c4":
         raise ViewError("la seleccion no declara la lente c4")
     pregunta = seleccion.get("question")
@@ -86,23 +98,11 @@ def load_selection(workspace_dir: Path, view: str) -> dict:
         raise ViewError(
             f"la pregunta es '{pregunta}', y la lente solo declara {', '.join(C4_QUESTIONS)}"
         )
-    label = seleccion.get("label")
-    if not isinstance(label, str) or not label.strip() or "\n" in label:
-        raise ViewError("la seleccion no declara un label de una linea")
-    if len(label) > MAX_LABEL:
-        raise ViewError(f"el label de la seleccion supera los {MAX_LABEL} caracteres")
-    claim_ids = seleccion.get("claim_ids")
-    if (not isinstance(claim_ids, list) or not claim_ids or len(claim_ids) > MAX_CLAIMS
-            or any(not isinstance(cid, str) or not cid for cid in claim_ids)
-            or len(set(claim_ids)) != len(claim_ids)):
-        raise ViewError(
-            f"la seleccion necesita entre 1 y {MAX_CLAIMS} afirmaciones distintas"
-        )
     kinds = seleccion.get("kinds")
     if not isinstance(kinds, dict):
         raise ViewError("la seleccion no declara las clases de sus elementos")
     for cid, kind in kinds.items():
-        if cid not in set(claim_ids):
+        if cid not in set(seleccion["claim_ids"]):
             raise ViewError(f"la clase de '{cid}' apunta a una afirmacion que no esta seleccionada")
         if kind not in C4_KINDS:
             raise ViewError(
@@ -276,7 +276,22 @@ def derive(workspace_dir: Path, view: str) -> dict:
     todo_completo = (not huecos
                      and all(e["coverage"] == "complete" for e in elements)
                      and all(r["coverage"] == "complete" for r in relations))
-    return {
+
+    # El plano de la vista es el de su contenido: las afirmaciones que
+    # llegaron. Una sola respuesta viaja en el campo; una mezcla o un
+    # vacio salen sin el, que es declarar que no se dijo.
+    llegaron: set[str] = set()
+    for elemento in elements:
+        for cid in elemento["claim_ids"]:
+            plano = claims[cid].get("plane")
+            if isinstance(plano, str) and plano:
+                llegaron.add(plano)
+    for relation in relations:
+        plano = claims[relation["claim_id"]].get("plane")
+        if isinstance(plano, str) and plano:
+            llegaron.add(plano)
+
+    vista = {
         "schema_version": VIEW_SCHEMA,
         "generator": GENERATOR,
         "lens": "c4",
@@ -296,6 +311,10 @@ def derive(workspace_dir: Path, view: str) -> dict:
                    "holes": len(huecos)},
         "status": "complete" if todo_completo else "partial",
     }
+    plano = _plane_of(llegaron)
+    if plano is not None:
+        vista["plane"] = plano
+    return vista
 
 
 def main(argv: list[str] | None = None) -> int:

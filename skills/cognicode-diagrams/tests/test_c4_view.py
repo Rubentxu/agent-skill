@@ -292,6 +292,23 @@ class C4ViewTests(unittest.TestCase):
         self.assertEqual(vista["basis"]["status"], "reported_unverified")
         self.assertEqual(vista["basis"]["revision"], "rev-abc123")
 
+    def test_la_vista_declara_el_plano_de_lo_que_llego(self):
+        # SPEC-ST-002: every view declares its plane. The plane is the
+        # one the view's own content lives in; nothing is invented.
+        self.escribir_ledger([self.consulta()], [self.entidad()])
+        self.seleccion(["C-1"], {"C-1": "component"})
+        self.assertEqual(self.derivar(emit=True), 0)
+        vista = self.derivada()
+        self.assertEqual(vista["plane"], "static")
+
+    def test_sin_un_plano_unico_la_vista_no_inventa_ninguno(self):
+        # A mixed plane set is not one plane. The view leaves the field
+        # out rather than picking a side: whoever reads it knows no
+        # single plane was declared.
+        self.assertEqual(c4_view._plane_of({"static", "runtime"}), None)
+        self.assertEqual(c4_view._plane_of(set()), None)
+        self.assertEqual(c4_view._plane_of({"static"}), "static")
+
     def test_la_base_en_conflicto_se_declara_como_tal(self):
         self.escribir_ledger(
             [self.consulta(),
