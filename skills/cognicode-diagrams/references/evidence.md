@@ -95,6 +95,17 @@ Por eso una afirmación puede estar **observada y no corroborada**: se vio algo,
 
 La misma consulta CLI y MCP al mismo backend no equivale a corroboración independiente. Código mostrado por CogniCode puede respaldar una afirmación **solo en el plano que realmente demuestra**. Una inferencia debe indicarse como tal, no etiquetarse `OBSERVED_CODE`.
 
+### El veredicto derivado, que también es contrato
+
+La corroboración no se queda en quien la comprobó: se escribe junto al material, en `evidence/corroboration.json`, para que pueda publicarse con la afirmación y no solo la afirmación. Su forma es parte del contrato:
+
+- `schema_version`, `generator` y `workspace`: quién lo escribió y de qué workspace.
+- `inputs`: las sumas `sha256` de los ficheros que se leyeron (`evidence/claims.json` y `evidence/queries.json`). **El veredicto declara de qué material salió.** Quien lo lee compara esas sumas con el material que tiene delante: si no cuadran, el veredicto habla de otro material y no del que se está mirando.
+- `claims`: por afirmación, `claim_id`, `kind`, `provenance`, `verdict` (`corroborated`, `observed_not_corroborated`, `not_implementation`), `verdict_label` y `missing`, que nombra lo que falta para sostenerla más.
+- `counts`: cuántas afirmaciones hay de cada tipo.
+
+Sin `inputs` el veredicto se puede leer, pero no se puede **atribuir**: quien lo lee no puede saber si habla del material que tiene delante. Un veredicto sin origen se publica como lo que es, y no como el veredicto de este material.
+
 ## Contrato de suficiencia
 
 - Toda entidad y relación factual de un diagrama debe enlazar a claim y consulta(s). Sin ello, quitarla o representarla expresamente como hipótesis en informe, nunca como estructura implementada.

@@ -11,13 +11,16 @@ and reports what each claim is actually worth.
 `--check` writes a report and fails when a claim claims to be observed but
 no structured query backs it. `--emit` writes the same verdict as a derived
 artifact next to the ledger, so that whoever publishes the evidence can
-publish the verdict with it and not only the claim.
+publish the verdict with it and not only the claim. The derived verdict
+carries the digests of the files it read, so whoever reads it can tell
+whether it speaks about the material in front of them.
 
 Never reads the checkout: it only reads the derived workspace under HOME.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -33,6 +36,8 @@ SCHEMA_VERSION = 1
 GENERATOR = "cognicode-diagrams-evidence"
 LEDGER_NAME = "corroboration.json"
 MAX_INPUT = 8 * 1024 * 1024
+CLAIMS_PATH = "evidence/claims.json"
+QUERIES_PATH = "evidence/queries.json"
 
 
 class EvidenceError(ValueError):
@@ -45,14 +50,23 @@ def _no_symlinks(path: Path) -> None:
             raise EvidenceError(f"ruta con enlace simbolico: {component}")
 
 
-def _load(path: Path) -> object:
+def _load_bytes(path: Path) -> bytes:
+    """Read a ledger file as bytes, so its digest can travel with it."""
     if not path.is_file():
         raise EvidenceError(f"no existe el fichero de evidencia: {path}")
     if path.stat().st_size > MAX_INPUT:
         raise EvidenceError(f"el fichero de evidencia es demasiado grande: {path}")
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
+        return path.read_bytes()
+    except OSError as exc:
+        raise EvidenceError(f"no se pudo leer {path}: {exc}") from exc
+
+
+def _load(path: Path) -> object:
+    raw = _load_bytes(path)
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeError) as exc:
         raise EvidenceError(f"no se pudo leer {path}: {exc}") from exc
 
 
@@ -78,23 +92,37 @@ def _write_owned(path: Path, content: str) -> None:
             os.unlink(temp)
 
 
-def examine(workspace_dir: Path) -> dict:
-    """Read the ledger and report what every claim earns."""
+def examine(workspace_dir: Path) -> tuple[dict, dict[str, str]]:
+    """Read the ledger and report what every claim earns.
+
+    The digests of the files that were read travel with the report: a
+    verdict that does not say which material it came from cannot be
+    matched against the material in front of the reader.
+    """
     _no_symlinks(workspace_dir)
     evidence = workspace_dir / "evidence"
-    claims_raw = _load(evidence / "claims.json")
-    queries_raw = _load(evidence / "queries.json")
+    claims_path = evidence / "claims.json"
+    queries_path = evidence / "queries.json"
+    claims_raw = _load_bytes(claims_path)
+    queries_raw = _load_bytes(queries_path)
     try:
-        return contract.report(claims_raw, queries_raw)
-    except ValueError as exc:
+        report = contract.report(json.loads(claims_raw.decode("utf-8")),
+                                  json.loads(queries_raw.decode("utf-8")))
+    except (ValueError, UnicodeError) as exc:
         raise EvidenceError(f"el ledger no se pudo interpretar: {exc}") from exc
+    inputs = {
+        CLAIMS_PATH: hashlib.sha256(claims_raw).hexdigest(),
+        QUERIES_PATH: hashlib.sha256(queries_raw).hexdigest(),
+    }
+    return report, inputs
 
 
-def ledger(workspace_dir: Path, report: dict) -> dict:
+def ledger(workspace_dir: Path, report: dict, inputs: dict[str, str]) -> dict:
     return {
         "schema_version": SCHEMA_VERSION,
         "generator": GENERATOR,
         "workspace": str(workspace_dir),
+        "inputs": inputs,
         "claims": report["claims"],
         "counts": {
             "corroborated": report["corroborated"],
@@ -121,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
         workspace_dir = ws.workspace_path(root, home=args.home)
         if not workspace_dir.exists():
             raise EvidenceError(f"no hay material derivado para {root}")
-        report = examine(workspace_dir)
+        report, inputs = examine(workspace_dir)
     except (ws.WorkspaceError, EvidenceError) as exc:
         print(json.dumps({"status": "BLOCKED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
@@ -129,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     result = {
         "status": "OK" if report["not_corroborated"] == 0 else "NOT_CORROBORATED",
         "workspace": str(workspace_dir),
+        "inputs": inputs,
         "counts": {
             "corroborated": report["corroborated"],
             "observed_not_corroborated": report["not_corroborated"],
@@ -140,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.emit:
         target = workspace_dir / "evidence" / LEDGER_NAME
         try:
-            _write_owned(target, json.dumps(ledger(workspace_dir, report), ensure_ascii=False,
+            _write_owned(target, json.dumps(ledger(workspace_dir, report, inputs), ensure_ascii=False,
                                             sort_keys=True, indent=2) + "\n")
         except (EvidenceError, OSError) as exc:
             print(json.dumps({"status": "BLOCKED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)

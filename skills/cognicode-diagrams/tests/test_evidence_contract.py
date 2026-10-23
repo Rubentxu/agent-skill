@@ -5,6 +5,7 @@ that the published contract publishes. Without it, the document and the
 code could drift apart again and nobody would notice until a ledger could
 not be read.
 """
+import hashlib
 import json
 import re
 import sys
@@ -191,6 +192,31 @@ class ValidatorTests(unittest.TestCase):
         self.assertEqual(ledger["counts"]["corroborated"], 1)
         self.assertEqual(ledger["claims"][0]["claim_id"], "C-1")
         self.assertEqual(ledger["claims"][0]["verdict"], contract.CORROBORATED)
+
+    def test_el_veredicto_declara_de_que_material_salio(self):
+        # Un veredicto que no dice de que material salio no se puede
+        # comparar con el material que tiene delante quien lo lee.
+        self.write(*self.good())
+        self.assertEqual(validator.main(["--repo", str(self.repo), "--home",
+                                          str(self.home), "--emit"]), 0)
+        ledger = json.loads((self.w / "evidence/corroboration.json").read_text(encoding="utf-8"))
+        inputs = ledger["inputs"]
+        self.assertEqual(set(inputs), {"evidence/claims.json", "evidence/queries.json"})
+        for relative, expected in inputs.items():
+            actual = hashlib.sha256((self.w / relative).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected, relative)
+
+    def test_el_veredicto_avisa_cuando_el_material_cambio(self):
+        # Si el material cambia despues, las sumas dejan de cuadrar y el
+        # veredicto se reconoce como de otro material.
+        self.write(*self.good())
+        self.assertEqual(validator.main(["--repo", str(self.repo), "--home",
+                                          str(self.home), "--emit"]), 0)
+        ledger = json.loads((self.w / "evidence/corroboration.json").read_text(encoding="utf-8"))
+        before = ledger["inputs"]["evidence/claims.json"]
+        self.claims.write_text(json.dumps([{"claim_id": "C-2"}]), encoding="utf-8")
+        after = hashlib.sha256(self.claims.read_bytes()).hexdigest()
+        self.assertNotEqual(before, after)
 
     def test_el_validador_no_pisa_un_fichero_ajeno(self):
         target = self.w / "evidence/corroboration.json"
