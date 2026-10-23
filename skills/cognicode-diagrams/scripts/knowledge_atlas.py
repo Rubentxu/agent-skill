@@ -11,7 +11,9 @@ from evidence_contract import (
     CORROBORATED,
     OBSERVED_NOT_CORROBORATED,
     corroborated,
+    index_claims,
     index_queries,
+    provenance_of,
     verdict,
 )
 
@@ -146,16 +148,17 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
         claims_raw = claims_raw.get("claims")
     if not isinstance(claims_raw, list) or len(claims_raw) > MAX_CLAIMS:
         raise KnowledgeError("claims must be a bounded array")
+    # La forma la decide el contrato: las grafias antiguas se leen por
+    # la misma autoridad que las comprueba.
+    try:
+        indexed = index_claims(claims_raw)
+    except ValueError as exc:
+        raise KnowledgeError(str(exc)) from exc
     claims = {}
-    for c in claims_raw:
-        if not isinstance(c, dict):
-            raise KnowledgeError("invalid claim")
-        cid = c.get("claim_id", c.get("id"))
-        if not isinstance(cid, str) or not cid or cid in claims:
-            raise KnowledgeError("duplicate or absent claim ID")
+    for cid, c in indexed.items():
         if c.get("kind", "entity") not in {"entity", "relation"}:
             raise KnowledgeError("unknown claim kind")
-        provenance = c.get("provenance", c.get("status", "UNKNOWN"))
+        provenance = provenance_of(c)
         if provenance not in IMPLEMENTATION | INTENT | UNCERTAIN:
             raise KnowledgeError("unsupported claim provenance (DOC_INTENT requires separate authorized mode)")
         category = c.get("category", "symbol")
