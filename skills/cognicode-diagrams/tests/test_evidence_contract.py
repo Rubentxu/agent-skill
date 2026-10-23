@@ -200,14 +200,92 @@ class MaterialShapeTests(unittest.TestCase):
                         report["gaps"])
 
     def test_el_material_que_se_desvia_no_se_confunde_con_el_que_no_se_sostiene(self):
-        claims = {"schema_version": contract.CONTRACT_VERSION,
+        # La desviacion se comprueba como hoy solo en el material legado: la
+        # version 2 no se desvia, la cumple o miente sobre lo que declara.
+        claims = {"schema_version": 1,
                   "claims": [self.afirmacion()]}
-        queries = {"schema_version": contract.CONTRACT_VERSION,
+        queries = {"schema_version": 1,
                    "queries": [self.consulta_sin_declarar_como_se_ejecuto()]}
         report = contract.report(claims, queries)
         self.assertEqual(report["not_checkable"], 1)
         self.assertEqual(report["not_corroborated"], 0,
                          "lo que no se pudo mirar no esta entre lo que no se sostiene")
+
+
+class ContractVersionTwoTests(unittest.TestCase):
+    """Version 2 is one shape, and the promise is checked item by item.
+
+    Material of version 1 keeps being read with its old spellings: the
+    drift is reported, not punished. Version 2 declares that the drift is
+    gone, and the platform takes that word seriously: a ledger that
+    declares 2 and does not follow the shape is a ledger that lied about
+    itself, and it is read as what it is.
+    """
+
+    def afirmacion(self, **extra):
+        claim = {"claim_id": "C-1", "kind": "entity", "provenance": "OBSERVED_CODE",
+                 "plane": "static", "coverage": "complete", "symbol_id": "App::Entry",
+                 "query_ids": ["Q-1"]}
+        claim.update(extra)
+        return claim
+
+    def consulta(self):
+        return {"query_id": "Q-1", "mode": "structured", "status": "ok",
+                "source": "cognicode", "observation_plane": "static",
+                "symbol_ids": ["App::Entry"]}
+
+    def test_la_version_dos_no_admite_grafias_antiguas(self):
+        vieja = self.afirmacion()
+        vieja["id"] = vieja.pop("claim_id")
+        claims = {"schema_version": contract.CONTRACT_VERSION, "claims": [vieja]}
+        queries = {"schema_version": contract.CONTRACT_VERSION,
+                   "queries": [self.consulta()]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "unreadable")
+        self.assertEqual(report["claims"], [],
+                         "un material que miente sobre su forma no lleva veredictos")
+        self.assertTrue(any("'id'" in gap for gap in report["gaps"]), report["gaps"])
+
+    def test_la_version_dos_exige_los_campos_requeridos(self):
+        incompleta = self.afirmacion()
+        incompleta.pop("coverage")
+        claims = {"schema_version": contract.CONTRACT_VERSION, "claims": [incompleta]}
+        queries = {"schema_version": contract.CONTRACT_VERSION,
+                   "queries": [self.consulta()]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "unreadable")
+        self.assertTrue(any("coverage" in gap for gap in report["gaps"]), report["gaps"])
+
+    def test_la_version_dos_exige_la_forma_tambien_en_las_consultas(self):
+        consulta = self.consulta()
+        consulta.pop("mode")
+        claims = {"schema_version": contract.CONTRACT_VERSION,
+                  "claims": [self.afirmacion()]}
+        queries = {"schema_version": contract.CONTRACT_VERSION, "queries": [consulta]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "unreadable")
+        self.assertTrue(any("mode" in gap for gap in report["gaps"]), report["gaps"])
+
+    def test_la_version_dos_cumplida_se_le_y_corrobora(self):
+        claims = {"schema_version": contract.CONTRACT_VERSION,
+                  "claims": [self.afirmacion()]}
+        queries = {"schema_version": contract.CONTRACT_VERSION,
+                   "queries": [self.consulta()]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "current")
+        self.assertEqual(report["corroborated"], 1)
+        self.assertEqual(report["gaps"], [])
+
+    def test_el_material_legado_de_version_uno_sigue_leible_con_sus_grafias(self):
+        vieja = self.afirmacion()
+        vieja["id"] = vieja.pop("claim_id")
+        vieja["status"] = vieja.pop("provenance")
+        claims = {"schema_version": 1, "claims": [vieja]}
+        queries = {"schema_version": 1, "queries": [self.consulta()]}
+        report = contract.report(claims, queries)
+        self.assertEqual(report["status"], "current")
+        self.assertEqual(report["corroborated"], 1)
+        self.assertTrue(any("legado" in gap for gap in report["gaps"]), report["gaps"])
 
 
 class ValidatorTests(unittest.TestCase):

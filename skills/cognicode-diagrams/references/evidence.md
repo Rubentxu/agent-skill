@@ -20,9 +20,23 @@ Conservar en `~/.cognicode-diagrams/workspaces/<id>/evidence/` un `queries.json`
 
 Los nombres de campo de arriba están escritos como los entiende el motor, no como los entiende el contrato. El contrato tiene una forma única, y el ledger debe usarla:
 
-- El ledger **declara la versión del contrato que sigue** (`schema_version`). Declararla es una promesa: la versión dice qué forma es la que se ha escrito, y quien lo comprueba la verifica. Un ledger que declara otra versión es un ledger de otro contrato, y este no lo puede leer. Un ledger que no declara ninguna tampoco cumple la promesa: se puede leer, pero quien lo lea tiene que saber que no se sabe qué forma sigue.
+- El ledger **declara la versión del contrato que sigue** (`schema_version`). Declararla es una promesa: la versión dice qué forma es la que se ha escrito, y quien lo comprueba la verifica. Bajo la **versión 2** la forma es una sola y se cumple entera: una grafía antigua o un campo requerido ausente son un material que miente sobre lo que declara, y se lee como ilegible. La **versión 1** es legado: se lee con sus grafías antiguas y el desvío se informa, para no perder lo escrito antes de que la forma se fijara. Un ledger que declara otra versión es un ledger de otro contrato, y este no lo puede leer. Un ledger que no declara ninguna tampoco cumple la promesa: se puede leer, pero quien lo lea tiene que saber que no se sabe qué forma sigue.
 - Una **consulta** declara `query_id`, `mode` (`structured|symbol_context`), `status` (`ok|partial`), `source` (`cognicode`), `observation_plane` (`static`), `symbol_ids` con los símbolos que la respuesta resolvió, `relation_ids` cuando la respuesta trajo relaciones, y `reference_hits` con las filas de uso cuando la respuesta fue de usos.
 - Una **afirmación** declara `claim_id`, `kind` (`entity|relation`), `provenance` (`OBSERVED_CODE|INFERRED|UNKNOWN|CODE_DOC|CURATED_INTENT`), `plane`, `coverage` (`complete|partial|unknown`) y `query_ids`. Si es una entidad, declara `symbol_id`; si es una relación, declara `relation_source` (`graph_edge|reference_link`), sus dos extremos y, según la procedencia, `relation_id` o `reference`.
+
+### El registro, que es el único escritor
+
+Bajo la versión 2 nadie escribe el ledger a mano: el agente trae los **hechos** de una observación y la forma la decide el registro, que es quien sella el identificador, la versión y los nombres del contrato.
+
+```text
+python3 scripts/record.py query --repo <raíz> --payload <fichero|->
+python3 scripts/record.py claim  --repo <raíz> --payload <fichero|->
+```
+
+- El payload es un objeto JSON con los campos de la observación, **sin** `query_id`/`claim_id` ni `schema_version`: eso lo sella el registro, y un payload que lo trae se rechaza. Una grafía antigua (`id`, `status`, `symbol_ids` en una afirmación) también se rechaza: la forma tiene una sola autoridad.
+- Una afirmación solo se registra si las consultas que cita existen ya en el ledger: se registra primero la consulta y después la afirmación que la cita.
+- Cada registro **publica el veredicto derivado** (`evidence/corroboration.json`) junto al material: no existe un ledger publicado sin su veredicto.
+- El material legado se **renueva** al registrarse encima: las grafías antiguas se renombran, la migración se informa, y cuando una entrada no se puede renovar sin pérdida el registro se niega y dice cuál — porque un ledger que renovado a medias sería un ledger que miente sobre lo que contiene.
 
 Una consulta puede declarar además estos campos opcionales, y entonces toda proyección que la cite tiene que tenerlos en cuenta:
 
@@ -49,7 +63,7 @@ Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contra
 
 ```json canonical
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "queries": [
     {"query_id": "Q-1", "mode": "structured", "status": "ok", "source": "cognicode",
      "observation_plane": "static", "symbol_ids": ["App::Entry", "App::Store"],
@@ -85,7 +99,7 @@ Este es el ejemplo canónico. Las pruebas lo ejecutan: si el ejemplo y el contra
 }
 ```
 
-`python3 scripts/evidence.py --repo <raíz> --check` dice, afirmación por afirmación, qué sostiene la evidencia y qué falta para sostenerla más.
+El registro escribe el ledger; la comprobación es otro oficio. `python3 scripts/evidence.py --repo <raíz> --check` dice, afirmación por afirmación, qué sostiene la evidencia y qué falta para sostenerla más.
 
 ### Lo que se escribe y lo que se deduce
 

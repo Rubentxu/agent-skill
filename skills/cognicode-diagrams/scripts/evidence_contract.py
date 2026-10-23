@@ -27,12 +27,21 @@ QUERY_REQUIRED = ("query_id", "mode", "status", "observation_plane", "source")
 QUERY_CORROBORATING = ("symbol_ids",)
 CLAIM_REQUIRED = ("claim_id", "kind", "provenance", "plane", "coverage", "query_ids")
 
+# The vocabularies a claim declares with. A value outside them is a claim
+# nobody will be able to read later, so the recorder refuses it at the
+# door instead of filing it unreadable.
+CLAIM_KINDS = ("entity", "relation")
+CLAIM_COVERAGES = ("complete", "partial", "unknown")
+
 # Los campos sin los cuales la afirmacion no se puede mirar. Los demas
 # son forma: se avisa de ellos, pero la afirmacion se sigue leyendo.
 CLAIM_BLOCKING = ("claim_id", "kind", "provenance")
 
 # Spellings seen in ledgers written before the shape was fixed. They are
-# read, so the ledger is not lost, and reported, so the drift is visible.
+# read — under the legacy version 1 — so the ledger is not lost, and
+# reported, so the drift is visible. Under version 2 they are a broken
+# promise: the shape has one authority, and it is not whoever writes by
+# hand.
 CLAIM_ALIASES = {
     "claim_id": ("id",),
     "provenance": ("status",),
@@ -64,6 +73,7 @@ QUERY_OPTIONAL = ("limitations", "symbol_locations", "impact",
 IMPLEMENTATION_PROVENANCE = ("OBSERVED_CODE", "observed")
 INTENT_PROVENANCE = ("CODE_DOC", "CURATED_INTENT")
 UNCERTAIN_PROVENANCE = ("INFERRED", "inferred", "UNKNOWN", "unknown")
+CLAIM_PROVENANCE = IMPLEMENTATION_PROVENANCE + INTENT_PROVENANCE + UNCERTAIN_PROVENANCE
 
 # Provenance of a relation: where the relation comes from.
 GRAPH_EDGE = "graph_edge"
@@ -93,9 +103,16 @@ NOT_CHECKABLE = "not_checkable"
 # La version del contrato que este modulo comprueba.
 #
 # El material declara la suya, y declararla es una promesa: la forma que se
-# comprueba es la de esta version. Un material que declara otra version no
-# es un material que este contrato pueda leer.
-CONTRACT_VERSION = 1
+# comprueba es la de la version declarada. Bajo la version 2 la forma es
+# una sola y se cumple entera: cualquiera de las grafias antiguas, o un
+# campo requerido ausente, es un material que miente sobre lo que declara,
+# y se lee como ilegible. La version 1 es legado: se lee con sus grafias
+# antiguas y el desvio se informa. Un material que declara otra version es
+# un material de otro contrato: este no lo puede leer.
+CONTRACT_VERSION = 2
+
+# Las versiones que este modulo sigue leyendo con las grafias antiguas.
+LEGACY_VERSIONS = (1,)
 
 # Labels for humans, in the language of the people who read the atlas.
 VERDICT_LABELS = {
@@ -312,8 +329,11 @@ def claim_gaps(claim: dict) -> list[str]:
             gaps.append(f"usa '{used}' en vez de '{field}'")
         else:
             gaps.append(f"falta '{field}'")
-    if claim.get("kind") == "entity" and "symbol_id" not in claim and "symbol_ids" not in claim:
-        gaps.append("falta 'symbol_id'")
+    if claim.get("kind") == "entity" and "symbol_id" not in claim:
+        if "symbol_ids" in claim:
+            gaps.append("usa 'symbol_ids' en vez de 'symbol_id'")
+        else:
+            gaps.append("falta 'symbol_id'")
     if claim.get("kind") == "relation":
         source = claim.get("relation_source")
         if source == GRAPH_EDGE:
@@ -526,31 +546,75 @@ def verdict(claim: dict, queries: dict[str, dict]) -> tuple[str, list[str]]:
     return OBSERVED_NOT_CORROBORATED, gaps
 
 
+def _strict_violations(nombre: str, raw: dict, gaps: list[str]) -> bool:
+    """Item by item, what does not follow the shape the material declares.
+
+    Only called for material that declares the current version: that
+    declaration says the drift is gone, so every old spelling and every
+    missing required field is named here, and the caller reads the
+    material as what it is — a ledger that lied about itself. Returns
+    whether anything was found.
+    """
+    es_afirmaciones = nombre == "las afirmaciones"
+    collection = "claims" if es_afirmaciones else "queries"
+    items = raw.get(collection)
+    if not isinstance(items, list):
+        gaps.append(f"{nombre} declaran la version {CONTRACT_VERSION} "
+                    f"y no traen la lista '{collection}'")
+        return True
+    donde = f"{nombre} declaran la version {CONTRACT_VERSION} y"
+    habia = len(gaps)
+    for item in items:
+        if not isinstance(item, dict):
+            gaps.append(f"{donde} traen una entrada que no es un objeto")
+            continue
+        identificador = item.get("claim_id", item.get("query_id", item.get("id")))
+        if es_afirmaciones:
+            gaps.extend(f"{donde} la afirmacion '{identificador}' {gap}"
+                        for gap in claim_gaps(item))
+        else:
+            gaps.extend(f"{donde} {gap}"
+                        for gap in query_gaps(str(identificador), item))
+    return len(gaps) > habia
+
+
 def material_status(claims_raw: list | dict, queries_raw: list | dict) -> tuple[str, list[str]]:
     """Whether this contract can read the material, and what it misses.
 
-    The version is a promise. A material that declares the contract's
-    version says it follows that shape, and the platform checks it item by
-    item. A material that declares another version is a material of
+    The version is a promise. A material that declares the current version
+    says the drift is gone, and the platform checks it item by item: an
+    old spelling or a missing required field makes the material unreadable,
+    because its verdicts would be about a shape it did not promise. A
+    material of a legacy version is read with its old spellings and the
+    drift is reported, so ledgers written before the shape was fixed are
+    not lost. A material that declares another version is a material of
     another contract: this contract cannot read it, and saying so is
     better than returning verdicts that would be about a shape nobody
     promised.
     """
     gaps: list[str] = []
-    otra_version = False
+    ilegible = False
     for nombre, raw in (("las afirmaciones", claims_raw), ("las consultas", queries_raw)):
         if not isinstance(raw, dict):
             continue
         version = raw.get("schema_version")
         if version is None:
             gaps.append(f"{nombre} no declaran la version del contrato")
-        elif version != CONTRACT_VERSION:
-            otra_version = True
+        elif version == CONTRACT_VERSION:
+            if _strict_violations(nombre, raw, gaps):
+                ilegible = True
+        elif version in LEGACY_VERSIONS:
+            gaps.append(
+                f"{nombre} declaran la version {version} del contrato, que es legado: "
+                "se leen las grafias antiguas y el desvio se informa"
+            )
+        else:
+            ilegible = True
             gaps.append(
                 f"{nombre} declaran la version {version} del contrato "
                 f"y este comprueba la {CONTRACT_VERSION}"
             )
-    return ("unreadable" if otra_version else "current"), gaps
+    return ("unreadable" if ilegible else "current"), gaps
 
 
 def report(claims_raw: list | dict, queries_raw: list | dict) -> dict:
