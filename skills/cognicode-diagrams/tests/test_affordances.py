@@ -480,3 +480,45 @@ class InteractiveProjectorRoutingTests(unittest.TestCase):
         x=fixture(intent='preview',formats=['likec4'],artifacts={'likec4':'valid'},
                   projector='likec4-local',projector_status='cloud_ready')
         with self.assertRaises(engine.InvalidState):engine.affordances(x)
+
+
+class GuidedViewsTests(unittest.TestCase):
+    """The guided question lists the views the atlas declares.
+
+    The atlas manifest is the natural source: its views_index already
+    says which questions the material answers. The question reads the
+    manifest and nothing else; without one, the honest answer is that
+    no views are indexed, never an invented listing.
+    """
+
+    def test_the_atlas_index_lists_the_declared_views(self):
+        manifest = {"views_index": {"c4": {
+            "lenses/c4/views/entrypoints.json": {
+                "question": "C2",
+                "label": "Puntos de entrada de produccion",
+                "view": "entrypoints",
+            },
+        }}}
+        answer = engine.guided_views(manifest)
+        self.assertEqual(answer, {"lens": "c4", "views": [
+            {"question": "C2",
+             "label": "Puntos de entrada de produccion",
+             "view": "entrypoints"},
+        ]})
+
+    def test_without_an_index_the_answer_declares_no_indexed_views(self):
+        self.assertEqual(engine.guided_views(None)["views"], [])
+        self.assertEqual(engine.guided_views({})["views"], [])
+        self.assertEqual(
+            engine.guided_views({"views_index": {}})["views"], [])
+        self.assertEqual(
+            engine.guided_views({"views_index": {"deps": {}}})["views"], [])
+
+    def test_a_malformed_index_never_invents_entries(self):
+        manifest = {"views_index": {"c4": {
+            "a.json": {"question": "C1"},
+            "b.json": "no soy un objeto",
+            "c.json": {"question": "C2", "label": "x", "view": "c"},
+        }}}
+        answer = engine.guided_views(manifest)
+        self.assertEqual([v["view"] for v in answer["views"]], ["c"])

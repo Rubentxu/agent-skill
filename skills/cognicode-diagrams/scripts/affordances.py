@@ -781,6 +781,35 @@ def affordances(state: dict, catalog: dict | None = None) -> dict:
     return {"status": status, "lens": lens_id, "recommended": recommended, "_links": links, "blockers": blockers}
 
 
+def guided_views(manifest: dict | None) -> dict:
+    """The guided question's answer: which views the material declares.
+
+    The atlas manifest is the natural source: its ``views_index`` already
+    says which questions the material answers. This reads the manifest
+    and nothing else - the view files stay closed. Without a manifest or
+    without an index for the lens, the honest answer is that no views
+    are indexed; an empty list is that declaration, never an invented
+    listing. Entries that do not carry question, label and view are
+    skipped: a half-declared view cannot guide anyone.
+    """
+    index = (manifest or {}).get("views_index")
+    if not isinstance(index, dict):
+        return {"lens": "c4", "views": []}
+    lens = index.get("c4")
+    if not isinstance(lens, dict):
+        return {"lens": "c4", "views": []}
+    views = []
+    for path in sorted(lens):
+        entry = lens[path]
+        if not isinstance(entry, dict):
+            continue
+        question, label, view = entry.get("question"), entry.get("label"), entry.get("view")
+        if not all(isinstance(x, str) and x.strip() for x in (question, label, view)):
+            continue
+        views.append({"question": question, "label": label, "view": view})
+    return {"lens": "c4", "views": views}
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Uso: affordances.py <session.json | ->", file=sys.stderr)
