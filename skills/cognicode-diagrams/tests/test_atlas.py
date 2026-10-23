@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 import subprocess
 import sys
@@ -355,3 +356,80 @@ class AtlasRoutingTests(unittest.TestCase):
         r=affordances.affordances({'intent':'atlas','workspace':'ready','atlas_source':'ready','atlas_html':'rendered','visual_review':'passed'})
         self.assertEqual(r['status'],'VERIFIED')
         self.assertEqual(r['recommended'],'finish')
+
+
+def vista_derivada(view="lectura", question="C3"):
+    """Una vista derivada en la forma que el proyector publica."""
+    return {
+        "schema_version": 1,
+        "generator": "cognicode-diagrams-c4-view",
+        "lens": "c4",
+        "view": view,
+        "question": question,
+        "label": "Vista de prueba",
+        "elements": [], "relations": [], "holes": [],
+        "status": "complete",
+    }
+
+
+class ViewDigestTests(unittest.TestCase):
+    """Las vistas derivadas son artefactos del atlas, como sources y renders.
+
+    El atlas lista lo que existe para que quien navega sepa que esas
+    vistas existen y son las que son: su suma entra en el manifiesto, y
+    una vista que cambia despues del sync deja el atlas desactualizado,
+    igual que un render que cambia.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.home, self.repo, self.w, self.s, self.r = repo_setup(Path(self.tmp.name))
+        self.views = self.w / "lenses" / "c4" / "views"
+        self.views.mkdir(exist_ok=True)
+        self.v = self.views / "lectura.json"
+        self.v.write_text(json.dumps(vista_derivada()), encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_una_vista_derivada_se_digiere_como_artefacto_del_atlas(self):
+        result = atlas.build(self.repo, home=self.home)
+        self.assertEqual(result["status"], "ATLAS_SOURCE_READY")
+        # La vista cuenta en el inventario, junto a sources y renders.
+        self.assertEqual(result["artifacts"], 3)
+        content = Path(result["markdown"]).read_text()
+        self.assertIn("lectura.json", content)
+        manifest = json.loads(
+            (self.w / "navigation" / "atlas.manifest.json").read_text(encoding="utf-8"))
+        relativa = "lenses/c4/views/lectura.json"
+        self.assertIn(relativa, manifest["artifacts"]["c4"],
+                      "la suma de la vista entra en el manifiesto")
+        self.assertEqual(manifest["artifacts"]["c4"][relativa],
+                         hashlib.sha256(self.v.read_bytes()).hexdigest())
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_una_vista_manipulada_tras_el_sync_deja_el_atlas_desactualizado(self):
+        atlas.build(self.repo, home=self.home)
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+        manipulada = vista_derivada()
+        manipulada["status"] = "partial"
+        manipulada["holes"] = [{"claim_id": "C-9", "reason": "inventado despues"}]
+        self.v.write_text(json.dumps(manipulada), encoding="utf-8")
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "STALE")
+        atlas.build(self.repo, home=self.home)
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_un_json_que_no_declara_el_contrato_de_vista_no_es_del_atlas(self):
+        # Un json cualquiera en views/ no es material de esta skill: se
+        # salta, igual que un html que no es editorial.
+        (self.views / "ajeno.json").write_text(json.dumps({"otra": "cosa"}), encoding="utf-8")
+        result = atlas.build(self.repo, home=self.home)
+        self.assertEqual(result["artifacts"], 3)
+        manifest = json.loads(
+            (self.w / "navigation" / "atlas.manifest.json").read_text(encoding="utf-8"))
+        self.assertNotIn("lenses/c4/views/ajeno.json", manifest["artifacts"]["c4"])
+
+    def test_una_vista_enlazada_no_se_digiere(self):
+        (self.views / "enlazada.json").symlink_to(self.repo / ".git" / "HEAD")
+        with self.assertRaises(atlas.AtlasError):
+            atlas.build(self.repo, home=self.home)

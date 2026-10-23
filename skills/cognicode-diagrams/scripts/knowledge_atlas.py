@@ -201,7 +201,8 @@ def project(workspace: Path, catalog: dict, href, label) -> tuple[list[str], dic
         name, ids, assets = view.get("label"), view.get("claim_ids"), view.get("assets")
         if not isinstance(name, str) or not name.strip() or not isinstance(ids, list) or not ids or not isinstance(assets, list) or not assets:
             raise KnowledgeError("view must link concrete claims and assets")
-        allowed = {str(a.relative_to(workspace)) for k in ("sources", "renders") for a in catalog[lens][k]}
+        allowed = {str(a.relative_to(workspace))
+                   for k in ("sources", "renders", "views") for a in catalog[lens].get(k, [])}
         if any(not isinstance(cid, str) or cid not in claims for cid in ids):
             raise KnowledgeError("view references missing claim")
         plane = view.get("plane", "implementation")
