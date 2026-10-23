@@ -64,6 +64,24 @@ def _items(folder: Path, extensions: set[str], workspace: Path) -> list[Path]:
     return files
 
 
+def _view_question(path: Path) -> tuple[str, str, str] | None:
+    """La pregunta que una vista derivada declara, con su nombre y etiqueta.
+
+    Una vista que no declara pregunta no guía a nadie: se digiere con su
+    suma, pero del índice de preguntas sale.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeError, OSError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    letra, vista, etiqueta = data.get("question"), data.get("view"), data.get("label")
+    if not all(isinstance(v, str) and v.strip() for v in (letra, vista)):
+        return None
+    return (vista, etiqueta if isinstance(etiqueta, str) and etiqueta.strip() else vista, letra)
+
+
 def _label(name: str) -> str:
     # Eliminate Markmap/Markdown injection via untrusted filenames.
     return re.sub(r"[\[\]()*_`!<>|\\\r\n]", " ", name).strip()[:100] or "diagrama"
@@ -214,9 +232,11 @@ def build(repo: Path, *, home: Path | None = None, inspect_viewers: bool = False
              "Los enlaces a visores interactivos solo funcionan mientras sus servicios locales sigan activos.", ""]
     lines.extend(knowledge_lines)
     metadata = {}
+    views_index: dict[str, dict[str, dict[str, str]]] = {}
     for lens, listing in catalog.items():
         lines += ["## " + _label(lens), ""]
         metadata[lens] = {}
+        views_index[lens] = {}
         for kind in ("sources", "renders", "views"):
             for p in listing.get(kind, []):
                 metadata[lens][str(p.relative_to(workspace))] = _hash(p)
@@ -233,7 +253,17 @@ def build(repo: Path, *, home: Path | None = None, inspect_viewers: bool = False
         if listing.get("views"):
             lines.append("- Vistas derivadas (dato trazable al ledger)")
             for p in listing["views"]:
-                lines.append(f"  - [{_label(p.stem)} · JSON]({_href(p, nav)})")
+                pregunta = _view_question(p)
+                if pregunta is not None:
+                    # Una vista sin pregunta no guia a nadie: se digiere
+                    # con su suma, pero del indice de preguntas sale.
+                    vista, etiqueta, letra = pregunta
+                    views_index[lens][str(p.relative_to(workspace))] = {
+                        "view": vista, "question": letra, "label": etiqueta,
+                    }
+                    lines.append(f"  - [{letra} · {_label(etiqueta)} · JSON]({_href(p, nav)})")
+                else:
+                    lines.append(f"  - [{_label(p.stem)} · JSON]({_href(p, nav)})")
         if listing["sources"]:
             lines.append("- Fuentes editables")
             for p in listing["sources"]:
@@ -252,6 +282,7 @@ def build(repo: Path, *, home: Path | None = None, inspect_viewers: bool = False
             raise AtlasError(f"archivo preexistente ajeno a esta skill: {dest}")
     manifest = {"generator": "cognicode-diagrams-atlas", "schema_version": 1, "repository": info["repository"],
                 "workspace": str(workspace), "artifacts": metadata,
+                "views_index": views_index,
                 "knowledge_inputs": knowledge_hashes,
                 "markdown_sha256": hashlib.sha256(result.encode("utf-8")).hexdigest(),
                 "viewer_links": links, "semantic_certification": "not_claimed"}

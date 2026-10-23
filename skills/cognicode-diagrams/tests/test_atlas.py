@@ -433,3 +433,82 @@ class ViewDigestTests(unittest.TestCase):
         (self.views / "enlazada.json").symlink_to(self.repo / ".git" / "HEAD")
         with self.assertRaises(atlas.AtlasError):
             atlas.build(self.repo, home=self.home)
+
+
+class ViewQuestionIndexTests(unittest.TestCase):
+    """Las preguntas guiadas son las vistas que el material declara.
+
+    Quien llega al atlas puede preguntarse que se puede preguntar: el
+    indice de vistas responde con la pregunta y la etiqueta de cada
+    vista derivada, sin abrir los ficheros. Un json ajeno no entra en
+    el indice; una vista derivada sin pregunta se digiere pero no se
+    indexa, porque una pregunta que no declara su letra no guia a
+    nadie.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.home, self.repo, self.w, self.s, self.r = repo_setup(Path(self.tmp.name))
+        self.views = self.w / "lenses" / "c4" / "views"
+        self.views.mkdir(exist_ok=True)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def escribir(self, nombre, datos):
+        path = self.views / nombre
+        path.write_text(json.dumps(datos), encoding="utf-8")
+        return path
+
+    def test_el_indice_de_vistas_declara_pregunta_y_etiqueta(self):
+        self.escribir("lectura.json", vista_derivada(view="lectura", question="C3"))
+        self.escribir(
+            "frontera.json",
+            vista_derivada(view="frontera", question="C1"),
+        )
+        result = atlas.build(self.repo, home=self.home)
+        self.assertEqual(result["status"], "ATLAS_SOURCE_READY")
+        manifest = json.loads(
+            (self.w / "navigation" / "atlas.manifest.json").read_text(encoding="utf-8"))
+        indice = manifest["views_index"]["c4"]
+        self.assertEqual(indice["lenses/c4/views/lectura.json"]["question"], "C3")
+        self.assertEqual(
+            indice["lenses/c4/views/frontera.json"]["label"], "Vista de prueba"
+        )
+        # La vista sigue contando como artefacto con su suma: el indice
+        # anade la pregunta, no sustituye la suma.
+        self.assertIn(
+            hashlib.sha256(self.views.joinpath("lectura.json").read_bytes()).hexdigest(),
+            manifest["artifacts"]["c4"].values(),
+        )
+        self.assertEqual(atlas.check(self.repo, home=self.home)["status"], "CURRENT")
+
+    def test_el_markdown_guia_por_pregunta(self):
+        self.escribir("lectura.json", vista_derivada(view="lectura", question="C3"))
+        result = atlas.build(self.repo, home=self.home)
+        content = Path(result["markdown"]).read_text()
+        self.assertIn("C3", content)
+        self.assertIn("lectura.json", content)
+
+    def test_un_json_ajeno_no_entra_en_el_indice(self):
+        (self.views / "ajeno.json").write_text(
+            json.dumps({"otra": "cosa"}), encoding="utf-8"
+        )
+        result = atlas.build(self.repo, home=self.home)
+        self.assertEqual(result["artifacts"], 2)
+        manifest = json.loads(
+            (self.w / "navigation" / "atlas.manifest.json").read_text(encoding="utf-8"))
+        indice = manifest["views_index"]["c4"]
+        self.assertEqual(indice, {}, "un ajeno no declara pregunta ninguna")
+
+    def test_una_vista_sin_pregunta_se_digiere_pero_no_se_indexa(self):
+        sin_pregunta = vista_derivada()
+        del sin_pregunta["question"]
+        self.escribir("muda.json", sin_pregunta)
+        result = atlas.build(self.repo, home=self.home)
+        self.assertEqual(result["artifacts"], 3)
+        manifest = json.loads(
+            (self.w / "navigation" / "atlas.manifest.json").read_text(encoding="utf-8"))
+        self.assertNotIn(
+            "lenses/c4/views/muda.json", manifest["views_index"]["c4"]
+        )
