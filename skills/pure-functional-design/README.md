@@ -34,7 +34,7 @@ Instalación una vez integrado en el repositorio de skills:
 npx skills add Rubentxu/agent-skill --skill pure-functional-design --agent opencode
 ```
 
-Este paquete es una **propuesta inicial local**; no está publicado en GitHub ni acreditado en los repositorios de producción. Evaluaciones del agente y compilación de ejemplos se declaran por separado de los tests del selector.
+La skill se integra en `Rubentxu/agent-skill` mediante PR. La inclusión en la rama no acredita su indexación en skills.sh ni su uso en repositorios de producción. Evaluaciones del agente y compilación de ejemplos se declaran por separado de los tests del selector.
 
 ## Convivencia
 
