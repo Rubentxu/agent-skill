@@ -1,0 +1,11 @@
+{
+  "intent": "refactor",
+  "language": "rust",
+  "basis": "observed",
+  "signals": [
+    "large-service",
+    "side-effects",
+    "duplicate-logic"
+  ],
+  "risk": "high"
+}

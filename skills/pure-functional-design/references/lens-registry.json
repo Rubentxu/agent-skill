@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "lenses": [
+    {
+      "id": "problem-diagnosis",
+      "kind": "method",
+      "status": "ready",
+      "priority": 100,
+      "question": "¿Cuál es el problema comprobado, las hipótesis y la opción de no cambiar?",
+      "intents": [
+        "discovery",
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "unknown",
+        "side-effects",
+        "large-service",
+        "duplicate-logic",
+        "invalid-state",
+        "legacy-test-coupling",
+        "complex-algorithm",
+        "nested-data",
+        "cross-context",
+        "domain-ambiguity"
+      ],
+      "problems": [
+        "mixed-rules-effects",
+        "distributed-ownership",
+        "illegal-domain-states",
+        "uncharacterized-legacy-code",
+        "public-contract-migration",
+        "algorithm-cost-or-clarity",
+        "nested-update-friction"
+      ],
+      "playbook": "references/lenses/problem-diagnosis.md"
+    },
+    {
+      "id": "legacy-refactoring",
+      "kind": "method",
+      "status": "ready",
+      "priority": 72,
+      "question": "¿Qué estrategia incremental reduce el riesgo del cambio?",
+      "intents": [
+        "refactor",
+        "review",
+        "implementation"
+      ],
+      "signals": [
+        "legacy-test-coupling",
+        "large-service",
+        "cross-context"
+      ],
+      "problems": [
+        "uncharacterized-legacy-code",
+        "public-contract-migration"
+      ],
+      "playbook": "references/lenses/legacy-refactoring.md"
+    },
+    {
+      "id": "architectural-economics",
+      "kind": "method",
+      "status": "ready",
+      "priority": 68,
+      "question": "¿Qué opción mejora la arquitectura con el menor coste total?",
+      "intents": [
+        "refactor",
+        "design",
+        "review"
+      ],
+      "signals": [
+        "large-service",
+        "complex-algorithm",
+        "nested-data",
+        "cross-context"
+      ],
+      "problems": [
+        "distributed-ownership",
+        "algorithm-cost-or-clarity",
+        "nested-update-friction",
+        "public-contract-migration"
+      ],
+      "playbook": "references/lenses/architectural-economics.md"
+    },
+    {
+      "id": "domain-discovery",
+      "kind": "method",
+      "status": "ready",
+      "priority": 90,
+      "question": "¿Qué modelo de dominio evidencia el comportamiento?",
+      "intents": [
+        "discovery",
+        "design",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "domain-ambiguity",
+        "cross-context",
+        "unknown"
+      ],
+      "playbook": "references/lenses/domain-discovery.md",
+      "problems": [
+        "illegal-domain-states",
+        "distributed-ownership"
+      ]
+    },
+    {
+      "id": "adt-invariants",
+      "kind": "method",
+      "status": "ready",
+      "priority": 85,
+      "question": "¿Qué estados ilegales impiden los ADTs?",
+      "intents": [
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "invalid-state",
+        "domain-ambiguity"
+      ],
+      "playbook": "references/lenses/adt-invariants.md",
+      "problems": [
+        "illegal-domain-states"
+      ]
+    },
+    {
+      "id": "effects-and-core",
+      "kind": "method",
+      "status": "ready",
+      "priority": 82,
+      "question": "¿Dónde termina la decisión pura y empiezan los efectos?",
+      "intents": [
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "side-effects",
+        "large-service"
+      ],
+      "playbook": "references/lenses/effects-and-core.md",
+      "problems": [
+        "mixed-rules-effects"
+      ]
+    },
+    {
+      "id": "vertical-slices",
+      "kind": "method",
+      "status": "ready",
+      "priority": 75,
+      "question": "¿Cuál es el slice que entrega valor y quién posee sus reglas?",
+      "intents": [
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "large-service",
+        "cross-context"
+      ],
+      "playbook": "references/lenses/vertical-slices.md",
+      "problems": [
+        "distributed-ownership",
+        "public-contract-migration"
+      ]
+    },
+    {
+      "id": "responsibility-refactor",
+      "kind": "method",
+      "status": "ready",
+      "priority": 74,
+      "question": "¿Qué responsabilidades/duplicidades justifican un seam?",
+      "intents": [
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "large-service",
+        "duplicate-logic",
+        "legacy-test-coupling"
+      ],
+      "playbook": "references/lenses/responsibility-refactor.md",
+      "problems": [
+        "distributed-ownership",
+        "uncharacterized-legacy-code"
+      ]
+    },
+    {
+      "id": "functional-algorithms",
+      "kind": "method",
+      "status": "ready",
+      "priority": 65,
+      "question": "¿Qué algoritmo cumple garantías con menor coste?",
+      "intents": [
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "complex-algorithm",
+        "nested-data"
+      ],
+      "playbook": "references/lenses/functional-algorithms.md",
+      "problems": [
+        "algorithm-cost-or-clarity"
+      ]
+    },
+    {
+      "id": "algebraic-laws",
+      "kind": "method",
+      "status": "ready",
+      "priority": 66,
+      "question": "¿Qué leyes verifican la equivalencia sin tests frágiles?",
+      "intents": [
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "invalid-state",
+        "complex-algorithm",
+        "legacy-test-coupling"
+      ],
+      "playbook": "references/lenses/algebraic-laws.md",
+      "problems": [
+        "algorithm-cost-or-clarity",
+        "illegal-domain-states"
+      ]
+    },
+    {
+      "id": "optics-persistent-data",
+      "kind": "method",
+      "status": "ready",
+      "priority": 60,
+      "question": "¿Cuándo aportan optics y persistencia frente a copy/mutación local?",
+      "intents": [
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "nested-data"
+      ],
+      "playbook": "references/lenses/optics-persistent-data.md",
+      "problems": [
+        "nested-update-friction"
+      ]
+    },
+    {
+      "id": "language-rust",
+      "kind": "language",
+      "language": "rust",
+      "status": "ready",
+      "priority": 40,
+      "question": "¿Cómo trasladar la decisión de forma idiomática a rust?",
+      "intents": [
+        "discovery",
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [],
+      "playbook": "references/languages/rust.md"
+    },
+    {
+      "id": "language-kotlin",
+      "kind": "language",
+      "language": "kotlin",
+      "status": "ready",
+      "priority": 40,
+      "question": "¿Cómo trasladar la decisión de forma idiomática a kotlin?",
+      "intents": [
+        "discovery",
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [],
+      "playbook": "references/languages/kotlin.md"
+    },
+    {
+      "id": "distributed-effects",
+      "kind": "method",
+      "status": "planned",
+      "priority": 30,
+      "question": "¿Qué semántica distribuida de reintentos y compensaciones necesita el dominio?",
+      "intents": [
+        "design",
+        "refactor"
+      ],
+      "signals": [
+        "side-effects",
+        "cross-context"
+      ],
+      "playbook": "references/extend-lenses.md"
+    }
+  ]
+}

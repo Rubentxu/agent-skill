@@ -21,6 +21,10 @@ jobs:
         run: python3 scripts/validate_skills.py
       - name: Run collection validator tests
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run pure-functional-design router tests
+        run: python3 -m unittest discover -s skills/pure-functional-design/tests -p 'test_*.py' -v
+      - name: Check pure-functional-design navigation smoke
+        run: python3 skills/pure-functional-design/scripts/affordances.py skills/pure-functional-design/examples/design-kotlin.json
       - name: Run gate vocabulary reachability tests
         run: python3 -m unittest discover -s skills/gate-vocabulary-reachability/tests -p 'test_*.py' -v
       - name: Run skill utility tests

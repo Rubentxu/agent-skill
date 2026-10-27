@@ -1,0 +1,11 @@
+{
+  "intent": "design",
+  "language": "kotlin",
+  "basis": "observed",
+  "signals": [
+    "domain-ambiguity",
+    "invalid-state",
+    "nested-data"
+  ],
+  "risk": "routine"
+}

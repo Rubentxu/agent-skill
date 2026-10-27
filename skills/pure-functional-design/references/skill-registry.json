@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "related_skills": [
+    {
+      "id": "delivery-first-testing",
+      "purpose": "Recibir invariantes y leyes; decidir tests selectivos/UAT/gates y registrar evidencia real",
+      "intents": [
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "invalid-state",
+        "legacy-test-coupling",
+        "side-effects"
+      ]
+    },
+    {
+      "id": "cognicode-diagrams",
+      "purpose": "Descubrir símbolos y relaciones implementados respetando su contrato CogniCode-only",
+      "intents": [
+        "discovery",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "large-service",
+        "cross-context",
+        "duplicate-logic"
+      ]
+    }
+  ]
+}

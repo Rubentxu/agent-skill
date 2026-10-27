@@ -1,0 +1,30 @@
+{
+  "intent": "refactor",
+  "phase": "plan",
+  "language": "rust",
+  "basis": "observed",
+  "risk": "high",
+  "signals": [
+    "side-effects",
+    "large-service"
+  ],
+  "problems": [
+    {
+      "id": "mixed-rules-effects",
+      "evidence": [
+        {
+          "source": "src/application/run.rs:150",
+          "observation": "validación y persistencia comparten función y frontera de error"
+        }
+      ]
+    }
+  ],
+  "facts": [
+    "behavior-characterized",
+    "effect-order-understood"
+  ],
+  "constraints": [],
+  "available_skills": [
+    "delivery-first-testing"
+  ]
+}

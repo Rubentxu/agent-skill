@@ -1,0 +1,29 @@
+{
+  "intent": "refactor",
+  "phase": "diagnose",
+  "language": "kotlin",
+  "basis": "observed",
+  "risk": "routine",
+  "signals": [
+    "invalid-state",
+    "domain-ambiguity"
+  ],
+  "problems": [
+    {
+      "id": "illegal-domain-states",
+      "evidence": [
+        {
+          "source": "src/main/kotlin/Order.kt:40",
+          "observation": "estado publicado permite draft=true y deliveredAt=null simultáneamente"
+        }
+      ]
+    }
+  ],
+  "facts": [
+    "domain-invariant-observed"
+  ],
+  "constraints": [
+    "unresolved-wire-contract"
+  ],
+  "available_skills": []
+}
