@@ -1,0 +1,21 @@
+{
+  "intent": "refactor",
+  "phase": "plan",
+  "basis": "observed",
+  "language": "kotlin",
+  "risk": "high",
+  "signals": [
+    "large-service"
+  ],
+  "problems": [
+    {
+      "id": "distributed-ownership",
+      "evidence": []
+    }
+  ],
+  "facts": [],
+  "constraints": [
+    "already-cohesive-boundary"
+  ],
+  "available_skills": []
+}
