@@ -35,6 +35,10 @@ jobs:
         run: python3 skills/delivery-first-testing/scripts/affordances.py skills/delivery-first-testing/examples/session-feature.json
       - name: Check ephemeral harness lifecycle
         run: bash skills/delivery-first-testing/tests/test_harness.sh
+      - name: Run pure-functional-design router tests
+        run: python3 -m unittest discover -s skills/pure-functional-design/tests -p 'test_*.py' -v
+      - name: Check pure-functional-design navigation smoke
+        run: python3 skills/pure-functional-design/scripts/affordances.py skills/pure-functional-design/examples/design-kotlin.json
       - name: Run distribution-first-release tests
         run: python3 -m unittest discover -s skills/distribution-first-release/tests -p 'test_*.py' -v
       - name: Check distribution-first-release navigation smoke
