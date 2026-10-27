@@ -1,6 +1,6 @@
 ---
 name: pure-functional-design
-description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcional puro: descubre dominio, modela ADTs, invariantes y estados, separa efectos, selecciona algoritmos, define vertical slices y verifica propiedades. Router con lentes bajo demanda, sin reescrituras masivas automáticas."
+description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcional puro: descubre dominio, modela ADTs, invariantes y estados, separa efectos, selecciona algoritmos, define vertical slices y verifica propiedades. Diagnóstico por problemas y refactors reversibles con recetas, lentes contextuales, autodetección de capacidades y opción KEEP_AS_IS; sin reescrituras masivas automáticas."
 ---
 
 # Pure Functional Design — una entrada, lentes de dominio y de lenguaje
@@ -19,15 +19,15 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 
 ## Router: observar → descubrir → decidir → aplicar → verificar
 
-1. Identificar la tarea `discovery|design|implementation|refactor|review|catalog`, lenguaje real `rust|kotlin|unknown|other`, señales y restricciones del repositorio. Partir de código productivo, firmas, entradas y salidas reales; documentación es contexto, no evidencia de implementación. Fijar revisión o reconocer `unknown/stale`. No inventar instrumentos ni archivos.
-2. Consultar `references/lens-registry.json` y `references/navigation.md`. Seleccionar **1–3 lentes metodológicas** relevantes más, si procede, **una lente de lenguaje**. Respetar `ready`/`planned` y precondiciones. `scripts/affordances.py` es un selector **puro opcional** que calcula enlaces locales y nunca lee un repo ajeno ni lo modifica.
-3. Para descubrimiento: extraer actores, verbos, eventos, términos, invariantes, fronteras de contexto, vacíos y contradicciones a partir de código/contratos observables. El nombre sugerido es hipótesis hasta validación. No llamar “ontología verificada” a una taxonomía inferida de nombres de ficheros.
+1. Identificar la tarea `discovery|design|implementation|refactor|review|catalog`, fase `diagnose|plan|verify`, lenguaje real `rust|kotlin|unknown|other`, señales y restricciones del repositorio. Partir de código productivo, firmas, entradas y salidas reales; documentación es contexto, no evidencia de implementación. Fijar revisión o reconocer `unknown/stale`. No inventar instrumentos ni archivos.
+2. Consultar [navigation](references/navigation.md), [problemas](references/problems.json), [recetas](references/recipe-registry.json) y [lens-registry](references/lens-registry.json). Diagnosticar **síntoma, mecanismo causal, evidencia, alternativa y contraindicación**, sin asumir que un patrón equivale a una mejora. El router `scripts/affordances.py` solo recomienda y anuncia rutas locales, nunca lee repos externos ni cambia código. Seleccionar **como máximo 1–3 lentes metodológicas** y adaptar por lenguaje en fase de planificación, no cargar todo el catálogo.
+3. Para descubrimiento: comenzar por [problem-diagnosis](references/lenses/problem-diagnosis.md) cuando el problema no esté confirmado. Extraer actores, verbos, eventos, términos, invariantes, fronteras de contexto, vacíos y contradicciones a partir de código/contratos observables. El nombre sugerido es hipótesis hasta validación. No llamar “ontología verificada” a una taxonomía inferida de nombres de ficheros.
 4. Antes de modificar código: proponer contratos de entrada/salida, ADTs, errores esperados y transiciones válidas. Dibujar flujo con Mermaid **solo si resuelve ambigüedad**. Distinguir modelos compartibles de traducciones entre bounded contexts.
 5. Situar `decide(input, state, context) -> Result<Decision, DomainError>` o equivalente dentro de un slice. Decisión pura, intérpretes de efectos en el borde; persistencia/HTTP/CLI no se filtran al dominio. Si ya existe un seam claro, **no forzar refactor** por patrón.
 6. Seleccionar implementaciones nativas: Rust `enum`, `Option`, `Result`, `?`, pattern matching, iteradores, ownership; Kotlin `sealed interface`, `data class`, `copy`, `Result` o Arrow `Raise/Either` según dependencia existente. Evitar HKT/monads/free-monads/optics como requisito general. Estimar clones, asignaciones, almacenamiento persistente, interoperabilidad Java y degradación de rendimiento antes de adoptar abstracciones.
-7. Ejecutar refactors por **slices verticales**, con seam reversible y sin congelar detalles privados. Distinguir semántica preservada de cambios de contrato. Evitar deuda de adaptadores duplicados, coordinadores enormes y modelos "God"; mantener un único propietario de cada regla.
-8. Verificar las invariantes con tests unitarios mínimos, ejemplos de frontera y propiedades algebraicas cuando aporten valor. Delegar selección/ejecución de tests, UAT efímeros, gates y releases a `delivery-first-testing` si está disponible; nunca declararlos `PASS` sin ejecución y artefacto observado. Prohibido tomar decisiones de borrado solo por cobertura de líneas.
-9. Informar: `evidencia | decisión propuesta | regla/invariante | slice afectado | equivalencia semántica | coste/beneficio | pruebas ejecutadas o NOT_RUN | riesgos restantes`. Una hipótesis no se presenta como hecho. Ningún commit, publicación, instalación o borrado sin autorización.
+7. Antes de actuar, comparar explícitamente `KEEP_AS_IS`, extracción local y [recetas incrementales](references/recipes/legacy-seam.md). Validar `requires` y `blocks` del catálogo. Una recomendación `APPLY` autoriza **proponer** un cambio, no ejecutarlo ni declararlo validado. `INSPECT_MORE` exige evidencia, `BLOCKED` impide la receta contraindicada. Ejecutar refactors por **slices verticales**, con seam reversible y sin congelar detalles privados. Distinguir semántica preservada de cambios de contrato. Evitar deuda de adaptadores duplicados, coordinadores enormes y modelos "God"; mantener un único propietario de cada regla.
+8. Verificar las invariantes con tests unitarios mínimos, ejemplos de frontera y propiedades algebraicas cuando aporten valor. En una migración de legado, caracterizar primero el comportamiento observable, preservar orden de efectos, transacciones, compatibilidad wire/datos, cancelación y concurrencia. Delegar selección/ejecución de tests, UAT efímeros, gates y releases a `delivery-first-testing` si está disponible; nunca declararlos `PASS` sin ejecución y artefacto observado. Prohibido tomar decisiones de borrado solo por cobertura de líneas.
+9. Informar: `problema | evidencia OBSERVED/INFERRED | alternativas (incluida KEEP_AS_IS) | decisión | precondiciones/contraindicaciones | regla/invariante | slice | equivalencia | coste/beneficio | pruebas reales o NOT_RUN | riesgos`. Una hipótesis no se presenta como hecho. Ningún commit, publicación, instalación o borrado sin autorización.
 
 ## Políticas irrenunciables
 
@@ -39,10 +39,20 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 - Si un módulo utiliza CogniCode con restricciones de lectura, usar exclusivamente sus capacidades permitidas y sus precondiciones; no afirmar que existe un grafo si no se ha obtenido.
 - En `unknown` o `stale`: inspeccionar, marcar `BLOCKED` o limitar recomendaciones; jamás aprobar implementación imaginaria.
 
+## Autodescubrimiento y activación por conversación
+
+- `SKILL.md` describe **cuándo usar la skill**; la activación real depende de que el agente anfitrión la anuncie o permita encontrarla. Ninguna referencia a otra skill equivale a instalación.
+- Descubrimiento progresivo: **(1)** detectar intención y problema, **(2)** seleccionar lentes `ready` por evidencia, **(3)** en `plan`, consultar solo la receta aplicable, **(4)** en `verify`, descubrir y delegar únicamente a skills incluidas en `available_skills` observadas.
+- Recalcular decisiones después de cada nueva evidencia y cada cambio de objetivo; no retener lentes activadas como obligación de otros turnos. No guardar estado nuevo dentro del repositorio ni crear un daemon.
+- La ayuda delegada mantiene fronteras: `cognicode-diagrams` observa código con sus precondiciones, `delivery-first-testing` selecciona y verifica garantías. Sin skill disponible: ofrecer inspección/proceso manual sin simular ejecución.
+
 ## Navegación rápida
 
 | Situación observada | Lente metodológica | Resultado buscado |
 |---|---|---|
+| Diagnóstico sin causa confirmada | [problem-diagnosis](references/lenses/problem-diagnosis.md) | hipótesis, evidencia, alternativas y abstención |
+| Aplicación legacy sin seam seguro | [legacy-refactoring](references/lenses/legacy-refactoring.md) | estrategia incremental reversible |
+| Transformación con coste dudoso | [architectural-economics](references/lenses/architectural-economics.md) | comparar KEEP_AS_IS, riesgo y coste |
 | Términos y responsabilidades ambiguas | [domain-discovery](references/lenses/domain-discovery.md) | mapa de lenguaje, invariantes y preguntas abiertas |
 | Muchos `null`, booleanos y estados imposibles | [adt-invariants](references/lenses/adt-invariants.md) | tipos válidos y transiciones explícitas |
 | Servicio con IO mezclado con reglas | [effects-and-core](references/lenses/effects-and-core.md) | núcleo puro + intérprete de efectos |
@@ -55,3 +65,5 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 **Lentes de lenguaje:** [Rust](references/languages/rust.md) · [Kotlin](references/languages/kotlin.md). Consultar [primitivas](references/primitives.md), [bibliografía](references/sources.md) y [extensión de lentes](references/extend-lenses.md) únicamente cuando proceda.
 
 **Handoff testing:** la skill produce garantías + particiones + leyes; `delivery-first-testing` decide dónde ejecutarlas y qué evidencia conservar. Ejemplo de sesión en `examples/*.json`; pruebas propias del selector en `tests/`.
+
+**Catálogo de recetas:** [extract-pure-decision](references/recipes/extract-pure-decision.md) · [legacy-seam](references/recipes/legacy-seam.md) · [mikado-refactor](references/recipes/mikado-refactor.md) · [parallel-change](references/recipes/parallel-change.md) · [branch-by-abstraction](references/recipes/branch-by-abstraction.md) · [domain-state-refactor](references/recipes/domain-state-refactor.md) · [algorithm-substitution](references/recipes/algorithm-substitution.md) · [simplify-nested-updates](references/recipes/simplify-nested-updates.md). Consultar solo la necesaria.

@@ -2,6 +2,89 @@
   "schema_version": 1,
   "lenses": [
     {
+      "id": "problem-diagnosis",
+      "kind": "method",
+      "status": "ready",
+      "priority": 100,
+      "question": "¿Cuál es el problema comprobado, las hipótesis y la opción de no cambiar?",
+      "intents": [
+        "discovery",
+        "design",
+        "implementation",
+        "refactor",
+        "review"
+      ],
+      "signals": [
+        "unknown",
+        "side-effects",
+        "large-service",
+        "duplicate-logic",
+        "invalid-state",
+        "legacy-test-coupling",
+        "complex-algorithm",
+        "nested-data",
+        "cross-context",
+        "domain-ambiguity"
+      ],
+      "problems": [
+        "mixed-rules-effects",
+        "distributed-ownership",
+        "illegal-domain-states",
+        "uncharacterized-legacy-code",
+        "public-contract-migration",
+        "algorithm-cost-or-clarity",
+        "nested-update-friction"
+      ],
+      "playbook": "references/lenses/problem-diagnosis.md"
+    },
+    {
+      "id": "legacy-refactoring",
+      "kind": "method",
+      "status": "ready",
+      "priority": 72,
+      "question": "¿Qué estrategia incremental reduce el riesgo del cambio?",
+      "intents": [
+        "refactor",
+        "review",
+        "implementation"
+      ],
+      "signals": [
+        "legacy-test-coupling",
+        "large-service",
+        "cross-context"
+      ],
+      "problems": [
+        "uncharacterized-legacy-code",
+        "public-contract-migration"
+      ],
+      "playbook": "references/lenses/legacy-refactoring.md"
+    },
+    {
+      "id": "architectural-economics",
+      "kind": "method",
+      "status": "ready",
+      "priority": 68,
+      "question": "¿Qué opción mejora la arquitectura con el menor coste total?",
+      "intents": [
+        "refactor",
+        "design",
+        "review"
+      ],
+      "signals": [
+        "large-service",
+        "complex-algorithm",
+        "nested-data",
+        "cross-context"
+      ],
+      "problems": [
+        "distributed-ownership",
+        "algorithm-cost-or-clarity",
+        "nested-update-friction",
+        "public-contract-migration"
+      ],
+      "playbook": "references/lenses/architectural-economics.md"
+    },
+    {
       "id": "domain-discovery",
       "kind": "method",
       "status": "ready",
@@ -18,7 +101,11 @@
         "cross-context",
         "unknown"
       ],
-      "playbook": "references/lenses/domain-discovery.md"
+      "playbook": "references/lenses/domain-discovery.md",
+      "problems": [
+        "illegal-domain-states",
+        "distributed-ownership"
+      ]
     },
     {
       "id": "adt-invariants",
@@ -36,7 +123,10 @@
         "invalid-state",
         "domain-ambiguity"
       ],
-      "playbook": "references/lenses/adt-invariants.md"
+      "playbook": "references/lenses/adt-invariants.md",
+      "problems": [
+        "illegal-domain-states"
+      ]
     },
     {
       "id": "effects-and-core",
@@ -54,7 +144,10 @@
         "side-effects",
         "large-service"
       ],
-      "playbook": "references/lenses/effects-and-core.md"
+      "playbook": "references/lenses/effects-and-core.md",
+      "problems": [
+        "mixed-rules-effects"
+      ]
     },
     {
       "id": "vertical-slices",
@@ -72,7 +165,11 @@
         "large-service",
         "cross-context"
       ],
-      "playbook": "references/lenses/vertical-slices.md"
+      "playbook": "references/lenses/vertical-slices.md",
+      "problems": [
+        "distributed-ownership",
+        "public-contract-migration"
+      ]
     },
     {
       "id": "responsibility-refactor",
@@ -89,7 +186,11 @@
         "duplicate-logic",
         "legacy-test-coupling"
       ],
-      "playbook": "references/lenses/responsibility-refactor.md"
+      "playbook": "references/lenses/responsibility-refactor.md",
+      "problems": [
+        "distributed-ownership",
+        "uncharacterized-legacy-code"
+      ]
     },
     {
       "id": "functional-algorithms",
@@ -107,7 +208,10 @@
         "complex-algorithm",
         "nested-data"
       ],
-      "playbook": "references/lenses/functional-algorithms.md"
+      "playbook": "references/lenses/functional-algorithms.md",
+      "problems": [
+        "algorithm-cost-or-clarity"
+      ]
     },
     {
       "id": "algebraic-laws",
@@ -126,7 +230,11 @@
         "complex-algorithm",
         "legacy-test-coupling"
       ],
-      "playbook": "references/lenses/algebraic-laws.md"
+      "playbook": "references/lenses/algebraic-laws.md",
+      "problems": [
+        "algorithm-cost-or-clarity",
+        "illegal-domain-states"
+      ]
     },
     {
       "id": "optics-persistent-data",
@@ -143,7 +251,10 @@
       "signals": [
         "nested-data"
       ],
-      "playbook": "references/lenses/optics-persistent-data.md"
+      "playbook": "references/lenses/optics-persistent-data.md",
+      "problems": [
+        "nested-update-friction"
+      ]
     },
     {
       "id": "language-rust",

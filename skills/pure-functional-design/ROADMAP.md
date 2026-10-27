@@ -1,6 +1,6 @@
 # Roadmap para integrar `pure-functional-design` en `Rubentxu/agent-skill`
 
-**Estado:** propuesta; ningún commit/push/PR creado. Enfoque delivery-first: un router instalable, lentes que deciden, herramientas existentes que ejecutan. No sumar runtimes, dependencias ni otro sistema CI.
+**Estado:** primera versión subida en PR #43; evolución R1–R3 preparada en rama de la PR. No equivale a fusión en `main`. Enfoque delivery-first: un router instalable, lentes que deciden, herramientas existentes que ejecutan. No sumar runtimes, dependencias ni otro sistema CI.
 
 ## F0 — Contrato portable y bibliografía
 
@@ -43,3 +43,13 @@
 - Falsos positivos en recomendaciones de lentes y abstenciones correctas.
 
 Las métricas se usan comparativamente en proyectos concretos, no como metas numéricas arbitrarias.
+
+## Evolución R1–R3 — Diagnóstico y refactorización por problemas
+
+- **R1:** catálogo de síntomas/problemas con evidencia y abstención; selector por problema y alternativas. Validado mediante unit tests del router, no mediante agentes reales.
+- **R2:** recetas incrementales de seam, Mikado, parallel-change, branch-by-abstraction, estados, algoritmos y extracción de core; incluye comparación con no cambiar.
+- **R3:** navegación `diagnose|plan|verify`, `read-recipe` solo cuando procede y `delegate-skill` únicamente sobre `available_skills` confirmadas.
+- **R4 pendiente:** ejecutar casos reales sobre un slice Rust y otro Kotlin y medir semántica, memoria/asignación y coste de feedback.
+- **R5 pendiente:** evaluar falsos positivos, adaptar heurísticas y cerrar publicación e indexación después de los gates.
+
+No confundir tests del selector con refactors verificados sobre aplicaciones.

@@ -1,41 +1,53 @@
-# Máquina de decisión y navegación sin HTTP
+# Navegación HATEOAS-like contextual (sin HTTP)
 
-El router no ejecuta operaciones: produce `{rel, href, why}` locales, sin acceso automático a Git ni ejecución de compilers. Los flags `observed` provienen del usuario/agente y **no** están certificados por el helper.
+El router es **puro** respecto al proyecto: lee catálogos empaquetados, calcula decisiones y ofrece `_links[]`. Ninguna recomendación equivale a ejecutar tests, leer código o cambiar el repositorio.
 
-## Entrada
+## Entrada — sesión observada y evidencia mínima
 
 ```json
 {
   "intent": "refactor",
-  "language": "rust",
+  "phase": "plan",
   "basis": "observed",
-  "signals": ["large-service", "side-effects", "invalid-state"],
-  "risk": "high"
+  "language": "rust",
+  "risk": "high",
+  "signals": ["side-effects", "large-service"],
+  "problems": [{
+    "id": "mixed-rules-effects",
+    "evidence": [{"source": "src/usecase.rs:42", "observation": "Decisión invoca SQL en la misma rama"}]
+  }],
+  "facts": ["behavior-characterized", "effect-order-understood"],
+  "constraints": [],
+  "available_skills": ["delivery-first-testing"]
 }
 ```
 
 - `intent`: `catalog|discovery|design|implementation|refactor|review`.
-- `language`: `rust|kotlin|other|unknown`.
-- `basis`: `observed|unknown|stale` para revisión y señales de código (no garantiza que exista grafo CogniCode).
-- `signals`: `domain-ambiguity|invalid-state|side-effects|large-service|duplicate-logic|complex-algorithm|nested-data|cross-context|legacy-test-coupling|unknown`.
-- `risk`: `routine|high|critical`.
+- `phase`: `diagnose|plan|verify` (default `diagnose`). En diagnóstico no se exponen recetas ni perfil de sintaxis; en planificación se anuncia `read-recipe` solo si se cumplen precondiciones; en verificación se anuncia `verify-contracts`.
+- `basis`: `observed|unknown|stale`, nunca certificación automática del router.
+- `signals`: observaciones superficiales del caso; **no bastan** para `APPLY`.
+- `problems`: problema tipado de `problems.json`. `evidence` con pares no vacíos `source/observation` produce `OBSERVED` declarado por el llamante; sin evidencia, `INFERRED`. El helper no puede verificar la veracidad de esas cadenas.
+- `facts`: precondiciones afirmadas observadas por el llamante; `constraints`: contraindicaciones; ambos vocabularios proceden de `recipe-registry.json` y el script los valida.
+- `available_skills`: IDs que el anfitrión ha confirmado realmente disponibles, no sugerencias ni plugins presumidos.
+- `risk`: `routine|high|critical`, alerta sobre riesgo; no sustituye los preconditions de cada receta.
 
-## Prioridades
+## Máquina de decisión
 
-1. `catalog`: listar lentes `ready` y `planned` explícitamente, sin pretender ejecutarlas.
-2. `basis != observed`: `inspect-code` o `refresh-basis`, nunca recomendaciones como hallazgos confirmados.
-3. `language == unknown`: `identify-language` antes de proponer syntaxis.
-4. Sin señales: `discover-signals`, no seleccionar por moda.
-5. Con evidencias: seleccionar hasta tres lentes metodológicas relevantes por `intent` y `signals` (prioridad de dominio y fronteras primero), más la lente de lenguaje si es `ready` y aplica.
-6. Al terminar el análisis: `propose-slice` con alcance mínimo; si se implementa, `verify-contracts` con `delivery-first-testing` cuando corresponda.
-7. Lente `planned` no se considera disponible; sin playbook, no hay acción ejecutable.
+1. `catalog`: listar lentes y recetas, sin activarlas.
+2. `basis=unknown|stale`: `inspect-code|refresh-basis`, sin diagnosticar.
+3. `language=unknown`: `identify-language`, sin asumir sintaxis.
+4. Sin observaciones útiles: `discover-signals`, sin patrón predeterminado.
+5. Con señales solamente: inferir **hipótesis** y activar `problem-diagnosis`; no `APPLY`.
+6. Con problemas respaldados por evidencias, comparar `KEEP_AS_IS` y recetas `ready` por precondiciones, contraindicaciones, esfuerzo, riesgo y reversibilidad **en ese orden**. La comparación es ordinal, no probabilidad ni rentabilidad demostrada.
+7. `APPLY`: la receta es una propuesta implementable, no ejecución; `INSPECT_MORE`: falta evidencia; `KEEP_AS_IS`: no hacer cambio; `BLOCKED`: contraindicación.
+8. Seleccionar 1–3 lentes metodológicas contextuales más perfil de lenguaje en `plan/verify`. Preferir especialización con problema coincidente antes que prioridad fija del catálogo.
+9. Solo enlazar a otra skill con `delegate-skill` si el anfitrión ha observado su disponibilidad real; no invocar ni instalar automáticamente.
+10. Una nueva observación o giro de la conversación reinicia este cálculo; **no se escribe un archivo de sesión**.
 
-## Resultados de verdad
+## Rutas
 
-- `OBSERVED`: existe código/firma/ejecución cuya procedencia conocemos.
-- `INFERRED`: hipótesis de dominio pendiente de confirmar.
-- `NOT_RUN`: comandos, compilers, tests o probes no ejecutados.
-- `BLOCKED`: falta permiso, herramienta, grafo o fuente.
-- `STALE`: cambió el código o su entorno después de la observación.
+`read-lens`, `read-recipe` incluyen `href` relativo **dentro de esta skill**; acciones sin archivo (`inspect-problem`, `compare-options`, `propose-slice`, `verify-contracts`, `preserve-existing`, `delegate-skill`) tienen `rel` y `why`. Ninguna `href` es URL de ejecución.
 
-No inferir una transición `PASS` del estado del router. El router es un recomendador, no certificador de refactors.
+## No-vacuidad
+
+No llamar `PASS` a una recomendación; una entrada `OBSERVED` con texto de evidencia falso sigue siendo responsabilidad del agente que inspecciona. Si no existe inspección de código, reportar `BLOCKED/NOT_RUN`, jamás suponer que un archivo o una prueba existen.

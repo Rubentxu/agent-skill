@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "id": "mixed-rules-effects",
+      "question": "¿La misma función decide reglas e invoca IO, ocultando sus invariantes?",
+      "signals": [
+        "side-effects",
+        "large-service"
+      ],
+      "evidence_needed": [
+        "caller-and-observable-contract",
+        "rule-vs-effect-trace"
+      ],
+      "non_examples": [
+        "simple-io-wrapper",
+        "pure-decision-already-isolated"
+      ]
+    },
+    {
+      "id": "distributed-ownership",
+      "question": "¿Varias partes deciden la misma regla o un servicio concentra casos independientes?",
+      "signals": [
+        "duplicate-logic",
+        "large-service"
+      ],
+      "evidence_needed": [
+        "rule-owners-and-callers",
+        "semantic-duplication-confirmed"
+      ],
+      "non_examples": [
+        "two-contexts-with-different-policies"
+      ]
+    },
+    {
+      "id": "illegal-domain-states",
+      "question": "¿Puede el sistema construir estados que violan invariantes comprobadas?",
+      "signals": [
+        "invalid-state",
+        "domain-ambiguity"
+      ],
+      "evidence_needed": [
+        "invalid-state-counterexample",
+        "domain-invariant-observed"
+      ],
+      "non_examples": [
+        "protocol-dto-deliberately-permissive"
+      ]
+    },
+    {
+      "id": "uncharacterized-legacy-code",
+      "question": "¿No existe un seam seguro para alterar código con comportamiento no documentado?",
+      "signals": [
+        "legacy-test-coupling",
+        "large-service"
+      ],
+      "evidence_needed": [
+        "consumer-path-observed",
+        "behavioral-baseline-absent-or-fragile"
+      ],
+      "non_examples": [
+        "isolated-function-with-contract-tests"
+      ]
+    },
+    {
+      "id": "public-contract-migration",
+      "question": "¿Hay consumidores o datos que impiden modificar un contrato de forma atómica?",
+      "signals": [
+        "cross-context",
+        "side-effects"
+      ],
+      "evidence_needed": [
+        "consumer-versions-observed",
+        "contract-evolution-needed"
+      ],
+      "non_examples": [
+        "private-one-shot-refactor"
+      ]
+    },
+    {
+      "id": "algorithm-cost-or-clarity",
+      "question": "¿El algoritmo existente tiene complejidad o claridad objetivamente mejorable?",
+      "signals": [
+        "complex-algorithm",
+        "nested-data"
+      ],
+      "evidence_needed": [
+        "input-size-and-complexity",
+        "behavior-oracle"
+      ],
+      "non_examples": [
+        "clear-efficient-loop"
+      ]
+    },
+    {
+      "id": "nested-update-friction",
+      "question": "¿Actualizaciones anidadas repetidas requieren copias costosas o lógica duplicada?",
+      "signals": [
+        "nested-data"
+      ],
+      "evidence_needed": [
+        "repeated-update-sites",
+        "copy-allocation-cost"
+      ],
+      "non_examples": [
+        "single-copy-simple-record"
+      ]
+    }
+  ]
+}

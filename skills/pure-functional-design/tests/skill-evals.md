@@ -20,3 +20,16 @@
 | Algoritmo greedy sin prueba de optimalidad | pedir hipótesis o elegir otra técnica | vender greedy como siempre óptimo |
 
 Evals de agente reales aún no ejecutadas. Los tests de Python verifican **solo** navegación y estructura del catálogo.
+
+## Evals R1–R3 (pendientes de agente real)
+
+1. El usuario menciona “fold” y muestra un bucle Rust lineal eficiente: recomendar `KEEP_AS_IS` o inspección, no convertirlo automáticamente.
+2. Servicio enorme pero con una responsabilidad cohesionada: no sugerir dividir en diez servicios.
+3. Dos validadores similares pertenecen a bounded contexts con invariantes distintas: rechazar deduplicación semántica falsa.
+4. El agente no puede inspeccionar base de datos ni orden de efectos: `INSPECT_MORE`, sin declarar equivalencia.
+5. Un cambio que requiere compatibilidad de dos esquemas serializados: preferir `parallel-change` y no romper la lectura antigua.
+6. La fase inicial menciona Kotlin pero no pide implementación: no cargar las ocho recetas ni el perfil Kotlin hasta planificar.
+7. La conversación cambia de optimización a mantenimiento: recalcular el catálogo; no conservar una lente por inercia.
+8. Handoff a skill no instalada: ausencia de `delegate-skill`, aunque figure en el registro como relacionada.
+9. Un ADT mejora estados pero empeora compatibilidad JSON: reportar bloqueo o proponer migración explícita, no etiquetar refactor.
+10. `APPLY` en selector es propuesta, no permiso para escribir ni `PASS`; verificar comandos reales y artefactos con skill de testing si disponible.

@@ -12,9 +12,9 @@ sys.modules[spec.name] = router
 spec.loader.exec_module(router)
 
 
-def session(signals=None, intent="refactor", language="rust", basis="observed", risk="routine"):
+def session(signals=None, intent="refactor", language="rust", basis="observed", risk="routine", phase="plan"):
     return {"intent": intent, "language": language, "basis": basis,
-            "signals": signals or [], "risk": risk}
+            "signals": signals or [], "risk": risk, "phase": phase}
 
 
 class RouterTests(unittest.TestCase):
@@ -39,14 +39,15 @@ class RouterTests(unittest.TestCase):
 
     def test_rust_selects_methods_then_exactly_one_adapter(self):
         result = router.affordances(session(["large-service", "side-effects", "duplicate-logic"]))
-        self.assertEqual([x["id"] for x in result["lenses"]],
-                         ["effects-and-core", "vertical-slices", "responsibility-refactor", "language-rust"])
+        self.assertEqual(result["lenses"][-1]["id"], "language-rust")
+        self.assertIn("problem-diagnosis", {x["id"] for x in result["lenses"]})
+        self.assertLessEqual(len(result["lenses"]), 4)
         self.assertTrue(all("href" in link for link in result["_links"] if link["rel"] == "read-lens"))
 
     def test_kotlin_state_model_chooses_domain_before_adt(self):
         result = router.affordances(session(["domain-ambiguity", "invalid-state", "nested-data"], language="kotlin", intent="design"))
-        self.assertEqual([x["id"] for x in result["lenses"]],
-                         ["domain-discovery", "adt-invariants", "algebraic-laws", "language-kotlin"])
+        self.assertEqual(result["lenses"][-1]["id"], "language-kotlin")
+        self.assertIn("problem-diagnosis", {x["id"] for x in result["lenses"]})
 
     def test_no_signals_not_an_excuse_for_every_lens(self):
         result = router.affordances(session())

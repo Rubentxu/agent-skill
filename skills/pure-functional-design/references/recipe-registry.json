@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "recipes": [
+    {
+      "id": "extract-pure-decision",
+      "status": "ready",
+      "problems": [
+        "mixed-rules-effects",
+        "distributed-ownership"
+      ],
+      "playbook": "references/recipes/extract-pure-decision.md",
+      "requires": [
+        "behavior-characterized",
+        "effect-order-understood"
+      ],
+      "blocks": [
+        "transaction-semantics-unknown"
+      ],
+      "effort": "small",
+      "risk": "routine",
+      "reversibility": "easy",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    },
+    {
+      "id": "legacy-seam",
+      "status": "ready",
+      "problems": [
+        "uncharacterized-legacy-code",
+        "mixed-rules-effects"
+      ],
+      "playbook": "references/recipes/legacy-seam.md",
+      "requires": [
+        "consumer-path-observed"
+      ],
+      "blocks": [
+        "contract-preservation-impossible"
+      ],
+      "effort": "small",
+      "risk": "routine",
+      "reversibility": "easy",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    },
+    {
+      "id": "mikado-refactor",
+      "status": "ready",
+      "problems": [
+        "uncharacterized-legacy-code",
+        "distributed-ownership"
+      ],
+      "playbook": "references/recipes/mikado-refactor.md",
+      "requires": [
+        "consumer-path-observed"
+      ],
+      "blocks": [
+        "irreversible-change-required"
+      ],
+      "effort": "medium",
+      "risk": "routine",
+      "reversibility": "easy",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    },
+    {
+      "id": "parallel-change",
+      "status": "ready",
+      "problems": [
+        "public-contract-migration",
+        "illegal-domain-states"
+      ],
+      "playbook": "references/recipes/parallel-change.md",
+      "requires": [
+        "consumer-path-observed",
+        "compatibility-plan-observed"
+      ],
+      "blocks": [
+        "data-migration-unsafe"
+      ],
+      "effort": "medium",
+      "risk": "high",
+      "reversibility": "medium",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    },
+    {
+      "id": "branch-by-abstraction",
+      "status": "ready",
+      "problems": [
+        "public-contract-migration",
+        "distributed-ownership"
+      ],
+      "playbook": "references/recipes/branch-by-abstraction.md",
+      "requires": [
+        "consumer-path-observed",
+        "stable-seam-observed"
+      ],
+      "blocks": [
+        "divergent-business-semantics"
+      ],
+      "effort": "large",
+      "risk": "high",
+      "reversibility": "medium",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "parallel-change"
+    },
+    {
+      "id": "domain-state-refactor",
+      "status": "ready",
+      "problems": [
+        "illegal-domain-states"
+      ],
+      "playbook": "references/recipes/domain-state-refactor.md",
+      "requires": [
+        "domain-invariant-observed",
+        "serialization-boundary-reviewed"
+      ],
+      "blocks": [
+        "unresolved-wire-contract"
+      ],
+      "effort": "medium",
+      "risk": "high",
+      "reversibility": "medium",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    },
+    {
+      "id": "algorithm-substitution",
+      "status": "ready",
+      "problems": [
+        "algorithm-cost-or-clarity"
+      ],
+      "playbook": "references/recipes/algorithm-substitution.md",
+      "requires": [
+        "behavior-characterized",
+        "complexity-baseline-observed"
+      ],
+      "blocks": [
+        "unknown-order-semantics"
+      ],
+      "effort": "small",
+      "risk": "routine",
+      "reversibility": "easy",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    },
+    {
+      "id": "simplify-nested-updates",
+      "status": "ready",
+      "problems": [
+        "nested-update-friction"
+      ],
+      "playbook": "references/recipes/simplify-nested-updates.md",
+      "requires": [
+        "update-sites-observed",
+        "ownership-and-aliasing-reviewed"
+      ],
+      "blocks": [
+        "unmeasured-hot-path-copy"
+      ],
+      "effort": "small",
+      "risk": "routine",
+      "reversibility": "easy",
+      "languages": [
+        "rust",
+        "kotlin",
+        "other"
+      ],
+      "alternative_to": "keep-existing-code"
+    }
+  ]
+}
