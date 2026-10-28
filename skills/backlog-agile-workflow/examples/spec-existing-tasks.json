@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "kind": "task-list",
+  "tasks": [
+    {
+      "id": "TASK-1",
+      "title": "Baseline hist\u00f3rico",
+      "references": [
+        "docs/ROADMAP.md#R0.W1"
+      ],
+      "status": "Done",
+      "archived": true,
+      "isReady": false
+    }
+  ]
+}

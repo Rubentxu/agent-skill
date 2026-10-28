@@ -26,3 +26,16 @@
 - Ejecutar tareas, modificar código de aplicaciones consumidoras, ejecutar un daemon o duplicar Backlog.md.
 - Sincronizar automáticamente roadmaps, crear sprints ficticios o instalar un MCP sin consentimiento.
 - Dar por `PASS` pruebas del proyecto por haber pasado tests del router.
+
+## S3 — Proyección segura de ROADMAP/ADR/SPEC/hitos (entregado)
+
+- Lentes `specification-intake`, `spec-decomposition`, `spec-reconciliation`, descubiertas por intención.
+- Contrato efímero `spec-packet` con IDs canónicos, hitos, dependencias, gates, estado declarado, requisitos, ADR/SPEC, AC/DoD y prioridad propuesta.
+- Proyector puro determinista: rechaza referencias inválidas/ciclos/duplicidades; preserva trabajo histórico; compara `task-list` existente y bloquea creación ante corpus incompleto o coincidencia sospechosa; nunca ejecuta la CLI.
+- Tests de comportamiento sobre escenarios sintéticos, sin alterar proyectos consumidores.
+
+### S4 — Futuras evaluaciones (pendiente)
+
+- Evals de agente con documentos sintéticos extensos y mezclados (planes, históricos, receipts, contradicciones).
+- Validar con una instalación temporal de Backlog.md el formato exacto de `references` y compatibilidad de versiones antes de automatizar propuestas de `--ref`.
+- Medir falsos positivos de extracción, cantidad de preguntas necesarias y coste de navegación. No introducir indexador, base de datos secundaria ni sincronización automática como requisito.

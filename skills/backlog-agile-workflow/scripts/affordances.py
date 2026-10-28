@@ -10,7 +10,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 INTENTS = frozenset({"discover", "capture", "triage", "refine", "plan", "execute",
-                     "verify", "close", "review", "maintain", "catalog"})
+                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "catalog"})
 BASIS = frozenset({"observed", "unknown", "stale"})
 CLI = frozenset({"available", "missing", "unknown"})
 PROJECT = frozenset({"initialized", "absent", "unknown"})
@@ -118,13 +118,14 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["decision"] = "INSPECT_MORE"
         result["_links"].append(_notice("refresh-basis", "Reexaminar un proyecto que pudo cambiar"))
         return result
-    if cli != "available":
+    offline_spec = intent in {"specify", "decompose"}
+    if cli != "available" and not offline_spec:
         result["decision"] = "DISCOVER"
         result["_links"].append(_notice("inspect-cli", "Verificar backlog --version y backlog --help, sin instalar automáticamente"))
         if cli == "missing":
             result["warnings"].append("backlog no instalado; npx backlog.md es distinto de npx backlog")
         return result
-    if project != "initialized":
+    if project != "initialized" and not offline_spec:
         result["decision"] = "DISCOVER"
         result["_links"].append(_notice("inspect-project", "Comprobar raíz y config; inicializar solo con permiso explícito"))
         return result
@@ -138,8 +139,11 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
     for lens in selected:
         result["lenses"].append(lens["id"])
         result["_links"].append(_notice("read-lens", f"Guía {lens['id']}", href=_local(lens["playbook"])))
-    result["suggested_reads"] = [["backlog", "instructions", "overview"]]
-    if intent in {"capture", "triage", "review", "maintain"}:
+    result["suggested_reads"] = ([["backlog", "instructions", "overview"]]
+                                  if cli == "available" and project == "initialized" else [])
+    if offline_spec:
+        result["_links"].append(_notice("inspect-specifications", "Inspeccionar ROADMAP, ADR, SPEC, gates y estado de la fuente canónica"))
+    if intent in {"capture", "triage", "review", "maintain", "sync-specs"}:
         result["suggested_reads"].append(["backlog", "task", "list", "--json"])
     elif intent in NEEDS_TASK or intent == "refine":
         if task.get("id"):
@@ -174,6 +178,8 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["_links"].append(_notice("inspect-dependencies", "El candidato no está confirmado como listo"))
         return result
 
+    if intent in {"specify", "decompose", "sync-specs"}:
+        result["_links"].append(_notice("plan-spec-projection", "Derivar propuestas trazables; nunca escribir tareas sin reconciliar corpus"))
     if mode == "read":
         result["decision"] = "READY"
         result["_links"].append(_notice("inspect-current", "Leer backlog sin modificarlo"))

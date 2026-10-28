@@ -69,6 +69,30 @@
         "review"
       ],
       "playbook": "references/navigation.md"
+    },
+    {
+      "id": "specification-intake",
+      "status": "ready",
+      "intents": [
+        "specify"
+      ],
+      "playbook": "references/lenses/specification-intake.md"
+    },
+    {
+      "id": "spec-decomposition",
+      "status": "ready",
+      "intents": [
+        "decompose"
+      ],
+      "playbook": "references/lenses/spec-decomposition.md"
+    },
+    {
+      "id": "spec-reconciliation",
+      "status": "ready",
+      "intents": [
+        "sync-specs"
+      ],
+      "playbook": "references/lenses/spec-reconciliation.md"
     }
   ]
 }

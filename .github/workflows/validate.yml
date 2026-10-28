@@ -21,6 +21,10 @@ jobs:
         run: python3 scripts/validate_skills.py
       - name: Run collection validator tests
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Run Backlog workflow router and spec projection tests
+        run: python3 -m unittest discover -s skills/backlog-agile-workflow/tests -p 'test_*.py' -v
+      - name: Check Backlog spec projection smoke
+        run: python3 skills/backlog-agile-workflow/scripts/spec_projection.py skills/backlog-agile-workflow/examples/spec-packet.json skills/backlog-agile-workflow/examples/spec-existing-tasks.json
       - name: Run pure-functional-design router tests
         run: python3 -m unittest discover -s skills/pure-functional-design/tests -p 'test_*.py' -v
       - name: Check pure-functional-design navigation smoke

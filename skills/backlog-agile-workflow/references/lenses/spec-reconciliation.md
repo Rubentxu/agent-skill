@@ -1,0 +1,13 @@
+# Lente: proyectar especificaciones sin duplicar tareas
+
+**Pregunta:** ¿Qué cambiaría en Backlog.md al reconciliar esta versión del roadmap con las tareas existentes?
+
+1. Obtener panorama sin editar: `backlog instructions overview`, `backlog task list --json` **sin filtros/ventanas**, `backlog milestone list --plain`, consultas de configuración y, para candidatos existentes, `backlog task view <id> --json`. Inspeccionar diferencias entre ramas/worktrees; un task-list solo representa el corpus visible, no una transacción global.
+2. Crear un `spec-packet.json` **temporal y curado por el agente**, con claves y referencias estables a documentos originales; reutilizar el mismo `sourceRef` como referencia `--ref` de Backlog.md si la CLI y el proyecto lo permiten. ADR, SPEC, receipts, no-alcance y gates solo alimentan criterios/documentRefs, no son tareas automáticamente.
+3. Ejecutar `python3 scripts/spec_projection.py spec-packet.json task-list.json`. La utilidad **solo lee esos dos archivos** y produce un plan JSON `PROPOSAL_ONLY`. No ejecuta Backlog.md ni escribe archivos. Comprobar ruta/versión y diferencia de corpus antes de usar el resultado. Con `snapshotScope=unfiltered-visible-corpus` se manifiesta intención del llamante, no se certifica que sea cierto.
+4. Revisar `PROPOSE_CREATE`, `REVIEW_EXISTING`, `REVIEW_POSSIBLE_DUPLICATE`, `WAIT_FOR_DEPENDENCY_IDS`, `PRESERVE_HISTORICAL`, `NEEDS_CORPUS`, `INSPECT_STATUS`. Una coincidencia de título sin `sourceRef` no es identidad; exige inspección manual. Una referencia repetida en varias tareas bloquea; una tarea archivada no se edita sin restauración explícita.
+5. Solo tras permiso, usar CLI oficial (`backlog milestone add`, `backlog task create`, `backlog task edit`) paso a paso. Cualquier propuesta `--dep` se resuelve con **IDs reales devueltos** por Backlog.md, nunca con `R1.W2` como si fuera `TASK-2`. Conservar `--ref`, contenido y AC/DoD; confirmar flags y prioridades con `--help` local. Nunca editar frontmatter directamente. No ejecutar side-effects sin inspeccionar `autoCommit`, `remoteOperations`, `onStatusChange`, hooks.
+6. Releer task-list después de cada batch y comparar la referencia original para evitar duplicaciones. No correr el importador sobre un snapshot viejo; si la tarea ya existe, **actualizar solo tras revisar diferencia del `task view`**, no reemplazar notas/progreso/historial.
+7. Cerrar un hito/gate solo según su autoridad externa y recibos; el estado Done de Backlog.md es una proyección, no certificación del build o release.
+
+**Ausencia de Backlog.md:** preparar paquete/plan `NEEDS_CORPUS`, sin instalar ni inicializar automáticamente. **Problema en la CLI:** declarar BLOCKED, no escribir la tarea Markdown.

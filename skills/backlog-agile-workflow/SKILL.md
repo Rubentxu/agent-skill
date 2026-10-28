@@ -9,16 +9,17 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 
 ## Contrato de arranque y descubrimiento
 
-1. Determinar la **intención de la conversación** y etapa vigente: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|catalog`. No arrastrar lentes de otra intención por inercia.
+1. Determinar la **intención de la conversación** y etapa vigente: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|catalog`. No arrastrar lentes de otra intención por inercia.
 2. Verificar si `backlog` existe y qué proyecto está activo **sin instalar ni inicializar automáticamente**. Para tareas reales, leer primero `backlog instructions overview`; después solo `backlog instructions task-creation`, `task-execution` o `task-finalization` cuando correspondan. La ayuda local prevalece si difiere de la documentación empaquetada.
 3. Si la CLI no está disponible, mostrar opciones de instalación para aprobación; `npx backlog.md ...` es una alternativa ocasional, **nunca** `npx backlog ...` (paquete distinto). Si no hay proyecto inicializado, proponer `backlog init` pero no ejecutar una configuración interactiva sin autorización.
 4. Descubrir preferencias y límites del proyecto vía `backlog config get <clave>` cuando se conozca el comando y consultando la CLI actual; `statuses`, `defaultStatus`, `definition_of_done`, `projects`, `remoteOperations`, `autoCommit`, `bypassGitHooks`, `checkActiveBranches`, `onStatusChange`. No suponer columnas fijas ni que cerrar equivale a archivar.
 5. Leer el estado **real** mediante `backlog task list --json`, `backlog task view <id> --json`, `backlog search ... --json`, `backlog milestone list --plain`; usar `schemaVersion` y `kind` para los parsers. `--watch` es una suscripción de larga duración, no una consulta puntual.
-6. Seleccionar como máximo **dos lentes** desde `references/lens-registry.json` según intención y hechos disponibles. `scripts/affordances.py` es un router determinista y **sin acceso a la CLI ni a aplicaciones**; emite enlaces a recursos y recomendaciones, nunca ejecuta comandos. `scripts/ready_candidates.py` valida una instantánea JSON **ya obtenida** y devuelve tareas listas sin mutarla ni consultar Backlog.md.
+6. Seleccionar como máximo **dos lentes** desde `references/lens-registry.json` según intención y hechos disponibles. `scripts/affordances.py` es un router determinista y **sin acceso a la CLI ni a aplicaciones**; emite enlaces a recursos y recomendaciones, nunca ejecuta comandos. `scripts/spec_projection.py` compara un paquete explícito de especificaciones con una instantánea `task-list` sin mutar ninguno. `scripts/ready_candidates.py` valida una instantánea JSON **ya obtenida** y devuelve tareas listas sin mutarla ni consultar Backlog.md.
 7. Si aparecen huecos, abrir solo la lente siguiente. Los handoffs a otras skills se ofrecen únicamente si el anfitrión confirma `available_skills`. No importar ficheros de otra skill.
 
 ## Flujo ágil: valor, límites de WIP y evidencia
 
+- **Desde especificaciones:** ROADMAP, ADR, SPEC, gates y receipts son autoridades diferentes: convertir objetivos en propuestas de tareas con referencia estable, reconstruir dependencias y comparar con el backlog existente antes de escribir. Ver [contrato spec-packet](references/spec-contract.md) y [proyección](references/lenses/spec-reconciliation.md). Nunca transformar cada sección histórica en una tarea.
 - **Capturar:** buscar duplicados antes de crear. Ambigüedades → borrador (`backlog draft create`) o tarea con incertidumbre explícita, según aceptación; no convertir una idea vaga en veinte tareas especulativas.
 - **Refinar:** una capacidad observable por tarea, criterios de aceptación verificables y pequeños, Definition of Done del proyecto; dependencias solamente si son bloqueantes reales. Registrar decisiones arquitectónicas como decisiones, no como pseudo-tareas.
 - **Priorizar:** seleccionar trabajo listo (`isReady` derivado de JSON, o `backlog task list --ready`) y alto valor con bajo riesgo; no inventar estimaciones, sprint commitments, ni prioridades. Una tarea bloqueada o identidad de dependencia ambigua no es lista.
@@ -43,6 +44,9 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 | Pregunta | Lente |
 |---|---|
 | ¿Hay Backlog.md y qué configuración es segura? | [discovery](references/lenses/discovery.md) |
+| ¿Cómo interpretar ROADMAP, ADR, SPEC y gates sin reabrir historia? | [specification-intake](references/lenses/specification-intake.md) |
+| ¿Cómo priorizar hitos y descomponerlos en tareas útiles? | [spec-decomposition](references/lenses/spec-decomposition.md) |
+| ¿Cómo conciliar especificaciones y tareas ya existentes? | [spec-reconciliation](references/lenses/spec-reconciliation.md) |
 | ¿Cómo registrar ideas y evitar duplicados? | [capture](references/lenses/capture.md) |
 | ¿Qué tarea aporta valor y está desbloqueada? | [triage](references/lenses/triage.md) |
 | ¿Cómo separar una capacidad en una tarea verificable? | [refinement](references/lenses/refinement.md) |

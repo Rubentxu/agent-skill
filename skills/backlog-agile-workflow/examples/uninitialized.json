@@ -1,8 +1,0 @@
-{
-  "intent": "capture",
-  "basis": "observed",
-  "cli": "available",
-  "project": "absent",
-  "mode": "propose",
-  "available_skills": []
-}

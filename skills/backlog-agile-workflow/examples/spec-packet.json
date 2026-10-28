@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "kind": "spec-packet",
+  "snapshotScope": "unfiltered-visible-corpus",
+  "milestones": [
+    {
+      "key": "R0",
+      "title": "Contratos y baseline",
+      "sourceRef": "docs/ROADMAP.md#R0",
+      "state": "closed"
+    },
+    {
+      "key": "R1",
+      "title": "Entregar capacidad de consulta",
+      "sourceRef": "docs/ROADMAP.md#R1",
+      "state": "planned"
+    }
+  ],
+  "tasks": [
+    {
+      "key": "R0.W1",
+      "milestone": "R0",
+      "sourceRef": "docs/ROADMAP.md#R0.W1",
+      "title": "Baseline histórico",
+      "outcome": "Evidencia conservada",
+      "acceptanceCriteria": [
+        "Baseline verificable"
+      ],
+      "definitionOfDone": [
+        "Recibo existente"
+      ],
+      "dependsOn": [],
+      "documentRefs": [
+        "docs/adr/ADR-0001.md#decision"
+      ],
+      "evidenceRefs": [
+        "evidence/receipt-R0"
+      ],
+      "state": "closed",
+      "priorityFactors": {
+        "impact": "high",
+        "urgency": "medium",
+        "risk": "high",
+        "effort": "small"
+      },
+      "gate": "G0"
+    },
+    {
+      "key": "R1.W1",
+      "milestone": "R1",
+      "sourceRef": "docs/ROADMAP.md#R1.W1",
+      "title": "Consulta verificable",
+      "outcome": "Una consulta real observable para usuario",
+      "acceptanceCriteria": [
+        "La consulta devuelve el contrato esperado",
+        "Se conserva un rechazo tipado ante datos inválidos"
+      ],
+      "definitionOfDone": [
+        "Unit tests de reglas",
+        "Integración mínima con adaptador real",
+        "Gate de publicación/merge según política del repositorio"
+      ],
+      "dependsOn": [
+        "R0.W1"
+      ],
+      "documentRefs": [
+        "docs/adr/ADR-0001.md#decision",
+        "docs/specs/SPEC-01.md#contract"
+      ],
+      "evidenceRefs": [],
+      "state": "planned",
+      "priorityFactors": {
+        "impact": "high",
+        "urgency": "high",
+        "risk": "medium",
+        "effort": "medium"
+      },
+      "gate": "G1"
+    },
+    {
+      "key": "R1.W2",
+      "milestone": "R1",
+      "sourceRef": "docs/ROADMAP.md#R1.W2",
+      "title": "Proyección de consulta",
+      "outcome": "Salida utilizable",
+      "acceptanceCriteria": [
+        "La salida respeta el contrato publicado"
+      ],
+      "definitionOfDone": [
+        "Test unitario discriminante"
+      ],
+      "dependsOn": [
+        "R1.W1"
+      ],
+      "documentRefs": [
+        "docs/specs/SPEC-01.md#contract"
+      ],
+      "evidenceRefs": [],
+      "state": "planned",
+      "priorityFactors": {
+        "impact": "medium",
+        "urgency": "low",
+        "risk": "low",
+        "effort": "small"
+      },
+      "gate": "G1"
+    }
+  ]
+}
