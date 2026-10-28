@@ -20,3 +20,9 @@ El paquete intermedio `spec-packet` es **efímero** y no pretende sustituir los 
 ## Ejemplo sintético
 
 `examples/spec-packet.json` y `examples/spec-existing-tasks.json` no pertenecen a ningún producto real. Ejecutar el proyector devuelve `PRESERVE_ARCHIVED` para R0 ya archivado, `PROPOSE_CREATE` para R1.W1 (después de resolver R0) y espera a obtener el ID real de R1.W1 antes de proponer su dependiente R1.W2. El paquete es de demostración: ningún comando Backlog.md se ejecuta.
+
+## Documento privado y evidencia de commits
+
+`sourceRef` y `documentRefs` son **identificadores lógicos locales privados**, no vínculos de GitHub. No deben desaparecer cuando los archivos dejan de estar rastreados por Git. Cambios de ruta o ID requieren reconciliación de alias explícita; no regenerar tareas de cero.
+
+Opcionalmente, `commit_trace.py` consume mensajes de commit curados y el paquete, y devuelve `implementation-references`. `spec_projection.py` puede leerlo como tercer argumento: una tarea sin correspondencia en el backlog pero con commits asociados se marca `REVIEW_IMPLEMENTATION` (no crear de nuevo, no declarar DONE). El índice Git jamás constituye por sí mismo prueba de ejecución. Ver [trazabilidad](commit-traceability.md).

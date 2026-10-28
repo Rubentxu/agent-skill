@@ -26,3 +26,7 @@ Las claves como `statuses`, `priorities`, `projects` y otros listados se editan 
 Si la CLI fue inicializada con `--no-git`, no trasladar automáticamente políticas de ramas o remotos. En un repositorio Git, una lectura del tablero puede reflejar corpus de ramas activas; consultar IDs y dependencias antes de actuar y no interpretar `isReady` como compromiso de sprint.
 
 **Regla de privacidad:** el backlog puede almacenar información confidencial. No exportar tablero ni compartir contenido a servicios de terceros por defecto. No instalar Backlog.md globalmente sin petición.
+
+## Política de documentos de gestión privados
+
+Si el proyecto consumidor requiere no versionar ROADMAP/ADR/SPEC/Backlog.md, revisar [procedimiento Git](repository-hygiene.md) antes de configurar. `autoCommit=false` **no impide** un `git add` manual ni hace que Git deje de rastrear documentos existentes. `remoteOperations` y `checkActiveBranches` pueden perder semántica habitual con el backlog ignorado; documentar explícitamente esa limitación. No ejecutar `backlog init --no-git` sin confirmar la versión y el tipo de repositorio. Pactar ubicación persistente y sincronización privada, no confiar solo en `.gitignore`.

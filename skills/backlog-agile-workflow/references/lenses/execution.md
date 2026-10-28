@@ -7,3 +7,5 @@
 5. Al detectar bloqueo, describir evidencia y el siguiente requisito; no marcar como completado por persistencia o por fatiga.
 
 **Salida:** `estado observado | progreso | pruebas reales o NOT_RUN | próximos pasos | bloqueos`.
+
+**Handoffs según disponibilidad:** `pure-functional-design` cuando hay una transformación arquitectónica; `pipelinek-local-ci` para pipelines locales existentes; `agent-secretless` para operaciones con credenciales; `delivery-first-testing` para garantías y tests mínimos. No se presumen herramientas instaladas. El commit del slice debe enlazar los IDs existentes de Backlog.md/roadmap/ADR/SPEC, describir implementación y verificación y pasar el [guard de Git](../repository-hygiene.md) para evitar anexar documentación privada/ZIP de planificación.

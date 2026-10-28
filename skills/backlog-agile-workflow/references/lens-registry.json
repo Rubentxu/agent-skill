@@ -93,6 +93,25 @@
         "sync-specs"
       ],
       "playbook": "references/lenses/spec-reconciliation.md"
+    },
+    {
+      "id": "git-artifact-hygiene",
+      "status": "ready",
+      "intents": [
+        "git-hygiene",
+        "maintain"
+      ],
+      "playbook": "references/lenses/git-artifact-hygiene.md"
+    },
+    {
+      "id": "commit-traceability",
+      "status": "ready",
+      "intents": [
+        "trace",
+        "close",
+        "sync-specs"
+      ],
+      "playbook": "references/lenses/commit-traceability.md"
     }
   ]
 }

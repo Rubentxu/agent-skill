@@ -69,3 +69,7 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 **Handoff testing:** la skill produce garantías + particiones + leyes; `delivery-first-testing` decide dónde ejecutarlas y qué evidencia conservar. Ejemplo de sesión en `examples/*.json`; pruebas propias del selector en `tests/`.
 
 **Catálogo de recetas:** [extract-pure-decision](references/recipes/extract-pure-decision.md) · [legacy-seam](references/recipes/legacy-seam.md) · [mikado-refactor](references/recipes/mikado-refactor.md) · [parallel-change](references/recipes/parallel-change.md) · [branch-by-abstraction](references/recipes/branch-by-abstraction.md) · [domain-state-refactor](references/recipes/domain-state-refactor.md) · [algorithm-substitution](references/recipes/algorithm-substitution.md) · [simplify-nested-updates](references/recipes/simplify-nested-updates.md). Consultar solo la necesaria.
+
+## Colaboración opcional con backlog-agile-workflow
+
+Cuando el agente disponga de `backlog-agile-workflow`, vincular refactors a tareas, hitos ROADMAP y ADR/SPEC existentes; revisar trabajo anterior por IDs y SHAs antes de proponer tareas duplicadas. En el commit de implementación documentar decisión arquitectónica, cómo se implementó y evidencia de equivalencia o `NOT_RUN`. No versionar documentos de gestión ni ZIP de esos materiales en el proyecto consumidor; las referencias/ejemplos de esta skill distribuida sí forman parte de su código.

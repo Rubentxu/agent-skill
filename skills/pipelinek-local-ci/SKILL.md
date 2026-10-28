@@ -86,3 +86,7 @@ Reporta: HEAD, path real de PipelineK, versión, pipeline, comando, exit, `RunFi
 - [ ] Si se sustituyó CI alojado, las responsabilidades remotas restantes están delimitadas.
 - [ ] La superficie Jenkins-familiar usada figura como soportada o fue validada explícitamente.
 - [ ] Si hubo `publish`, todos los productos/canales obligatorios constan publicados y consumibles desde remoto; si no, estado parcial y bloqueo explícito.
+
+## Colaboración opcional con backlog-agile-workflow
+
+Cuando `backlog-agile-workflow` esté disponible, asociar cada gate local a IDs de tarea, hito ROADMAP y ADR/SPEC; registrar run/outcome, evidencia y SHA reales antes de marcar DoD. Auditar archivos de gestión y ZIP privados antes de la publicación: no deben versionarse en aplicaciones consumidoras. No excluir ZIP de binarios de distribución por su extensión. PipelineK no modifica automáticamente el backlog ni declara DONE por un run verde sin contrato verificado.

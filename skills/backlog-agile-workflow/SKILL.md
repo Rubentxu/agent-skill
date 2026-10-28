@@ -29,6 +29,14 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 - **Cerrar:** escribir `--final-summary` con resultado y riesgos, marcar estado final configurado solo con evidencias; archivar después durante mantenimiento explícito, no al completar.
 - **Revisar:** analizar bloqueos, exceso de WIP y tareas abandonadas; ajustar primero políticas y descomposición, no multiplicar reuniones ni burocracia.
 
+## Política obligatoria de documentos privados y trazabilidad de commits
+
+- **Workflow completo:** descubrir y configurar Backlog.md → interpretar ROADMAP/ADR/SPEC → reconciliar tasks/drafts y prioridades → planificar una tarea lista → implementar con skills especialistas → verificar AC/DoD/gates → registrar SHA y evidencia → cerrar y revisar. Backlog.md sigue siendo la autoridad de tareas.
+- **Documentos privados fuera de Git:** los ficheros de planificación, ADR/SPEC/roadmaps, documentación de Backlog.md y ZIP de estos materiales de una **aplicación consumidora** no se rastrean en Git. Detectar en índice y staging con [git-artifact-hygiene](references/lenses/git-artifact-hygiene.md); proponer `.gitignore` y `git rm --cached` (requiere autorización), **no borrar archivos locales ni reescribir historial**. Las referencias y documentos de esta skill distribuida SÍ son código del paquete.
+- **Compatibilidad upstream:** Backlog.md usa Git por defecto para parte de su historia y colaboración; sin tareas versionadas, inspeccionar `autoCommit`, `remoteOperations`, `checkActiveBranches`, callbacks y backups/sincronización privada. No afirmar equivalencia con el modo Git.
+- **Trazabilidad:** en commits de implementación citar IDs existentes de tarea, bloque roadmap, ADR/SPEC cuando procedan, junto con qué se cambió y qué se verificó (`NOT_RUN` cuando corresponda). Consultar historial por IDs antes de crear trabajo; un commit previo no certifica DONE. Ver [contrato de commit](references/commit-traceability.md).
+- **Handoffs condicionados:** recomendar `delivery-first-testing`, `pipelinek-local-ci`, `pure-functional-design`, `agent-secretless` según tipo de trabajo y **solo si están disponibles**; ninguna colaboración instala por sí sola otra skill.
+
 ## Políticas de seguridad, Git y concurrencia
 
 - Las **lecturas** no autorizan **escrituras**; para init, config, create/edit/status, archivar, restaurar o eliminar se necesita intención explícita del usuario o permiso previo específico. Los scripts de esta skill no ejecutan comandos Backlog.md.
@@ -44,6 +52,8 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 | Pregunta | Lente |
 |---|---|
 | ¿Hay Backlog.md y qué configuración es segura? | [discovery](references/lenses/discovery.md) |
+| ¿Están los documentos o ZIP de gestión versionados? | [git-artifact-hygiene](references/lenses/git-artifact-hygiene.md) |
+| ¿Cómo vincular TASK/roadmap/ADR/SPEC/commits? | [commit-traceability](references/lenses/commit-traceability.md) |
 | ¿Cómo interpretar ROADMAP, ADR, SPEC y gates sin reabrir historia? | [specification-intake](references/lenses/specification-intake.md) |
 | ¿Cómo priorizar hitos y descomponerlos en tareas útiles? | [spec-decomposition](references/lenses/spec-decomposition.md) |
 | ¿Cómo conciliar especificaciones y tareas ya existentes? | [spec-reconciliation](references/lenses/spec-reconciliation.md) |
@@ -54,4 +64,4 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 | ¿Cuándo marcar AC/DoD y finalizar? | [verification](references/lenses/verification.md) |
 | ¿Qué mejorar del flujo y cómo limpiar? | [review-maintenance](references/lenses/review-maintenance.md) |
 
-Navegación [HATEOAS-like](references/navigation.md) · [Comandos comprobados](references/cli-reference.md) · [Configuración avanzada y riesgos](references/configuration.md) · [integración con otras skills](references/skill-registry.json) · [fuentes](references/sources.md). El router nunca certifica una ejecución ni presume capacidades instaladas.
+[Política de documentos privados](references/repository-hygiene.md) · [Trazabilidad de commits](references/commit-traceability.md) · Navegación [HATEOAS-like](references/navigation.md) · [Comandos comprobados](references/cli-reference.md) · [Configuración avanzada y riesgos](references/configuration.md) · [integración con otras skills](references/skill-registry.json) · [fuentes](references/sources.md). El router nunca certifica una ejecución ni presume capacidades instaladas.

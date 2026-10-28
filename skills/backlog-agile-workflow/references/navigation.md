@@ -11,7 +11,7 @@ Entrada JSON para evaluación de **decisiones de la skill**, no un reflejo fiel 
 }
 ```
 
-- `intent`: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|catalog`.
+- `intent`: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|git-hygiene|trace|catalog`.
 - `basis`: `observed|unknown|stale`; `observed` describe evidencias **declaradas**, el router no las verifica.
 - `cli`: `available|missing|unknown`; `project`: `initialized|absent|unknown`.
 - `mode`: `read|propose|apply` (default `read`). `apply` representa autorización declarada por el llamante, **no ejecuta nada**.
@@ -26,3 +26,7 @@ Resultados: `DISCOVER`, `INSPECT_MORE`, `READY`, `PROPOSE_ONLY`, `AUTHORIZED_ACT
 ## Proyección de roadmaps y especificaciones
 
 `specify` abre la lente para descubrir autoridad documental; `decompose` elige hitos/AC/DoD y prioridades; `sync-specs` reconcilia con el corpus CLI. Los tres producen `plan-spec-projection` pero ninguna escritura. Ver [contrato](spec-contract.md).
+
+## Auditoría y trazabilidad sin CLI
+
+`git-hygiene` enlaza únicamente a la auditoría de índice y no requiere Backlog.md instalado. `trace` enlaza el índice de identidades documentales/commits, igualmente sin escribir ni necesitar Backlog.md. El `mode=apply` de estas consultas no autoriza sacar archivos del índice ni hacer commits; requieren consentimiento de operación específico. Handoffs solo hacia IDs presentes en `available_skills`.
