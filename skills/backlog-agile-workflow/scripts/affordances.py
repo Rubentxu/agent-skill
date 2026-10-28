@@ -10,7 +10,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 INTENTS = frozenset({"discover", "capture", "triage", "refine", "plan", "execute",
-                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "architecture", "curate-architecture", "map-task", "create-task", "move-task", "archive-task", "restore-task", "delete-task", "catalog"})
+                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "architecture", "curate-architecture", "map-task", "create-task", "move-task", "archive-task", "restore-task", "delete-task", "align-work", "unplanned-work", "manage-dependencies", "manage-epic", "catalog"})
 BASIS = frozenset({"observed", "unknown", "stale"})
 CLI = frozenset({"available", "missing", "unknown"})
 PROJECT = frozenset({"initialized", "absent", "unknown"})
@@ -19,9 +19,9 @@ GROMA = frozenset({"available", "missing", "unknown"})
 GROMA_INTENTS = frozenset({"architecture", "curate-architecture", "map-task"})
 CONFIG = ("autoCommit", "remoteOperations", "bypassGitHooks", "onStatusChange")
 TASK_ID = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}")
-NEEDS_TASK = frozenset({"plan", "execute", "verify", "close", "map-task", "move-task", "archive-task", "restore-task", "delete-task"})
+NEEDS_TASK = frozenset({"plan", "execute", "verify", "close", "map-task", "move-task", "archive-task", "restore-task", "delete-task", "manage-dependencies"})
 BOARD_INTENTS = frozenset({"create-task", "move-task", "archive-task", "restore-task", "delete-task"})
-WRITE_INTENTS = frozenset({"capture", "refine", "plan", "execute", "verify", "close", "review", "maintain", "map-task"})
+WRITE_INTENTS = frozenset({"capture", "refine", "plan", "execute", "verify", "close", "review", "maintain", "map-task", "align-work", "unplanned-work", "manage-dependencies", "manage-epic"})
 
 
 def _registry(file: str, key: str) -> list[dict[str, Any]]:
@@ -167,7 +167,7 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["_links"].append(_notice("audit-git-index", "Comprobar índice con git_artifact_guard.py (solo lectura)"))
     if intent == "trace":
         result["_links"].append(_notice("inspect-commit-trailers", "Buscar IDs de tarea, bloque y ADR/SPEC en commits observados"))
-    if intent in {"capture", "triage", "review", "maintain", "sync-specs", "create-task"}:
+    if intent in {"capture", "triage", "review", "maintain", "sync-specs", "create-task", "align-work", "unplanned-work", "manage-epic"}:
         result["suggested_reads"].append(["backlog", "task", "list", "--json"])
     elif intent in NEEDS_TASK or intent == "refine":
         if task.get("id"):
@@ -227,6 +227,14 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["_links"].append(_notice("inspect-dependencies", "El candidato no está confirmado como listo"))
         return result
 
+    if intent == "align-work":
+        result["_links"].append(_notice("inspect-work", "Comparar Git y tarea observada; lectura no equivale a modifiedFiles; no asumir DONE"))
+    if intent == "unplanned-work":
+        result["_links"].append(_notice("classify-unplanned", "Buscar duplicados, clasificar hallazgo, sin crear tareas por defecto"))
+    if intent == "manage-dependencies":
+        result["_links"].append(_notice("inspect-dependency-graph", "Verificar bloqueo real, ausencia de ciclo e isReady en corpus completo"))
+    if intent == "manage-epic":
+        result["_links"].append(_notice("inspect-hierarchy", "Elegir milestone, parent o tareas independientes, sin jerarquía ficticia"))
     if intent in {"specify", "decompose", "sync-specs"}:
         result["_links"].append(_notice("plan-spec-projection", "Derivar propuestas trazables; nunca escribir tareas sin reconciliar corpus"))
     if intent == "map-task":
