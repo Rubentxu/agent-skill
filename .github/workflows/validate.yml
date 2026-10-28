@@ -25,6 +25,12 @@ jobs:
         run: python3 -m unittest discover -s skills/pure-functional-design/tests -p 'test_*.py' -v
       - name: Check pure-functional-design navigation smoke
         run: python3 skills/pure-functional-design/scripts/affordances.py skills/pure-functional-design/examples/design-kotlin.json
+      - name: Run backlog-agile-workflow unit tests
+        run: python3 -m unittest discover -s skills/backlog-agile-workflow/tests -p 'test_*.py' -v
+      - name: Check backlog-agile-workflow navigation smoke
+        run: python3 skills/backlog-agile-workflow/scripts/affordances.py skills/backlog-agile-workflow/examples/triage.json
+      - name: Check backlog-agile-workflow readiness snapshot smoke
+        run: python3 skills/backlog-agile-workflow/scripts/ready_candidates.py skills/backlog-agile-workflow/examples/ready-list.json
       - name: Run gate vocabulary reachability tests
         run: python3 -m unittest discover -s skills/gate-vocabulary-reachability/tests -p 'test_*.py' -v
       - name: Run skill utility tests

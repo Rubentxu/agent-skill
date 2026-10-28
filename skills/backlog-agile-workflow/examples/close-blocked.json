@@ -1,0 +1,25 @@
+{
+  "intent": "close",
+  "basis": "observed",
+  "cli": "available",
+  "project": "initialized",
+  "mode": "apply",
+  "task": {
+    "id": "TASK-7",
+    "isReady": true,
+    "archived": false,
+    "acceptanceCriteriaCount": 3,
+    "acceptanceCriteriaCompleted": 2,
+    "definitionOfDoneCount": 2,
+    "definitionOfDoneCompleted": 2
+  },
+  "config": {
+    "autoCommit": false,
+    "remoteOperations": false,
+    "bypassGitHooks": false,
+    "onStatusChange": false
+  },
+  "available_skills": [
+    "delivery-first-testing"
+  ]
+}
