@@ -9,7 +9,8 @@ import {
   existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync,
   openSync, closeSync, writeFileSync,
 } from "node:fs";
-import { join, resolve, relative, isAbsolute, sep } from "node:path";
+import { join, resolve, relative, isAbsolute, sep, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
 import { emptyState, boundedPush, changedFile, readCalls, sourcePath,
   safeGromaOwner, validTaskId, presentation, recommendTrace, outputContext,
   type HookInput, type State } from "./kernel.ts";
@@ -50,6 +51,13 @@ function loadRuntime(event: HookInput, env: NodeJS.ProcessEnv): Runtime | null {
   const taskId = validTaskId(env.BACKLOG_CONTEXT_TASK_ID) ? env.BACKLOG_CONTEXT_TASK_ID : undefined;
   const data = env[DATA_ENV];
   if (!data || !isAbsolute(data)) return { root, cwd: actualCwd, taskId };
+  // A misconfigured plugin-data path must never place session files in the consumer project.
+  const dataPath = resolve(data);
+  if (dataPath === root || isWithin(root, dataPath)) return { root, cwd: actualCwd, taskId };
+  try {
+    const parent = realpathSync(dirname(dataPath));
+    if (parent === root || isWithin(root, parent)) return { root, cwd: actualCwd, taskId };
+  } catch { /* The provider may create CLAUDE_PLUGIN_DATA lazily. */ }
   const key = createHash("sha256").update(JSON.stringify([root, session, event.agent_id ?? "main"])).digest("hex");
   return { root, cwd: actualCwd, stateFile: join(data, "sessions", key + ".json"), taskId };
 }
@@ -69,11 +77,12 @@ function readState(file?: string): State {
 function updateState(runtime: Runtime, fn: (state: State) => { state: State; context?: string }): string | undefined {
   if (!runtime.stateFile) return fn(emptyState()).context;
   const path = runtime.stateFile;
-  try { mkdirSync(join(path, ".."), { recursive: true, mode: 0o700 }); } catch { return; }
+  try { mkdirSync(dirname(path), { recursive: true, mode: 0o700 }); } catch { return; }
   // Atomic exclusive lock. Another concurrent hook may skip this event; never clobber its state.
   const lock = path + ".lock";
   let fd: number;
-  try { fd = openSync(lock, "wx", 0o600); } catch { return; }
+  try { fd = openSync(lock, "wx", 0o600); }
+  catch { return; }
   try {
     const state = readState(path);
     if (runtime.taskId) state.taskId = runtime.taskId;
@@ -183,6 +192,6 @@ async function main(): Promise<void> {
   } catch { /* Fail open: never block Claude on malformed hook payloads. */ }
 }
 // Explicit test import guard; CLI executes only when invoked as the hook command.
-if (process.argv[1] && import.meta.url === new URL("file://" + resolve(process.argv[1])).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   await main();
 }
