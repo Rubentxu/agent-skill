@@ -124,4 +124,4 @@ Los estados terminales, nombres de columnas, opciones de Git y callbacks deben o
 
 ## Plugin contextual Claude Code opcional
 
-[backlog-context](../../plugins/backlog-context/README.md) recuerda sincronizar tareas después de ediciones y aprovecha `groma view` para dar contexto arquitectónico al leer código, sin escanear, sin editar tareas y sin nuevos servidores. Para otros agentes las lentes de alineamiento, trabajo imprevisto, dependencias y jerarquías permanecen disponibles sin hooks.
+`plugins/backlog-context` (véase el [README del plugin](https://github.com/Rubentxu/agent-skills/tree/main/plugins/backlog-context)) recuerda sincronizar tareas después de ediciones y aprovecha `groma view` para dar contexto arquitectónico al leer código, sin escanear, sin editar tareas y sin nuevos servidores. Para otros agentes las lentes de alineamiento, trabajo imprevisto, dependencias y jerarquías permanecen disponibles sin hooks.
