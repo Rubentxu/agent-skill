@@ -59,6 +59,12 @@ jobs:
           groma init "Context Smoke" --directory groma
           test -f groma/project.md
           test -f groma/index.md
+          # The work-source configuration is optional until explicitly adding a plugin.
+          groma plugin add backlog
+          test -f groma/config.json
+          groma plugin list | grep -i backlog
+          backlog task list --json > /tmp/backlog-after-groma-link.json
+          diff -u tasks-before.json /tmp/backlog-after-groma-link.json
           find groma -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/groma-before.txt
           groma agent-instructions inspect > /tmp/groma-guidance.txt
           groma view src/example.ts > /tmp/groma-view.txt 2>&1 || true

@@ -2,7 +2,7 @@
 
 ## Qué integra realmente el producto
 
-Groma.md trae un **work source** `backlog` que ejecuta la CLI Backlog.md: lee `backlog task list --json`, `backlog task view <id> --json`, estados y configuración; para mapas vivos consume `backlog task list --json --watch`. **No hay otro almacén de tareas**. El plugin se declara en `<groma-root>/config.json` en `workSources` y puede incorporarse con `groma plugin add backlog` tras consentimiento. El plugin requiere CLI Backlog.md en PATH; un Groma instalado **no** implica Backlog instalado. Descubre con `groma plugin list` y `backlog --version`.
+Groma.md trae un **work source** `backlog` que ejecuta la CLI Backlog.md: lee `backlog task list --json`, `backlog task view <id> --json`, estados y configuración; para mapas vivos consume `backlog task list --json --watch`. **No hay otro almacén de tareas**. En Groma.md 0.7.x la inicialización se reconoce por `<groma-root>/project.md` e `index.md`: `config.json` es **opcional** y aparece cuando se configura un plugin. El work source se registra en `<groma-root>/config.json` bajo `workSources` mediante `groma plugin add backlog`, solo tras consentimiento. El plugin requiere CLI Backlog.md en PATH; un Groma instalado **no** implica Backlog instalado. Descubre con `groma plugin list` y `backlog --version`.
 
 Fuentes verificadas: [Groma README](https://github.com/MrLesk/Groma.md/blob/main/README.md), [configuración](https://github.com/MrLesk/Groma.md/blob/main/docs/config.md), [guía oficial de enlaces](https://github.com/MrLesk/Groma.md/blob/main/docs/agent-instructions/backlog.md), [plugin](https://github.com/MrLesk/Groma.md/blob/main/plugins/work-sources/backlog/src/index.ts) y [Backlog README](https://github.com/MrLesk/Backlog.md/blob/main/README.md#groma-md).
 
