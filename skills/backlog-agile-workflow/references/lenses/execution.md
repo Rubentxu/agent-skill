@@ -9,3 +9,5 @@
 **Salida:** `estado observado | progreso | pruebas reales o NOT_RUN | próximos pasos | bloqueos`.
 
 **Handoffs según disponibilidad:** `pure-functional-design` cuando hay una transformación arquitectónica; `pipelinek-local-ci` para pipelines locales existentes; `agent-secretless` para operaciones con credenciales; `delivery-first-testing` para garantías y tests mínimos. No se presumen herramientas instaladas. El commit del slice debe enlazar los IDs existentes de Backlog.md/roadmap/ADR/SPEC, describir implementación y verificación y pasar el [guard de Git](../repository-hygiene.md) para evitar anexar documentación privada/ZIP de planificación.
+
+**Seguimiento Groma opcional:** cuando el CLI real esté instalado, antes de un cambio consultar `groma view <archivo>`; después de **cada archivo modificado**, conservar la lista completa de `--modified-file` en Backlog.md (no solo el último). Usar [groma-task-linking](groma-task-linking.md) para mover referencias tras combine/rename y no reescanear/curar todo el mapa por cada edición rutinaria. Los comentarios de código no llevan IDs de roadmap/tareas; esos metadatos se conservan en Backlog.md y trailers del commit.

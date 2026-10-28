@@ -73,3 +73,7 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 ## Colaboración opcional con backlog-agile-workflow
 
 Cuando el agente disponga de `backlog-agile-workflow`, vincular refactors a tareas, hitos ROADMAP y ADR/SPEC existentes; revisar trabajo anterior por IDs y SHAs antes de proponer tareas duplicadas. En el commit de implementación documentar decisión arquitectónica, cómo se implementó y evidencia de equivalencia o `NOT_RUN`. No versionar documentos de gestión ni ZIP de esos materiales en el proyecto consumidor; las referencias/ejemplos de esta skill distribuida sí forman parte de su código.
+
+## Observación Groma opcional para refactors
+
+Si `groma` está instalado y se observa su mapa, usar `groma view <archivo>` y `groma view --plain` para comprender ownership y relaciones, contrastándolos con código real. El primer scan no certifica arquitectura. `groma lint` describe potenciales duplicaciones, **no** recomienda automáticamente extraer funciones: comparar `KEEP_AS_IS`. El scanner Kotlin es experimental y no aporta fingerprints de duplicación como el de Rust. Delegar el seguimiento TASK/modifiedFiles/refs a `backlog-agile-workflow` cuando esté disponible; no editar Groma OKF como efecto de un refactor.

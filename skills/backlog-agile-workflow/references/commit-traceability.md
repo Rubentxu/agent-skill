@@ -52,3 +52,7 @@ Admitir varias referencias con **trailers repetidos**, no con arrays/cadenas amb
 ```
 
 El ejemplo es ficticio. Para producirlo, el agente puede utilizar Git de forma **solo lectura** y curar los resultados en un archivo temporal privado. No almacenar estos JSON en el repositorio, ni introducir un índice persistente adicional a Backlog.md.
+
+## Identificadores Groma como pistas adicionales
+
+Cuando Groma ha observado un componente C4, añadir su ID como `--add-ref` a Backlog.md **solo** si el cambio planificado lo requiere y no queda cubierto por `modifiedFiles`. Los IDs de Groma pueden ser sustituidos por operaciones combine/rename; sus reemplazos no generan alias persistentes. Conservar referencias originales ROADMAP/ADR/SPEC y commit SHA. El trailer adicional `Groma-Component:` es opcional y solo informativo, no prueba de ownership permanente; no sustituye TASK/ADR/SPEC ni evidencia de tests.
