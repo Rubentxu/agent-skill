@@ -43,10 +43,10 @@ Instalación una vez integrado en el repositorio de skills:
 npx skills add Rubentxu/agent-skill --skill pure-functional-design --agent opencode
 ```
 
-Este paquete es una **propuesta inicial local**; no está publicado en GitHub ni acreditado en los repositorios de producción. Evaluaciones del agente y compilación de ejemplos se declaran por separado de los tests del selector.
+La skill está publicada en `main` de `Rubentxu/agent-skill`. Los tests del router y las sesiones sintéticas solo validan **decisiones y navegación**, no certifican refactors de aplicaciones externas. Las evaluaciones del agente y los tests de cualquier aplicación consumidora son verificaciones independientes.
 
 ## Convivencia
 
 `delivery-first-testing` sigue siendo dueño de elección de tests, UAT efímero, regresiones, gates y certificación. `cognicode-diagrams` puede ayudar al descubrimiento de símbolos y relaciones cuando está disponible y sus precondiciones se cumplen. Esta skill no introduce su propio sistema de auditoría ni mezcla capacidad de observar con la de cambiar código.
 
-Ejemplos contextualizados: [refactor Rust](examples/refactor-existing-rust.json) y [refactor Kotlin](examples/refactor-existing-kotlin.json).
+Ejemplos **genéricos y sintéticos**, sin dependencias de proyectos ajenos: [refactor Rust](examples/refactor-existing-rust.json), [refactor Kotlin](examples/refactor-existing-kotlin.json) y [evaluaciones portables](references/portable-evaluations.md). Se pueden usar las recetas en cualquier aplicación compatible después de inspeccionar sus propios contratos y código.
