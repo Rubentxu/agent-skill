@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "lenses": [
+    {
+      "id": "discovery",
+      "status": "ready",
+      "intents": [
+        "discover"
+      ],
+      "playbook": "references/lenses/discovery.md"
+    },
+    {
+      "id": "capture",
+      "status": "ready",
+      "intents": [
+        "capture"
+      ],
+      "playbook": "references/lenses/capture.md"
+    },
+    {
+      "id": "triage",
+      "status": "ready",
+      "intents": [
+        "triage",
+        "review"
+      ],
+      "playbook": "references/lenses/triage.md"
+    },
+    {
+      "id": "refinement",
+      "status": "ready",
+      "intents": [
+        "refine",
+        "plan"
+      ],
+      "playbook": "references/lenses/refinement.md"
+    },
+    {
+      "id": "execution",
+      "status": "ready",
+      "intents": [
+        "execute",
+        "plan"
+      ],
+      "playbook": "references/lenses/execution.md"
+    },
+    {
+      "id": "verification",
+      "status": "ready",
+      "intents": [
+        "verify",
+        "close"
+      ],
+      "playbook": "references/lenses/verification.md"
+    },
+    {
+      "id": "review-maintenance",
+      "status": "ready",
+      "intents": [
+        "review",
+        "maintain"
+      ],
+      "playbook": "references/lenses/review-maintenance.md"
+    },
+    {
+      "id": "sprint-forecast",
+      "status": "planned",
+      "intents": [
+        "review"
+      ],
+      "playbook": "references/navigation.md"
+    }
+  ]
+}
