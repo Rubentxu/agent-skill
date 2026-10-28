@@ -7,3 +7,5 @@
 5. Confirmar IDs devueltos por CLI y reconsultar con `task view --json`. No construir IDs por secuencias inferidas.
 
 **Anti-patrón:** convertir «moderniza la aplicación» en 30 tickets sintácticos sin usuarios ni contratos. **Resultado:** un borrador o tarea mínima con incertidumbre explícita.
+
+**Kanban CLI ampliada:** para crear tarjetas directamente, consultar [board-create](board-create.md). Un trabajo impreciso queda como draft; el CLI soporta `backlog task create` con AC repetidas y refs existentes. El plan completo se prepara justo antes de implementarlo. `task list --json` no muestra archivados; no concluir ausencia de duplicados sin revisar identidades previas.

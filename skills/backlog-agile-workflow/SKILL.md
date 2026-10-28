@@ -9,7 +9,7 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 
 ## Contrato de arranque y descubrimiento
 
-1. Determinar la **intención de la conversación** y etapa vigente: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|git-hygiene|trace|architecture|curate-architecture|map-task|catalog`. No arrastrar lentes de otra intención por inercia.
+1. Determinar la **intención de la conversación** y etapa vigente: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|git-hygiene|trace|architecture|curate-architecture|map-task|create-task|move-task|archive-task|restore-task|delete-task|catalog`. No arrastrar lentes de otra intención por inercia.
 2. Verificar si `backlog` existe y qué proyecto está activo **sin instalar ni inicializar automáticamente**. Para tareas reales, leer primero `backlog instructions overview`; después solo `backlog instructions task-creation`, `task-execution` o `task-finalization` cuando correspondan. La ayuda local prevalece si difiere de la documentación empaquetada.
 3. Si la CLI no está disponible, mostrar opciones de instalación para aprobación; `npx backlog.md ...` es una alternativa ocasional, **nunca** `npx backlog ...` (paquete distinto). Si no hay proyecto inicializado, proponer `backlog init` pero no ejecutar una configuración interactiva sin autorización.
 4. Descubrir preferencias y límites del proyecto vía `backlog config get <clave>` cuando se conozca el comando y consultando la CLI actual; `statuses`, `defaultStatus`, `definition_of_done`, `projects`, `remoteOperations`, `autoCommit`, `bypassGitHooks`, `checkActiveBranches`, `onStatusChange`. No suponer columnas fijas ni que cerrar equivale a archivar.
@@ -20,6 +20,7 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 ## Flujo ágil: valor, límites de WIP y evidencia
 
 - **Desde especificaciones:** ROADMAP, ADR, SPEC, gates y receipts son autoridades diferentes: convertir objetivos en propuestas de tareas con referencia estable, reconstruir dependencias y comparar con el backlog existente antes de escribir. Ver [contrato spec-packet](references/spec-contract.md) y [proyección](references/lenses/spec-reconciliation.md). Nunca transformar cada sección histórica en una tarea.
+- **Operar Kanban (CRUD real):** activar `create-task` para crear, `move-task` para cambiar columnas, `archive-task` para retirar del board y `restore-task` para recuperarla; `delete-task` obliga a mantenimiento humano independiente. Cargar solo la lente aplicable desde el [catálogo](references/lens-registry.json). El helper `scripts/board_crud.py` prepara comandos estructurados con configuración, permisos y gates, pero **nunca ejecuta ni modifica Backlog.md**. Done y Archive son conceptos distintos; una archivada inacabada continúa bloqueando sus dependientes.
 - **Capturar:** buscar duplicados antes de crear. Ambigüedades → borrador (`backlog draft create`) o tarea con incertidumbre explícita, según aceptación; no convertir una idea vaga en veinte tareas especulativas.
 - **Refinar:** una capacidad observable por tarea, criterios de aceptación verificables y pequeños, Definition of Done del proyecto; dependencias solamente si son bloqueantes reales. Registrar decisiones arquitectónicas como decisiones, no como pseudo-tareas.
 - **Priorizar:** seleccionar trabajo listo (`isReady` derivado de JSON, o `backlog task list --ready`) y alto valor con bajo riesgo; no inventar estimaciones, sprint commitments, ni prioridades. Una tarea bloqueada o identidad de dependencia ambigua no es lista.
@@ -61,6 +62,9 @@ description: "Gestiona trabajo ágil local-first con Backlog.md CLI: captura y r
 | ¿Cómo priorizar hitos y descomponerlos en tareas útiles? | [spec-decomposition](references/lenses/spec-decomposition.md) |
 | ¿Cómo conciliar especificaciones y tareas ya existentes? | [spec-reconciliation](references/lenses/spec-reconciliation.md) |
 | ¿Cómo registrar ideas y evitar duplicados? | [capture](references/lenses/capture.md) |
+| ¿Cómo crear una tarjeta nueva en el Kanban? | [board-create](references/lenses/board-create.md) |
+| ¿Cómo mover a In Progress, Done o reabrir? | [board-transitions](references/lenses/board-transitions.md) |
+| ¿Cómo archivar, restaurar y evitar borrado destructivo? | [board-archive-restore](references/lenses/board-archive-restore.md) |
 | ¿Qué tarea aporta valor y está desbloqueada? | [triage](references/lenses/triage.md) |
 | ¿Cómo separar una capacidad en una tarea verificable? | [refinement](references/lenses/refinement.md) |
 | ¿Cómo ejecutar un ciclo corto sin deriva? | [execution](references/lenses/execution.md) |

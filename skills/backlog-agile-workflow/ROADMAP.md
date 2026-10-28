@@ -55,3 +55,11 @@
 - Helper puro que preserva la lista completa `modifiedFiles` y referencias, incluidos los IDs sustituidos por combine/rename.
 - Guard Git de OKF, config y ZIP/exportaciones privadas, con advertencias sobre la historia Git que se pierde al ignorarlos.
 - Validación sintética del router, helper y clasificación; **pendiente** una prueba conjunta de ambas CLIs en un workspace autorizado y efímero. No reclamar compatibilidad completa de versiones, watch, modo --no-git o action de PR sin ella.
+
+## S7 — CRUD Kanban completo y seguro
+
+- Nuevas lentes de creación, transiciones y archivo/restauración; `delete` permanece como operación destructiva fuera del ciclo automático.
+- Router de intención que distingue `create-task`, `move-task`, `archive-task`, `restore-task`, `delete-task` sin inventar estados ni archivar automáticamente al cerrar.
+- Propuestas deterministas de argv mediante `board_crud.py`: preflight de configuración, validación de evidencia de Done, readiness para comenzar, idempotencia y revisión de dependencias de cancelaciones.
+- Tests unitarios con fixtures sintéticas sin escribir tareas ni abrir el tablero TUI. Validar en entorno temporal autorizado con versión real de la CLI antes de afirmar compatibilidad end-to-end.
+- Conservar el mismo contrato de tareas privadas fuera de Git y trazabilidad mediante IDs/SHAs en commits.

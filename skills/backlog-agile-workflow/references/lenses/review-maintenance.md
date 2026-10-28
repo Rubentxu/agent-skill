@@ -8,3 +8,5 @@
 6. `backlog board export` crea/sobrescribe ficheros según flags: confirmar destino antes de generar un informe.
 
 **Salida:** 1 problema del proceso, 1 mejora, 1 señal futura para revisarla; mantener el resto `KEEP_AS_IS`.
+
+**Archivo y restauración:** usar [board-archive-restore](board-archive-restore.md) para tareas Done, canceladas, duplicadas o inválidas. No marcar Done para sacarlas del tablero, no archivar automáticamente al cerrar y no borrar registros para simplificar métricas. Tras cualquier operación, comprobar el estado real vía CLI.
