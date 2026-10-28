@@ -47,3 +47,11 @@
 - Reconciliar tareas con historial mediante índice puro opcional. Ante implementaciones ya abordadas, pedir revisión, no crear una segunda tarea ni certificar DONE.
 - Invocar especialistas por disponibilidad: testing, CI PipelineK, refactorización funcional y secretless.
 - Probar con fixtures sintéticas sin modificar proyectos reales. La modalidad de Backlog.md con Git ignorado requiere plan de conservación/sincronización externa.
+
+## S6 — Groma integrado como capacidad opcional
+
+- Investigación de la integración oficial mediante `workSources.backlog`, `task list/view --json`, `--watch`, referencias y changed files.
+- Lentes de arquitectura C4 y enlace de tareas, router con Groma opcional y Backlog independiente.
+- Helper puro que preserva la lista completa `modifiedFiles` y referencias, incluidos los IDs sustituidos por combine/rename.
+- Guard Git de OKF, config y ZIP/exportaciones privadas, con advertencias sobre la historia Git que se pierde al ignorarlos.
+- Validación sintética del router, helper y clasificación; **pendiente** una prueba conjunta de ambas CLIs en un workspace autorizado y efímero. No reclamar compatibilidad completa de versiones, watch, modo --no-git o action de PR sin ella.
