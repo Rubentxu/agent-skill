@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "board-operation",
+  "operation": "archive",
+  "statuses": [
+    "To Do",
+    "In Progress",
+    "Done"
+  ],
+  "terminalStatus": "Done",
+  "task": {
+    "id": "TASK-8",
+    "status": "To Do",
+    "archived": false,
+    "finalSummaryRecorded": true
+  },
+  "archiveReason": "duplicate",
+  "dependencyImpact": "reviewed",
+  "config": {
+    "autoCommit": false,
+    "remoteOperations": false,
+    "bypassGitHooks": false,
+    "onStatusChange": false
+  },
+  "authorized": false
+}

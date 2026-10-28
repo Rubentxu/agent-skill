@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "board-operation",
+  "operation": "transition",
+  "statuses": [
+    "To Do",
+    "In Progress",
+    "Done"
+  ],
+  "terminalStatus": "Done",
+  "task": {
+    "id": "TASK-7",
+    "status": "In Progress",
+    "archived": false,
+    "isReady": true,
+    "acceptanceCriteriaCount": 2,
+    "acceptanceCriteriaCompleted": 2,
+    "definitionOfDoneCount": 1,
+    "definitionOfDoneCompleted": 1,
+    "finalSummaryRecorded": true
+  },
+  "targetStatus": "Done",
+  "gateResult": "PASS",
+  "config": {
+    "autoCommit": false,
+    "remoteOperations": false,
+    "bypassGitHooks": false,
+    "onStatusChange": false
+  },
+  "authorized": false
+}
