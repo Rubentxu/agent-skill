@@ -1,0 +1,83 @@
+name: Backlog and Groma contextual integration smoke
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/backlog-context-integration.yml'
+      - '.claude-plugin/marketplace.json'
+      - 'plugins/backlog-context/**'
+      - 'skills/backlog-agile-workflow/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-cli-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.4'
+      - name: Install real CLI tools in ephemeral runner
+        run: |
+          npm install --global @anthropic-ai/claude-code backlog.md
+          bun install --global groma.md
+          claude --version
+          backlog --version
+          groma --version
+      - name: Validate plugin and marketplace with official Claude Code CLI
+        run: |
+          claude plugin validate --strict ./plugins/backlog-context
+          claude plugin validate --strict .
+      - name: Initialize disposable project and exercise real Backlog CLI
+        run: |
+          set -euo pipefail
+          fixture="$(mktemp -d)"
+          echo "FIXTURE=$fixture" >> "$GITHUB_ENV"
+          cd "$fixture"
+          git init -q
+          git config user.email smoke@example.invalid
+          git config user.name "Ephemeral Smoke"
+          mkdir src
+          printf 'export const answer = 42;\n' > src/example.ts
+          backlog init "Context Smoke" --defaults --no-git
+          backlog task create "Validate contextual tracking" --ac "Read-only tooling does not change task state"
+          backlog task list --json > tasks-before.json
+          node -e 'const a=require("./tasks-before.json");if(a.kind!=="task-list"||a.tasks.length<1)process.exit(1)'
+          backlog task list --json > tasks-after.json
+          diff -u tasks-before.json tasks-after.json
+      - name: Exercise real Groma CLI without launching servers or scanning implicitly
+        run: |
+          set -euo pipefail
+          cd "$FIXTURE"
+          groma init "Context Smoke" --directory groma
+          test -f groma/config.json
+          find groma -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/groma-before.txt
+          groma agent-instructions inspect > /tmp/groma-guidance.txt
+          groma view src/example.ts > /tmp/groma-view.txt 2>&1 || true
+          find groma -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/groma-after.txt
+          diff -u /tmp/groma-before.txt /tmp/groma-after.txt
+      - name: Exercise plugin hook JSON with real project and CLI
+        run: |
+          set -euo pipefail
+          cd "$FIXTURE"
+          mkdir -p "$RUNNER_TEMP/context-state"
+          export CLAUDE_PROJECT_DIR="$FIXTURE"
+          export CLAUDE_PLUGIN_DATA="$RUNNER_TEMP/context-state"
+          printf '{"hook_event_name":"SessionStart","session_id":"smoke01","cwd":"%s"}' "$FIXTURE" |
+            node --experimental-strip-types "$GITHUB_WORKSPACE/plugins/backlog-context/src/hook.ts" > /tmp/hook-output.json
+          node -e 'const a=require("/tmp/hook-output.json");if(a.hookSpecificOutput?.hookEventName!=="SessionStart")process.exit(1)'
+          printf '{"hook_event_name":"PostToolBatch","session_id":"smoke01","cwd":"%s","tool_calls":[{"tool_name":"Read","tool_input":{"file_path":"%s/src/example.ts"},"tool_response":"source"}]}' "$FIXTURE" "$FIXTURE" |
+            node --experimental-strip-types "$GITHUB_WORKSPACE/plugins/backlog-context/src/hook.ts" > /tmp/hook-batch.json
+          # A missing Groma owner is acceptable: no scan is run by the hook.
+          test ! -s /tmp/hook-batch.json || node -e 'const a=require("/tmp/hook-batch.json");if(a.hookSpecificOutput?.hookEventName!=="PostToolBatch")process.exit(1)'
+          backlog task list --json > tasks-final.json
+          diff -u tasks-before.json tasks-final.json
+          find groma -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/groma-final.txt
+          diff -u /tmp/groma-before.txt /tmp/groma-final.txt
