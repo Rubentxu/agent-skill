@@ -39,3 +39,11 @@
 - Evals de agente con documentos sintéticos extensos y mezclados (planes, históricos, receipts, contradicciones).
 - Validar con una instalación temporal de Backlog.md el formato exacto de `references` y compatibilidad de versiones antes de automatizar propuestas de `--ref`.
 - Medir falsos positivos de extracción, cantidad de preguntas necesarias y coste de navegación. No introducir indexador, base de datos secundaria ni sincronización automática como requisito.
+
+## S5 — Privacidad Git e identificadores cruzados
+
+- Detectar planificaciones y ZIP rastreados en índices de aplicaciones consumidoras; conservar bytes, reubicar/respaldar y proponer `.gitignore`/untracking, no ejecutar destrucción de forma automática.
+- Escribir en commits IDs estables de tarea, bloque roadmap, ADR/SPEC existentes junto con implementación y evidencia; revisar historia antes de generar trabajo duplicado.
+- Reconciliar tareas con historial mediante índice puro opcional. Ante implementaciones ya abordadas, pedir revisión, no crear una segunda tarea ni certificar DONE.
+- Invocar especialistas por disponibilidad: testing, CI PipelineK, refactorización funcional y secretless.
+- Probar con fixtures sintéticas sin modificar proyectos reales. La modalidad de Backlog.md con Git ignorado requiere plan de conservación/sincronización externa.

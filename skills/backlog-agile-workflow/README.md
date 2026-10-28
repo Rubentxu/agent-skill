@@ -54,3 +54,19 @@ La herramienta **Backlog.md** es un requisito separado para usar tareas reales. 
 - Probado: selector, rutas internas, escenarios sintéticos. No se afirma haber ejecutado una CLI externa ni un proyecto real.
 - Integraciones opcionales: `delivery-first-testing` (garantías), `pure-functional-design` (diseño/refactor), `cognicode-diagrams` (observaciones con sus restricciones). Sin acoplamiento de archivos.
 - En backlog sin inicializar, la recomendación es preparación, no una ejecución de `init` en segundo plano.
+
+## Gestión privada fuera de Git y trazabilidad
+
+Por política del consumidor, ROADMAP, ADR, SPEC, documentos de Backlog.md y ZIP de gestión **no** se rastrean en el índice Git. Detectar primero con el [guard](references/repository-hygiene.md); `git rm --cached` preserva bytes pero requiere respaldo privado, sincronización colaborativa y consentimiento. Las fuentes de esta skill son artefactos distribuibles y **sí** se versionan.
+
+```bash
+python3 skills/backlog-agile-workflow/scripts/git_artifact_guard.py --repo . --check
+python3 skills/backlog-agile-workflow/scripts/commit_trace.py commit-messages.json spec-packet.json
+python3 skills/backlog-agile-workflow/scripts/spec_projection.py spec-packet.json task-list.json implementation-references.json
+```
+
+Los JSON son efímeros, se mantienen fuera del índice y no son una nueva base de datos. El índice de commits solo identifica trabajo posiblemente implementado; no confirma cierre. Ver [contrato de commit](references/commit-traceability.md).
+
+## Especialistas recomendados cuando estén instalados
+
+`delivery-first-testing` selecciona pruebas; `pipelinek-local-ci` gobierna gates locales si PipelineK es la CI del proyecto; `pure-functional-design` diagnostica arquitectura y refactors; `agent-secretless` ejecuta operaciones protegidas sin exponer credenciales. `backlog-agile-workflow` es dueño de las tareas, no de esos dominios.

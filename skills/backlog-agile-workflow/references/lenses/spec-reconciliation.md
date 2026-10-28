@@ -11,3 +11,5 @@
 7. Cerrar un hito/gate solo según su autoridad externa y recibos; el estado Done de Backlog.md es una proyección, no certificación del build o release.
 
 **Ausencia de Backlog.md:** preparar paquete/plan `NEEDS_CORPUS`, sin instalar ni inicializar automáticamente. **Problema en la CLI:** declarar BLOCKED, no escribir la tarea Markdown.
+
+**Antes de proponer `PROPOSE_CREATE`:** inspeccionar documentos privados, tareas archivadas, drafts, IDs exactos y trailers de los commits disponibles. El tercer índice opcional de `spec_projection.py` permite detectar trabajo posiblemente ya implementado y producir `REVIEW_IMPLEMENTATION`; un SHA nunca certifica equivalente funcional, ni sustituye AC/DoD. Antes del siguiente commit ejecutar [guard del índice](../repository-hygiene.md).
