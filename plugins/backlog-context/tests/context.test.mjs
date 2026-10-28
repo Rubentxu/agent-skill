@@ -121,7 +121,7 @@ test("Groma adapter enriches a file read without scanning or writing Backlog",()
   writeFileSync(join(f.root,"groma","config.json"),'{"version":"1"}');
   const bin=mkdtempSync(join(tmpdir(),"fake-groma-bin-"));
   const cmd=join(bin,"groma");
-  writeFileSync(cmd,"#!/bin/sh\\nprintf '%s\\n' 'Owner' '-----' 'component-42  component  Safe' 'parent: system-root'\\n");
+  writeFileSync(cmd,"#!/bin/sh\nprintf '%s\n' 'Owner' '-----' 'component-42  component  Safe' 'parent: system-root'\n");
   chmodSync(cmd,0o755);
   const before=readFileSync(join(f.root,"backlog","config.yml"),"utf8");
   const original=process.env.PATH;
