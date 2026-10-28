@@ -1,4 +1,7 @@
 import test from "node:test";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { chmodSync } from "node:fs";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, symlinkSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -110,6 +113,39 @@ test("plugin state never writes into consumer project when data env misconfigure
   const result=handleEvent(f.event("SessionStart"),env);
   assert.match(result.hookSpecificOutput.additionalContext,/backlog task list/);
   assert.equal(existsSync(join(f.root,".claude")),false);
+});
+test("Groma adapter enriches a file read without scanning or writing Backlog",()=>{
+  if (process.platform === "win32") return;
+  const f=fixture();
+  mkdirSync(join(f.root,"groma"));
+  writeFileSync(join(f.root,"groma","config.json"),'{"version":"1"}');
+  const bin=mkdtempSync(join(tmpdir(),"fake-groma-bin-"));
+  const cmd=join(bin,"groma");
+  writeFileSync(cmd,"#!/bin/sh\\nprintf '%s\\n' 'Owner' '-----' 'component-42  component  Safe' 'parent: system-root'\\n");
+  chmodSync(cmd,0o755);
+  const before=readFileSync(join(f.root,"backlog","config.yml"),"utf8");
+  const original=process.env.PATH;
+  try {
+    process.env.PATH=bin+":"+original;
+    const result=handleEvent({...f.event("PostToolBatch"),tool_calls:[{
+      tool_name:"Read",tool_input:{file_path:f.file},tool_response:"file contents"
+    }]},f.env);
+    assert.match(result.hookSpecificOutput.additionalContext,/component-42/);
+    assert.match(result.hookSpecificOutput.additionalContext,/lectura, no modificación/);
+    assert.equal(readFileSync(join(f.root,"backlog","config.yml"),"utf8"),before);
+  } finally {process.env.PATH=original;}
+});
+test("standalone hook reads real stdin JSON and prints valid Claude context",()=>{
+  const f=fixture();
+  const executable=fileURLToPath(new URL("../src/hook.ts",import.meta.url));
+  const run=spawnSync(process.execPath,["--experimental-strip-types",executable],{
+    input:JSON.stringify(f.event("SessionStart")),
+    env:{...process.env,...f.env},encoding:"utf8",timeout:3000
+  });
+  assert.equal(run.status,0,run.stderr);
+  const output=JSON.parse(run.stdout);
+  assert.equal(output.hookSpecificOutput.hookEventName,"SessionStart");
+  assert.match(output.hookSpecificOutput.additionalContext,/backlog task list/);
 });
 test("malformed contexts and unknown events fail open",()=>{
   const f=fixture();
