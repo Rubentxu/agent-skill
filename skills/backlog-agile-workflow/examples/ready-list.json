@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "task-list",
+  "tasks": [
+    {"id":"TASK-9","title":"Search supports empty results","status":"To Do","priority":"High","archived":false,"isReady":true},
+    {"id":"TASK-10","title":"Search filters by owner","status":"To Do","priority":"High","archived":false,"isReady":false},
+    {"id":"TASK-12","title":"Document search contract","status":"To Do","priority":"Medium","archived":false,"isReady":true}
+  ]
+}
