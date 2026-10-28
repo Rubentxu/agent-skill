@@ -12,7 +12,7 @@ function fixture() {
   mkdirSync(join(root, "backlog"));
   writeFileSync(join(root, "src", "example.ts"), "export const result = 1;");
   writeFileSync(join(root, "backlog", "config.yml"), "projectName: sample");
-  const data = join(root, "private-plugin-state");
+  const data = mkdtempSync(join(tmpdir(), "backlog-context-state-"));
   const env = { CLAUDE_PROJECT_DIR: root, CLAUDE_PLUGIN_DATA: data };
   const event = hook_event_name => ({ hook_event_name, cwd: root, session_id: "session-1" });
   return { root, data, env, event, file: join(root, "src", "example.ts") };
@@ -103,6 +103,13 @@ test("kernel deterministic and bounded",()=>{
   assert.equal(paths.length,64);
   assert.equal(boundedPush(paths,"path-89").length,64);
   assert.match(presentation({kind:"inspect"}),/sin crear tareas/);
+});
+test("plugin state never writes into consumer project when data env misconfigured",()=>{
+  const f=fixture();
+  const env={CLAUDE_PROJECT_DIR:f.root, CLAUDE_PLUGIN_DATA:join(f.root,".claude")};
+  const result=handleEvent(f.event("SessionStart"),env);
+  assert.match(result.hookSpecificOutput.additionalContext,/backlog task list/);
+  assert.equal(existsSync(join(f.root,".claude")),false);
 });
 test("malformed contexts and unknown events fail open",()=>{
   const f=fixture();
