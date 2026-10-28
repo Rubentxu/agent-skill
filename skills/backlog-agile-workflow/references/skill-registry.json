@@ -5,7 +5,10 @@
       "id": "delivery-first-testing",
       "intents": [
         "verify",
-        "close"
+        "close",
+        "plan",
+        "execute",
+        "sync-specs"
       ],
       "reason": "Elegir pruebas mínimas y conservar evidencia sin crear un segundo harness"
     },
@@ -14,7 +17,9 @@
       "intents": [
         "refine",
         "plan",
-        "execute"
+        "execute",
+        "decompose",
+        "sync-specs"
       ],
       "reason": "Explorar una transformación funcional o refactor si el problema lo requiere"
     },
@@ -25,6 +30,25 @@
         "plan"
       ],
       "reason": "Descubrir relaciones de código solo si CogniCode y su grafo están disponibles"
+    },
+    {
+      "id": "pipelinek-local-ci",
+      "intents": [
+        "plan",
+        "execute",
+        "verify",
+        "close"
+      ],
+      "reason": "Ejecutar y verificar PipelineK CI local únicamente si el proyecto usa PipelineK y la skill está disponible"
+    },
+    {
+      "id": "agent-secretless",
+      "intents": [
+        "execute",
+        "close",
+        "maintain"
+      ],
+      "reason": "Operar credenciales mediante capacidades reales de ASV, sin exponer secretos"
     }
   ]
 }

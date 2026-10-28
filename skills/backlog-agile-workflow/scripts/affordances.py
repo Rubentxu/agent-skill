@@ -10,7 +10,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 INTENTS = frozenset({"discover", "capture", "triage", "refine", "plan", "execute",
-                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "catalog"})
+                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "catalog"})
 BASIS = frozenset({"observed", "unknown", "stale"})
 CLI = frozenset({"available", "missing", "unknown"})
 PROJECT = frozenset({"initialized", "absent", "unknown"})
@@ -118,7 +118,7 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["decision"] = "INSPECT_MORE"
         result["_links"].append(_notice("refresh-basis", "Reexaminar un proyecto que pudo cambiar"))
         return result
-    offline_spec = intent in {"specify", "decompose"}
+    offline_spec = intent in {"specify", "decompose", "git-hygiene", "trace"}
     if cli != "available" and not offline_spec:
         result["decision"] = "DISCOVER"
         result["_links"].append(_notice("inspect-cli", "Verificar backlog --version y backlog --help, sin instalar automáticamente"))
@@ -141,8 +141,12 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["_links"].append(_notice("read-lens", f"Guía {lens['id']}", href=_local(lens["playbook"])))
     result["suggested_reads"] = ([["backlog", "instructions", "overview"]]
                                   if cli == "available" and project == "initialized" else [])
-    if offline_spec:
+    if intent in {"specify", "decompose"}:
         result["_links"].append(_notice("inspect-specifications", "Inspeccionar ROADMAP, ADR, SPEC, gates y estado de la fuente canónica"))
+    if intent == "git-hygiene":
+        result["_links"].append(_notice("audit-git-index", "Comprobar índice con git_artifact_guard.py (solo lectura)"))
+    if intent == "trace":
+        result["_links"].append(_notice("inspect-commit-trailers", "Buscar IDs de tarea, bloque y ADR/SPEC en commits observados"))
     if intent in {"capture", "triage", "review", "maintain", "sync-specs"}:
         result["suggested_reads"].append(["backlog", "task", "list", "--json"])
     elif intent in NEEDS_TASK or intent == "refine":
