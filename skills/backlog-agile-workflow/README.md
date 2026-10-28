@@ -89,3 +89,35 @@ python3 skills/backlog-agile-workflow/scripts/groma_task_links.py \
 El helper solo propone argumentos, sin ejecutar comandos. El mapa inicial es evidencia de scanner, no diseño certificado. `groma scan` escribe OKF y `groma web` puede iniciar un servidor. Groma es opcional y Backlog.md continúa funcionando sin él.
 
 **Privacidad:** OKF `groma/`/`.groma/` y exports fuera del índice Git del consumidor, con backup privado. Se pierden garantías de historia, action en PR y colaboración basada en OKF versionado. `groma export` puede incluir código fuente: nunca publicar por defecto. Rust dispone de scanner; Kotlin es experimental, sin fingerprints para detección de duplicaciones.
+
+## Kanban CRUD — CLI completa, no solo planificación
+
+Las lentes [crear tarjeta](references/lenses/board-create.md), [transicionar estado](references/lenses/board-transitions.md) y [archivar/restaurar](references/lenses/board-archive-restore.md) utilizan comandos oficiales; no editan Markdown de Backlog.md directamente.
+
+```bash
+# Leer tablero sin abrir TUI ni servicio web
+backlog config get statuses
+backlog task list --json
+backlog task view TASK-7 --json
+
+# Crear solo tras buscar coincidencias y revisar referencias
+backlog task create "Título accionable" -d "Por qué hace falta" --ac "Resultado comprobable"
+# Mover usando un estado real de la configuración
+backlog task edit TASK-7 -s "In Progress"
+# Archive no es Done: se realiza por separado
+backlog task archive TASK-7
+backlog task restore TASK-7
+```
+
+Comandos propuestos por el **planificador puro**, sin ejecutar Backlog.md:
+
+```bash
+python3 skills/backlog-agile-workflow/scripts/board_crud.py \
+  skills/backlog-agile-workflow/examples/board-create.json
+python3 skills/backlog-agile-workflow/scripts/board_crud.py \
+  skills/backlog-agile-workflow/examples/board-transition.json
+python3 skills/backlog-agile-workflow/scripts/board_crud.py \
+  skills/backlog-agile-workflow/examples/board-archive.json
+```
+
+Los estados terminales, nombres de columnas, opciones de Git y callbacks deben observarse localmente. Los ejemplos son sintéticos. Los permisos no proceden del script: el agente debe confirmarlos antes de ejecutar la CLI real; después vuelve a leer la tarea y el board. La operación `delete` se bloquea por defecto, no es equivalente al archivo.

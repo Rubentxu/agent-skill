@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "board-operation",
+  "operation": "create",
+  "statuses": [
+    "To Do",
+    "In Progress",
+    "Done"
+  ],
+  "terminalStatus": "Done",
+  "duplicateReview": "clear",
+  "newTask": {
+    "title": "Mostrar estado de sincronización",
+    "description": "Los operadores no pueden distinguir un retraso normal de un fallo.",
+    "acceptanceCriteria": [
+      "El estado muestra el último resultado observado",
+      "Un error se comunica sin ocultar el estado anterior"
+    ],
+    "references": [
+      "docs/ROADMAP.md#R2.W1"
+    ]
+  },
+  "config": {
+    "autoCommit": false,
+    "remoteOperations": false,
+    "bypassGitHooks": false,
+    "onStatusChange": false
+  },
+  "authorized": false,
+  "defaultStatus": "To Do"
+}

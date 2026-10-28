@@ -129,6 +129,32 @@
         "map-task"
       ],
       "playbook": "references/lenses/groma-task-linking.md"
+    },
+    {
+      "id": "board-create",
+      "status": "ready",
+      "intents": [
+        "create-task"
+      ],
+      "playbook": "references/lenses/board-create.md"
+    },
+    {
+      "id": "board-transitions",
+      "status": "ready",
+      "intents": [
+        "move-task"
+      ],
+      "playbook": "references/lenses/board-transitions.md"
+    },
+    {
+      "id": "board-archive-restore",
+      "status": "ready",
+      "intents": [
+        "archive-task",
+        "restore-task",
+        "delete-task"
+      ],
+      "playbook": "references/lenses/board-archive-restore.md"
     }
   ]
 }

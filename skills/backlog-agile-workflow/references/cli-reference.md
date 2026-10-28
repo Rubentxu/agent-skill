@@ -28,3 +28,16 @@
 **Multilínea:** los caracteres `\n` en argumentos son literales, no saltos reales; preferir nuevas líneas reales o uso de `--append-notes` por líneas. **Peligro:** `--notes` reemplaza, `--append-notes` añade. La CLI preserva contenido ajeno y rehúsa reemplazar secciones heredadas ambiguas sin marcadores: no sortear esa validación editando Markdown manualmente.
 
 **No recomendadas a agentes sin control:** `backlog cleanup` requiere terminal interactivo; `backlog board`, `backlog browser` y `backlog config` sin argumentos también son interactivos; `backlog task delete` elimina definitivamente (tras archivo) y puede reescribir dependencias; `backlog doctor --fix` puede renumerar conflictos. Ninguno debe dispararse por una recomendación del router.
+
+## Kanban CRUD comprobado contra documentación upstream
+
+```bash
+backlog task create "Título" -d "Motivación" --ac "Criterio 1" --ac "Criterio 2"
+backlog task view <ID> --json
+backlog task edit <ID> -s "<columna-configurada>"
+backlog task archive <ID>
+backlog task restore <ID>
+```
+
+Ver las guías [creación](lenses/board-create.md), [transiciones](lenses/board-transitions.md) y [archivo/restauración](lenses/board-archive-restore.md). **No se archiva de oficio cuando Done**, ni se marca Done por archivar. Archivar una tarea sin terminar deja sus dependencias bloqueadas. La restauración conserva ID y estado; la tarea archivada no puede editarse. `backlog task delete` requiere archivado previo, puede liberar IDs y actualizar enlaces de otros registros: fuera de automatizaciones.
+`backlog board` es una interfaz interactiva, no un API para agentes; preferir `task list/view --json`. `backlog browser` inicia servidor local y no es necesario para CRUD. Antes de editar, leer `config get statuses` y efectos Git/callbacks. Tras cada operación, releer la tarea observada.
