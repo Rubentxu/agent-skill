@@ -112,6 +112,23 @@
         "sync-specs"
       ],
       "playbook": "references/lenses/commit-traceability.md"
+    },
+    {
+      "id": "groma-architecture",
+      "status": "ready",
+      "intents": [
+        "architecture",
+        "curate-architecture"
+      ],
+      "playbook": "references/lenses/groma-architecture.md"
+    },
+    {
+      "id": "groma-task-linking",
+      "status": "ready",
+      "intents": [
+        "map-task"
+      ],
+      "playbook": "references/lenses/groma-task-linking.md"
     }
   ]
 }
