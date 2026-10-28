@@ -8,3 +8,5 @@
 6. No archivar al cerrar automáticamente. Archivar exige operación de mantenimiento independiente; nunca borrar por inercia.
 
 **Anti-patrón:** marcar todas las casillas cuando «parece terminado». **Resultado:** cierre sustentado o `BLOCKED` con lo pendiente.
+
+**Antes del cierre:** enlazar tarea Backlog.md, bloque de roadmap, ADR/SPEC pertinentes y SHA del commit sin copiar contenidos privados. Verificar que el commit documenta qué implementó y qué verificó. Recoger evidencia realmente ejecutada de `delivery-first-testing` / `pipelinek-local-ci`, y de `agent-secretless` solo metadatos seguros. No cerrar por la existencia de un SHA; actualizar Backlog.md vía CLI y controlar los efectos de sus callbacks.

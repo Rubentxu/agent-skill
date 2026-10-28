@@ -121,3 +121,7 @@ leer nueva respuesta
 - no se ejecutaron comandos ASV inventados para sortear una relación;
 - cualquier human gate quedó en manos humanas;
 - el resultado distingue success, blocked, degraded y unsupported.
+
+## Colaboración opcional con backlog-agile-workflow
+
+Si se anuncia `backlog-agile-workflow`, usar IDs de tareas y ROADMAP/ADR/SPEC como metadatos de contexto, nunca como permiso de acceso. ASV sigue decidiendo qué capacidades están realmente autorizadas. Registrar en Backlog.md solo resultado, bloqueo y recibo/commit SHA no sensible: no incluir secretos, documentos privados de gestión ni ZIP de planificación en commits. Respetar human gates y no inventar evidencias.

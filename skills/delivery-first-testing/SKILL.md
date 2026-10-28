@@ -66,3 +66,7 @@ description: "Orquesta verificación rápida orientada a entrega de valor en cam
 - Para RC, la comprobación se hizo sobre distribución y artefactos reales, no solo árbol fuente.
 
 [Ejemplos](examples/session-feature.json) · [Criterios de evidencia](references/evidence.md) · [Evaluaciones de la skill](tests/skill-evals.md)
+
+## Colaboración opcional con backlog-agile-workflow
+
+Si `backlog-agile-workflow` está realmente disponible, recibir como contexto IDs de tarea, bloque ROADMAP y ADR/SPEC y devolver garantías, instrumentos, resultado `PASS/FAIL/NOT_RUN` y recibos ejecutados. La skill de testing no crea ni cierra tareas ni publica documentos de gestión, Backlog.md o ZIP de planificación en Git; el commit de aplicación enlaza esos IDs y resume la evidencia. Un resultado de caché no debe llamarse test ejecutado.
