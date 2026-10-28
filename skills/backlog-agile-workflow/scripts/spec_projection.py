@@ -151,6 +151,33 @@ def _existing(snapshot: dict | None) -> tuple[dict[str, dict], list[dict], list[
     return refs, records, []
 
 
+def _implementation_index(evidence: dict | None, keys: set[str]) -> tuple[dict[str, list[dict]], list[str]]:
+    if evidence is None:
+        return {}, []
+    if (not isinstance(evidence, dict) or evidence.get("schemaVersion") != 1
+            or evidence.get("kind") != "implementation-references"
+            or not isinstance(evidence.get("matches"), dict)
+            or not isinstance(evidence.get("warnings", []), list)):
+        raise ValueError("Invalid implementation-references snapshot")
+    if not set(evidence["matches"]).issubset(keys):
+        raise ValueError("Implementation references contain unknown task keys")
+    matches = {}
+    for key, entries in evidence["matches"].items():
+        if not isinstance(entries, list):
+            raise ValueError("Implementation evidence must be list")
+        verified = []
+        for entry in entries:
+            if (not isinstance(entry, dict) or not isinstance(entry.get("sha"), str)
+                    or not re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", entry["sha"])
+                    or entry.get("status") != "REVIEW_ONLY"
+                    or not isinstance(entry.get("backlogTaskIds"), list)
+                    or not all(isinstance(t, str) and t for t in entry["backlogTaskIds"])):
+                raise ValueError("Malformed implementation evidence")
+            verified.append(entry)
+        matches[key] = verified
+    return matches, list(evidence.get("warnings", []))
+
+
 def _rank(factors: dict[str, str]) -> dict[str, Any]:
     # Ordinal tie-breaking, NOT a calibrated estimate or a CLI priority.
     score = 3 * PRIORITY[factors["impact"]] + 2 * PRIORITY[factors["urgency"]] + PRIORITY[factors["risk"]] - EFFORT[factors["effort"]]
@@ -158,9 +185,11 @@ def _rank(factors: dict[str, str]) -> dict[str, Any]:
     return {"tier": tier, "score": score, "why": "impact*3 + urgency*2 + risk - effort; ordinal proposal, requires human review"}
 
 
-def project(packet: dict, snapshot: dict | None) -> dict:
+def project(packet: dict, snapshot: dict | None, commit_evidence: dict | None = None) -> dict:
     milestones, tasks = _packet(packet)
     refs, records, warnings = _existing(snapshot)
+    commit_matches, commit_warnings = _implementation_index(commit_evidence, {t["key"] for t in tasks})
+    warnings.extend(commit_warnings)
     result = {"schemaVersion": 1, "kind": "backlog-projection", "status": "PROPOSAL_ONLY",
               "sourceOfTruth": "specification documents", "taskAuthority": "Backlog.md CLI",
               "milestones": [], "actions": [], "warnings": list(warnings), "summary": {}}
@@ -192,12 +221,22 @@ def project(packet: dict, snapshot: dict | None) -> dict:
             disposition = "INSPECT_STATUS"
         else:
             disposition = "PROPOSE_CREATE"
+        prior_commits = commit_matches.get(task["key"], [])
+        referenced_task_ids = {task_id for item in prior_commits for task_id in item["backlogTaskIds"]}
+        recorded_ids = {item["id"] for item in records}
+        if match and referenced_task_ids and match["id"] not in referenced_task_ids:
+            disposition = "REVIEW_IDENTITY_CONFLICT"
+        elif not match and referenced_task_ids.intersection(recorded_ids):
+            disposition = "REVIEW_POSSIBLE_DUPLICATE"
+        elif prior_commits and not match and disposition in {"PROPOSE_CREATE", "WAIT_FOR_DEPENDENCY_IDS", "INSPECT_STATUS"}:
+            disposition = "REVIEW_IMPLEMENTATION"
         pending_deps = [dep for dep in task["dependsOn"] if by_key[dep]["sourceRef"] not in refs]
         if disposition == "PROPOSE_CREATE" and pending_deps:
             disposition = "WAIT_FOR_DEPENDENCY_IDS"
         action = {"key": task["key"], "sourceRef": ref, "title": task["title"],
                   "milestoneKey": task["milestone"], "disposition": disposition,
                   "existingTaskId": match["id"] if match else None,
+                  "linkedCommitSHAs": [item["sha"] for item in prior_commits],
                   "priorityProposal": pri, "dependsOnKeys": task["dependsOn"],
                   "pendingDependencyKeys": pending_deps, "acceptanceCriteria": task["acceptanceCriteria"],
                   "definitionOfDone": task["definitionOfDone"], "outcome": task["outcome"],
@@ -208,6 +247,8 @@ def project(packet: dict, snapshot: dict | None) -> dict:
             action["possibleDuplicateIds"] = [t["id"] for t in same_title]
         if task["state"] in {"closed", "verified"} and not task["evidenceRefs"]:
             result["warnings"].append(f"{task['key']}: documentary completion without receipt reference; no certification inferred")
+        if prior_commits:
+            result["warnings"].append(f"{task['key']}: matching commits require current-code and acceptance review; no completion inferred")
         if match and match.get("archived") is True:
             result["warnings"].append(f"{task['key']}: archived task {match['id']} is read-only; restoration requires explicit approval")
         result["actions"].append(action)
@@ -226,11 +267,12 @@ def project(packet: dict, snapshot: dict | None) -> dict:
 
 
 def main() -> int:
-    if len(sys.argv) not in {2,3}:
-        raise SystemExit("Usage: spec_projection.py <spec-packet.json> [unfiltered-task-list.json]")
+    if len(sys.argv) not in {2, 3, 4}:
+        raise SystemExit("Usage: spec_projection.py <spec-packet.json> [unfiltered-task-list.json] [implementation-references.json]")
     packet=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
     snapshot=json.loads(Path(sys.argv[2]).read_text(encoding="utf-8")) if len(sys.argv)==3 else None
-    print(json.dumps(project(packet,snapshot),ensure_ascii=False,indent=2))
+    evidence=json.loads(Path(sys.argv[3]).read_text(encoding="utf-8")) if len(sys.argv)==4 else None
+    print(json.dumps(project(packet,snapshot,evidence),ensure_ascii=False,indent=2))
     return 0
 
 
