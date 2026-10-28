@@ -155,6 +155,38 @@
         "delete-task"
       ],
       "playbook": "references/lenses/board-archive-restore.md"
+    },
+    {
+      "id": "work-alignment",
+      "status": "ready",
+      "intents": [
+        "align-work"
+      ],
+      "playbook": "references/lenses/work-alignment.md"
+    },
+    {
+      "id": "unplanned-work",
+      "status": "ready",
+      "intents": [
+        "unplanned-work"
+      ],
+      "playbook": "references/lenses/unplanned-work.md"
+    },
+    {
+      "id": "dependency-management",
+      "status": "ready",
+      "intents": [
+        "manage-dependencies"
+      ],
+      "playbook": "references/lenses/dependency-management.md"
+    },
+    {
+      "id": "epic-management",
+      "status": "ready",
+      "intents": [
+        "manage-epic"
+      ],
+      "playbook": "references/lenses/epic-management.md"
     }
   ]
 }

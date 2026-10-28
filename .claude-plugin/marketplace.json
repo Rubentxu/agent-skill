@@ -1,0 +1,14 @@
+{
+  "name": "rubentxu-agent-skills",
+  "description": "Optional Claude Code adapters for reusable Rubentxu agent skills",
+  "owner": {
+    "name": "Rubentxu"
+  },
+  "plugins": [
+    {
+      "name": "backlog-context",
+      "source": "./plugins/backlog-context",
+      "description": "Read-only contextual Backlog.md and Groma.md hooks"
+    }
+  ]
+}

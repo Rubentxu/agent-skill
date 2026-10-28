@@ -121,3 +121,7 @@ python3 skills/backlog-agile-workflow/scripts/board_crud.py \
 ```
 
 Los estados terminales, nombres de columnas, opciones de Git y callbacks deben observarse localmente. Los ejemplos son sintéticos. Los permisos no proceden del script: el agente debe confirmarlos antes de ejecutar la CLI real; después vuelve a leer la tarea y el board. La operación `delete` se bloquea por defecto, no es equivalente al archivo.
+
+## Plugin contextual Claude Code opcional
+
+`plugins/backlog-context` (véase el [README del plugin](https://github.com/Rubentxu/agent-skills/tree/main/plugins/backlog-context)) recuerda sincronizar tareas después de ediciones y aprovecha `groma view` para dar contexto arquitectónico al leer código, sin escanear, sin editar tareas y sin nuevos servidores. Para otros agentes las lentes de alineamiento, trabajo imprevisto, dependencias y jerarquías permanecen disponibles sin hooks.

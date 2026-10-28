@@ -63,3 +63,11 @@
 - Propuestas deterministas de argv mediante `board_crud.py`: preflight de configuración, validación de evidencia de Done, readiness para comenzar, idempotencia y revisión de dependencias de cancelaciones.
 - Tests unitarios con fixtures sintéticas sin escribir tareas ni abrir el tablero TUI. Validar en entorno temporal autorizado con versión real de la CLI antes de afirmar compatibilidad end-to-end.
 - Conservar el mismo contrato de tareas privadas fuera de Git y trazabilidad mediante IDs/SHAs en commits.
+
+## S8 — Eventos Claude Code y recomendaciones oportunistas
+
+- Plugin opcional `plugins/backlog-context` con normalizador de eventos, núcleo de recomendaciones TypeScript, `PostToolBatch` para agrupar lecturas, `PostToolUse` para registrar ediciones y recordatorio `Stop` único.
+- Groma solo lectura `groma view` con límite de tiempo e IDs de propietario validados; Backlog no se invoca desde el hook debido a potenciales migraciones y efectos configurables.
+- Estado acotado en `CLAUDE_PLUGIN_DATA`, aislado por sesión/proyecto/subagente, deduplicado y sin guardar fuentes/prompts.
+- Lentes `work-alignment`, `unplanned-work`, `dependency-management` y `epic-management`; el agente autorizado aplica CLI real y gates.
+- Pruebas unitarias sintéticas en Node 22 y pruebas de navegación existentes. Pendiente smoke manual contra Claude Code/Backlog/Groma instalados en un workspace temporal.
