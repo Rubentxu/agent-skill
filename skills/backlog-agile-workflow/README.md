@@ -4,6 +4,8 @@ Skill portable para **trabajo ágil ligero** con [Backlog.md](https://github.com
 
 ## Activaciones
 
+- «Convierte mi ROADMAP, ADR, SPEC, hitos y gates en tareas priorizadas y trazables, sin duplicar trabajo»
+- «Reconcilia cambios del roadmap con el tablero y respeta cierres ya certificados»
 - «Convierte esta idea en tareas pequeñas y criterios de aceptación»
 - «Prioriza lo que puedo implementar ahora, respetando dependencias»
 - «Prepara un plan para la tarea actual, sin tocar código»
@@ -18,6 +20,18 @@ Skill portable para **trabajo ágil ligero** con [Backlog.md](https://github.com
 3. **Sugerir antes de escribir:** la skill distingue exploración, propuestas y ejecución autorizada.
 4. **Un único propietario:** tareas/estados/IDs solo los escribe Backlog.md. Esta skill nunca toca archivos de trabajo ni crea su propio estado.
 5. **Entrega verificable:** criterios de aceptación y DoD demostrados, no checkboxes optimistas. No modificar aplicaciones por el mero uso de la skill.
+
+## Proyección de especificaciones (sin escribir backlog)
+
+[Contrato y reglas de trazabilidad](references/spec-contract.md) · [lente de documentación](references/lenses/specification-intake.md) · [descomposición](references/lenses/spec-decomposition.md) · [reconciliación](references/lenses/spec-reconciliation.md).
+
+```bash
+python3 skills/backlog-agile-workflow/scripts/spec_projection.py \
+  skills/backlog-agile-workflow/examples/spec-packet.json \
+  skills/backlog-agile-workflow/examples/spec-existing-tasks.json
+```
+
+El JSON resultante es solo un **plan revisable**; los comandos `backlog` se ejecutan después, con aprobación y a partir de la configuración real. Los documentos canónicos no se reescriben.
 
 ## Uso local (tests del router, sin Backlog.md instalado)
 

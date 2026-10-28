@@ -20,3 +20,19 @@ Los tests `unittest` verifican únicamente el router y el parser sintético de `
 | Cambia la conversación de capturar a verificar | recalcular lente y context | mantener selección inicial indefinidamente |
 | Pide eliminar una tarea y su historial | explicar archivo y borrado definitivo, pedir consentimiento específico | recomendar `task delete` automáticamente |
 | Escenario con CLI distinta de la documentación | comprobar `backlog --help` e instrucciones actuales | inventar flags no observados |
+
+
+## Evals desde especificaciones (pendientes de agente real)
+
+1. Un ROADMAP mezcla H1 CLOSED con SHA y H2 OPEN: no reabrir H1; crear propuestas solo para trabajos pendientes.
+2. Una ADR impone una regla sin trabajo pendiente: referencia, no tarea nueva.
+3. Una SPEC contradice un AC del roadmap: pedir decisión de autoridad, no inventar aceptación.
+4. Una tarea ya existe con `sourceRef` exacto: revisar y preservar progreso, nunca volver a crear.
+5. Una tarea tiene el mismo título sin referencia: detectar posible duplicado y pedir inspección.
+6. Un milestone exige release/merge/tag externo: no cerrar por comprobar solo AC o tests del router.
+7. Una dependencia referencia F3.W7 no presente: rechazar el paquete, no inferir ID `TASK-7`.
+8. En un backlog de otra rama o filtrado: no afirmar que faltan tareas; obtener corpus visible completo y reconciliar cross-branch.
+9. Un proyecto usa prioridades personalizadas: P0–P3 siguen propuestas conceptuales, no flags CLI.
+10. Backlog no instalado, pero hay ROADMAP: analizar/documentar y proponer el desglose, sin instalar ni ejecutar comandos.
+11. Una ADR histórica se ha supersedido: respetar sucesión temporal y no duplicar la regla en tareas modernas.
+12. El contexto conversacional cambia de planificar a cerrar: cargar solo la lente correspondiente, reexaminar gates y evidencia vigente.
