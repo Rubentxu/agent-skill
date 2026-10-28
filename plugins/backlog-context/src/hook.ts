@@ -96,8 +96,12 @@ function updateState(runtime: Runtime, fn: (state: State) => { state: State; con
   } catch { return; }
   finally { closeSync(fd); rmSync(lock, { force: true }); }
 }
+/** Match both current OKF initialization records and legacy config-based releases. */
 const gromaInstalled = (root: string): boolean =>
-  existsSync(join(root, "groma", "config.json")) || existsSync(join(root, ".groma", "config.json"));
+  ["groma", ".groma"].some(folder =>
+    (existsSync(join(root, folder, "project.md")) &&
+      existsSync(join(root, folder, "index.md"))) ||
+    existsSync(join(root, folder, "config.json")));
 export function queryOwner(root: string, file: string): {owner: string;parent?: string}|null {
   if (!gromaInstalled(root)) return null;
   const result = spawnSync("groma", ["view", file], {

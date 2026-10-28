@@ -57,7 +57,8 @@ jobs:
           set -euxo pipefail
           cd "$FIXTURE"
           groma init "Context Smoke" --directory groma
-          test -f groma/config.json
+          test -f groma/project.md
+          test -f groma/index.md
           find groma -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/groma-before.txt
           groma agent-instructions inspect > /tmp/groma-guidance.txt
           groma view src/example.ts > /tmp/groma-view.txt 2>&1 || true

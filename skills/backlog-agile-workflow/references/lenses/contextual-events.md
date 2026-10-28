@@ -3,7 +3,7 @@
 `plugins/backlog-context` es un **adaptador opt-in** de Claude Code. La skill continúa siendo la autoridad de instrucciones reutilizable por agentes sin hooks.
 
 - **SessionStart:** si existe proyecto Backlog, aconsejar consultar tareas. Un ID activo solo procede de `BACKLOG_CONTEXT_TASK_ID` explícito; no inferirlo del último commit.
-- **PostToolBatch/Read:** archivos consultados son oportunidades de `groma view <ruta>`, lectura sin escaneo ni edición. El hook extrae IDs de propietario, no incluye descripciones libres ni código. Si no hay owner, indicar cobertura desconocida.
+- **PostToolBatch/Read:** archivos consultados son oportunidades de `groma view <ruta>`, lectura sin escaneo ni edición. El hook extrae IDs de propietario, no incluye descripciones libres ni código. Un proyecto Groma moderno se reconoce por `project.md` e `index.md`, no por `config.json`; si no hay owner, indicar cobertura desconocida.
 - **PostToolUse/Edit|Write:** registrar ruta de código editada correctamente, no marcar AC/DoD ni añadir en Backlog directamente.
 - **PostToolUseFailure:** no registrar modificación; un error de herramienta no certifica cambios en el repositorio.
 - **PostToolBatch/Stop:** emitir una recomendación de reconciliación por cambio pendiente, conservar lista completa `modifiedFiles`, no forzar cierre ni crear nuevas tareas. `Stop` se silencia con `stop_hook_active=true` y evita bucles de feedback repetido.
