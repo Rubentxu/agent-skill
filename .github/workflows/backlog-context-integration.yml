@@ -54,7 +54,7 @@ jobs:
           diff -u tasks-before.json tasks-after.json
       - name: Exercise real Groma CLI without launching servers or scanning implicitly
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           cd "$FIXTURE"
           groma init "Context Smoke" --directory groma
           test -f groma/config.json
