@@ -1,0 +1,24 @@
+{
+  "intent": "refactor",
+  "phase": "plan",
+  "basis": "observed",
+  "language": "rust",
+  "risk": "routine",
+  "signals": [
+    "side-effects"
+  ],
+  "problems": [
+    {
+      "id": "mixed-rules-effects",
+      "evidence": [
+        {
+          "source": "examples/fixtures/search_use_case.rs:15-22",
+          "observation": "la validación de entrada, búsqueda y publicación de métricas conviven en execute; aún falta caracterizar el contrato"
+        }
+      ]
+    }
+  ],
+  "facts": [],
+  "constraints": [],
+  "available_skills": []
+}

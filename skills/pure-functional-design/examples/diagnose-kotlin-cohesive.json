@@ -3,7 +3,7 @@
   "phase": "plan",
   "basis": "observed",
   "language": "kotlin",
-  "risk": "high",
+  "risk": "routine",
   "signals": [
     "large-service"
   ],

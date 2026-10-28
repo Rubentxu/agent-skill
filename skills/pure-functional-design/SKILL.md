@@ -5,7 +5,7 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 
 # Pure Functional Design — una entrada, lentes de dominio y de lenguaje
 
-**Propósito:** lograr lógica sustituible, comprobable y fácil de entender, sin copiar mecánicamente la sintaxis o abstracciones de Haskell. Preferir la solución **más simple que preserve las invariantes**. La pureza se evalúa en el contrato observable de cada función, no contando instrucciones `mut` o `var` locales. Es UNA skill portable; ni framework propio, ni linter de código, ni motor CI.
+**Propósito:** ofrecer procedimientos genéricos reutilizables para cualquier aplicación compatible, sin vincular el catálogo a proyectos concretos. Lograr lógica sustituible, comprobable y fácil de entender, sin copiar mecánicamente la sintaxis o abstracciones de Haskell. Preferir la solución **más simple que preserve las invariantes**. La pureza se evalúa en el contrato observable de cada función, no contando instrucciones `mut` o `var` locales. Es UNA skill portable; ni framework propio, ni linter de código, ni motor CI.
 
 ## Ontología y restricciones
 
@@ -63,6 +63,8 @@ description: "Diseña y refactoriza código Rust/Kotlin hacia un núcleo funcion
 | Actualizaciones inmutables anidadas | [optics-persistent-data](references/lenses/optics-persistent-data.md) | decidir copy, optics, persistencia o mutación local |
 
 **Lentes de lenguaje:** [Rust](references/languages/rust.md) · [Kotlin](references/languages/kotlin.md). Consultar [primitivas](references/primitives.md), [bibliografía](references/sources.md) y [extensión de lentes](references/extend-lenses.md) únicamente cuando proceda.
+
+**Evaluación portable:** los ejemplos y tests de esta skill son sintéticos y prueban solo sus decisiones; no deben contener diagnósticos de repositorios consumidores ni presentarse como refactors reales. Ver [evaluaciones portables](references/portable-evaluations.md).
 
 **Handoff testing:** la skill produce garantías + particiones + leyes; `delivery-first-testing` decide dónde ejecutarlas y qué evidencia conservar. Ejemplo de sesión en `examples/*.json`; pruebas propias del selector en `tests/`.
 
