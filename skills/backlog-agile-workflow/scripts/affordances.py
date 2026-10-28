@@ -10,7 +10,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 INTENTS = frozenset({"discover", "capture", "triage", "refine", "plan", "execute",
-                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "architecture", "curate-architecture", "map-task", "catalog"})
+                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "architecture", "curate-architecture", "map-task", "create-task", "move-task", "archive-task", "restore-task", "delete-task", "catalog"})
 BASIS = frozenset({"observed", "unknown", "stale"})
 CLI = frozenset({"available", "missing", "unknown"})
 PROJECT = frozenset({"initialized", "absent", "unknown"})
@@ -19,7 +19,8 @@ GROMA = frozenset({"available", "missing", "unknown"})
 GROMA_INTENTS = frozenset({"architecture", "curate-architecture", "map-task"})
 CONFIG = ("autoCommit", "remoteOperations", "bypassGitHooks", "onStatusChange")
 TASK_ID = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}")
-NEEDS_TASK = frozenset({"plan", "execute", "verify", "close", "map-task"})
+NEEDS_TASK = frozenset({"plan", "execute", "verify", "close", "map-task", "move-task", "archive-task", "restore-task", "delete-task"})
+BOARD_INTENTS = frozenset({"create-task", "move-task", "archive-task", "restore-task", "delete-task"})
 WRITE_INTENTS = frozenset({"capture", "refine", "plan", "execute", "verify", "close", "review", "maintain", "map-task"})
 
 
@@ -166,7 +167,7 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["_links"].append(_notice("audit-git-index", "Comprobar índice con git_artifact_guard.py (solo lectura)"))
     if intent == "trace":
         result["_links"].append(_notice("inspect-commit-trailers", "Buscar IDs de tarea, bloque y ADR/SPEC en commits observados"))
-    if intent in {"capture", "triage", "review", "maintain", "sync-specs"}:
+    if intent in {"capture", "triage", "review", "maintain", "sync-specs", "create-task"}:
         result["suggested_reads"].append(["backlog", "task", "list", "--json"])
     elif intent in NEEDS_TASK or intent == "refine":
         if task.get("id"):
@@ -175,6 +176,31 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
             result["decision"] = "INSPECT_MORE"
             result["_links"].append(_notice("select-task", "Elegir el ID observado de una tarea"))
             return result
+
+    if intent in BOARD_INTENTS:
+        result["_links"].append(_notice(
+            "plan-board-operation",
+            "Inspeccionar configuración, task view, dependencias y motivos; board_crud.py devuelve propuesta de CLI sin ejecutar",
+            href=_local("scripts/board_crud.py")))
+        if intent == "delete-task":
+            result["decision"] = "BLOCKED"
+            result["warnings"].append("Delete puede liberar IDs y reescribir enlaces; no se automatiza")
+        elif intent == "move-task" and task.get("archived") is True:
+            result["decision"] = "BLOCKED"
+            result["warnings"].append("Tarea archivada: restaurar antes de transicionar")
+        elif intent == "archive-task" and task.get("archived") is True:
+            result["decision"] = "KEEP_AS_IS"
+        elif intent == "restore-task" and task.get("archived") is False:
+            result["decision"] = "KEEP_AS_IS"
+        elif intent in {"archive-task", "restore-task"} and "archived" not in task:
+            result["decision"] = "INSPECT_MORE"
+            result["_links"].append(_notice("inspect-archived", "Leer archived=true/false desde task view --json"))
+        elif mode == "read":
+            result["decision"] = "READY"
+        else:
+            result["decision"] = "PROPOSE_ONLY"
+            result["warnings"].append("El router no autoriza mutación: ejecutar board_crud.py con estado actual y permiso específico")
+        return result
 
     if intent in NEEDS_TASK and task.get("archived") is True:
         result["decision"] = "BLOCKED"
