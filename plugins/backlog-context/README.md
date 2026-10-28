@@ -4,7 +4,15 @@
 
 ## Instalación y validación
 
-Requiere Claude Code compatible con plugins y **Node.js >=22**. Instala el plugin desde el marketplace del repositorio o un marketplace local configurado en Claude Code; el plugin registra automáticamente `hooks/hooks.json`.
+Requiere Claude Code compatible con plugins y **Node.js >=22**. Desde tu terminal:
+
+```bash
+claude plugin marketplace add Rubentxu/agent-skills
+claude plugin install backlog-context@rubentxu-agent-skills
+claude plugin list
+```
+
+Claude Code registra automáticamente `hooks/hooks.json` del plugin instalado.
 
 ```bash
 claude plugin validate ./plugins/backlog-context

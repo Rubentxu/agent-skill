@@ -146,4 +146,4 @@ Antes de habilitar contribuciones externas o redistribución bajo términos de c
 
 ## Plugin Claude Code opcional: contexto Backlog.md + Groma.md
 
-`plugins/backlog-context` usa hooks Claude Code para consultar propietarios arquitectónicos de archivos leídos mediante `groma view` y sugerir reconciliación de archivos modificados con Backlog, sin escribir tareas ni arrancar servidores. Requiere Node >=22 y configuración voluntaria del plugin; no sustituye la [skill portable](skills/backlog-agile-workflow/SKILL.md). Ver [guía de instalación y límites](plugins/backlog-context/README.md).
+`plugins/backlog-context` usa hooks Claude Code para consultar propietarios arquitectónicos de archivos leídos mediante `groma view` y sugerir reconciliación de archivos modificados con Backlog, sin escribir tareas ni arrancar servidores. Requiere Node >=22 y configuración voluntaria del plugin (`claude plugin marketplace add Rubentxu/agent-skills` y `claude plugin install backlog-context@rubentxu-agent-skills`); no sustituye la [skill portable](skills/backlog-agile-workflow/SKILL.md). Ver [guía de instalación y límites](plugins/backlog-context/README.md).
