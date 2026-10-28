@@ -143,3 +143,7 @@ El workflow de GitHub Actions ejecuta estas comprobaciones para cada PR y push. 
 ## Licencia
 
 Antes de habilitar contribuciones externas o redistribución bajo términos de código abierto, el propietario debe seleccionar y añadir una licencia explícita. La visibilidad pública del repositorio por sí sola no define permisos de reutilización. Las herramientas enlazadas tienen licencias independientes.
+
+## Plugin Claude Code opcional: contexto Backlog.md + Groma.md
+
+`plugins/backlog-context` usa hooks Claude Code para consultar propietarios arquitectónicos de archivos leídos mediante `groma view` y sugerir reconciliación de archivos modificados con Backlog, sin escribir tareas ni arrancar servidores. Requiere Node >=22 y configuración voluntaria del plugin; no sustituye la [skill portable](skills/backlog-agile-workflow/SKILL.md). Ver [guía de instalación y límites](plugins/backlog-context/README.md).

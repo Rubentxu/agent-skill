@@ -17,6 +17,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test contextual Claude hooks
+        run: node --disable-warning=ExperimentalWarning --experimental-strip-types --test plugins/backlog-context/tests/*.test.mjs
+      - name: Validate contextual hooks manifest
+        run: python3 -m json.tool plugins/backlog-context/hooks/hooks.json > /dev/null
       - name: Validate skill manifests and local references
         run: python3 scripts/validate_skills.py
       - name: Run collection validator tests
