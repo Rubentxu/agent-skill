@@ -118,7 +118,8 @@ test("Groma adapter enriches a file read without scanning or writing Backlog",()
   if (process.platform === "win32") return;
   const f=fixture();
   mkdirSync(join(f.root,"groma"));
-  writeFileSync(join(f.root,"groma","config.json"),'{"version":"1"}');
+  writeFileSync(join(f.root,"groma","project.md"),"---\\ntype: Groma Project\\n---\\n");
+  writeFileSync(join(f.root,"groma","index.md"),"# Map\\n");
   const bin=mkdtempSync(join(tmpdir(),"fake-groma-bin-"));
   const cmd=join(bin,"groma");
   writeFileSync(cmd,"#!/bin/sh\nprintf '%s\n' 'Owner' '-----' 'component-42  component  Safe' 'parent: system-root'\n");
@@ -134,6 +135,26 @@ test("Groma adapter enriches a file read without scanning or writing Backlog",()
     assert.match(result.hookSpecificOutput.additionalContext,/lectura, no modificación/);
     assert.equal(readFileSync(join(f.root,"backlog","config.yml"),"utf8"),before);
   } finally {process.env.PATH=original;}
+});
+test("current Groma requires project.md plus index.md, not stale config.json",()=>{
+  if(process.platform==="win32") return;
+  const f=fixture();
+  mkdirSync(join(f.root,"groma"));
+  writeFileSync(join(f.root,"groma","project.md"),"# Project");
+  const bin=mkdtempSync(join(tmpdir(),"groma-guard-"));
+  const executable=join(bin,"groma");
+  writeFileSync(executable,"#!/bin/sh\nprintf '%s\n' 'Owner' '-----' 'part  component  Test'\n");
+  chmodSync(executable,0o755);
+  const original=process.env.PATH;
+  try {
+    process.env.PATH=bin+":"+original;
+    const input={...f.event("PostToolBatch"),tool_calls:[{tool_name:"Read",tool_input:{file_path:f.file},tool_response:"source"}]};
+    assert.equal(handleEvent(input,f.env),null);
+    writeFileSync(join(f.root,"groma","index.md"),"# Index");
+    // A new session is required to retry the first unseen read.
+    const second={...input,session_id:"session-two"};
+    assert.match(handleEvent(second,f.env).hookSpecificOutput.additionalContext,/part/);
+  }finally{process.env.PATH=original;}
 });
 test("standalone hook reads real stdin JSON and prints valid Claude context",()=>{
   const f=fixture();

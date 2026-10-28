@@ -24,7 +24,7 @@ No instala Backlog.md, Groma.md, MCP ni modifica permisos. Los hooks no invocan 
 ## Comportamiento
 
 - **SessionStart**: si detecta una carpeta Backlog, propone revisar tareas; solo asocia una tarea con `BACKLOG_CONTEXT_TASK_ID` explícito, nunca infiere identidad a partir de un nombre o estado.
-- **PostToolBatch**: agrupa las lecturas `Read` exitosas y, si existe `groma/config.json` o `.groma/config.json`, ejecuta `groma view <archivo>` sobre **un archivo de código** nuevo por lote (timeout 1,5 s). Extrae únicamente IDs de propietario y padre, no código ni descripciones arbitrarias.
+- **PostToolBatch**: agrupa las lecturas `Read` exitosas y, si existe el par `groma/project.md` + `groma/index.md` (o en `.groma/`), con compatibilidad para configuraciones antiguas `config.json`, ejecuta `groma view <archivo>` sobre **un archivo de código** nuevo por lote (timeout 1,5 s). Extrae únicamente IDs de propietario y padre, no código ni descripciones arbitrarias.
 - **PostToolUse**: registra solo ediciones confirmadas de Write/Edit/MultiEdit/NotebookEdit, nunca lecturas, Bash ambiguo, documentos administrativos o herramientas MCP no reconocidas.
 - **PostToolBatch/Stop**: recomienda reconciliar `modifiedFiles` conservando **la lista completa** del task view original. Recordatorio `Stop` como máximo una vez por archivo y sesión, y ninguno con `stop_hook_active=true`.
 - **PostToolUseFailure**: jamás trata una edición fallida como prueba de cambio. **SessionEnd** limpia el estado efímero.
