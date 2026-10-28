@@ -87,7 +87,7 @@ function updateState(runtime: Runtime, fn: (state: State) => { state: State; con
   } catch { return; }
   finally { closeSync(fd); rmSync(lock, { force: true }); }
 }
-function gromaInstalled(root: string): boolean =>
+const gromaInstalled = (root: string): boolean =>
   existsSync(join(root, "groma", "config.json")) || existsSync(join(root, ".groma", "config.json"));
 export function queryOwner(root: string, file: string): {owner: string;parent?: string}|null {
   if (!gromaInstalled(root)) return null;
