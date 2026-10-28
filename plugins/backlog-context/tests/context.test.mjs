@@ -143,7 +143,7 @@ test("current Groma requires project.md plus index.md, not stale config.json",()
   writeFileSync(join(f.root,"groma","project.md"),"# Project");
   const bin=mkdtempSync(join(tmpdir(),"groma-guard-"));
   const executable=join(bin,"groma");
-  writeFileSync(executable,"#!/bin/sh\\nprintf '%s\\n' 'Owner' '-----' 'part  component  Test'\\n");
+  writeFileSync(executable,"#!/bin/sh\nprintf '%s\n' 'Owner' '-----' 'part  component  Test'\n");
   chmodSync(executable,0o755);
   const original=process.env.PATH;
   try {
