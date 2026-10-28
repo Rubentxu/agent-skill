@@ -10,15 +10,17 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 INTENTS = frozenset({"discover", "capture", "triage", "refine", "plan", "execute",
-                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "catalog"})
+                     "verify", "close", "review", "maintain", "specify", "decompose", "sync-specs", "git-hygiene", "trace", "architecture", "curate-architecture", "map-task", "catalog"})
 BASIS = frozenset({"observed", "unknown", "stale"})
 CLI = frozenset({"available", "missing", "unknown"})
 PROJECT = frozenset({"initialized", "absent", "unknown"})
 MODES = frozenset({"read", "propose", "apply"})
+GROMA = frozenset({"available", "missing", "unknown"})
+GROMA_INTENTS = frozenset({"architecture", "curate-architecture", "map-task"})
 CONFIG = ("autoCommit", "remoteOperations", "bypassGitHooks", "onStatusChange")
 TASK_ID = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}")
-NEEDS_TASK = frozenset({"plan", "execute", "verify", "close"})
-WRITE_INTENTS = frozenset({"capture", "refine", "plan", "execute", "verify", "close", "review", "maintain"})
+NEEDS_TASK = frozenset({"plan", "execute", "verify", "close", "map-task"})
+WRITE_INTENTS = frozenset({"capture", "refine", "plan", "execute", "verify", "close", "review", "maintain", "map-task"})
 
 
 def _registry(file: str, key: str) -> list[dict[str, Any]]:
@@ -95,15 +97,17 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(state, dict):
         raise ValueError("Session must be object")
     allowed = {"intent", "basis", "cli", "project", "mode", "task", "config",
-               "available_skills", "effects_acknowledged"}
+               "available_skills", "effects_acknowledged", "groma"}
     if set(state) - allowed:
         raise ValueError("Unknown session fields")
     intent, basis = state.get("intent", "catalog"), state.get("basis", "unknown")
     cli, project = state.get("cli", "unknown"), state.get("project", "unknown")
     mode = state.get("mode", "read")
     acknowledged = state.get("effects_acknowledged", False)
+    groma = state.get("groma", "unknown")
     if (intent not in INTENTS or basis not in BASIS or cli not in CLI
-            or project not in PROJECT or mode not in MODES or type(acknowledged) is not bool):
+            or project not in PROJECT or mode not in MODES or groma not in GROMA
+            or type(acknowledged) is not bool):
         raise ValueError("Invalid session intent/basis/cli/project/mode/acknowledgement")
     task, config = _task(state.get("task")), _config(state.get("config"))
     available = _strings(state.get("available_skills", []), "available_skills")
@@ -118,7 +122,13 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["decision"] = "INSPECT_MORE"
         result["_links"].append(_notice("refresh-basis", "Reexaminar un proyecto que pudo cambiar"))
         return result
-    offline_spec = intent in {"specify", "decompose", "git-hygiene", "trace"}
+    if intent in GROMA_INTENTS and groma != "available":
+        result["decision"] = "DISCOVER"
+        result["_links"].append(_notice("inspect-groma", "Comprobar groma --version, groma plugin list y mapa local; no instalar ni escanear de oficio"))
+        if groma == "missing":
+            result["warnings"].append("Groma opcional y ausente; Backlog.md puede seguir funcionando sin mapa")
+        return result
+    offline_spec = intent in {"specify", "decompose", "git-hygiene", "trace", "architecture", "curate-architecture"}
     if cli != "available" and not offline_spec:
         result["decision"] = "DISCOVER"
         result["_links"].append(_notice("inspect-cli", "Verificar backlog --version y backlog --help, sin instalar automáticamente"))
@@ -140,7 +150,16 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
         result["lenses"].append(lens["id"])
         result["_links"].append(_notice("read-lens", f"Guía {lens['id']}", href=_local(lens["playbook"])))
     result["suggested_reads"] = ([["backlog", "instructions", "overview"]]
-                                  if cli == "available" and project == "initialized" else [])
+                                  if cli == "available" and project == "initialized"
+                                  and intent not in {"architecture", "curate-architecture"} else [])
+    if intent in GROMA_INTENTS:
+        result["suggested_reads"].extend([["groma", "plugin", "list"], ["groma", "agent-instructions"]])
+        if intent == "map-task":
+            result["suggested_reads"].append(["groma", "agent-instructions", "backlog"])
+        else:
+            result["suggested_reads"].append(["groma", "view", "--plain"])
+    elif groma == "available" and intent in {"refine", "plan", "execute", "verify", "review", "decompose"}:
+        result["_links"].append(_notice("inspect-architecture", "Groma es opcional: inspeccionar dueño de archivos por groma view <file> y referencias Backlog verificadas", href=_local("references/groma-integration.md")))
     if intent in {"specify", "decompose"}:
         result["_links"].append(_notice("inspect-specifications", "Inspeccionar ROADMAP, ADR, SPEC, gates y estado de la fuente canónica"))
     if intent == "git-hygiene":
@@ -184,6 +203,10 @@ def affordances(state: dict[str, Any]) -> dict[str, Any]:
 
     if intent in {"specify", "decompose", "sync-specs"}:
         result["_links"].append(_notice("plan-spec-projection", "Derivar propuestas trazables; nunca escribir tareas sin reconciliar corpus"))
+    if intent == "map-task":
+        result["_links"].append(_notice("plan-groma-task-links", "Leer task view actual y proponer --modified-file completo y --add-ref/--remove-ref; no ejecuta CLI"))
+    if intent == "curate-architecture":
+        result["_links"].append(_notice("inspect-groma-writes", "Curación y scan escriben OKF; usar CLI Groma solo con aprobación específica"))
     if mode == "read":
         result["decision"] = "READY"
         result["_links"].append(_notice("inspect-current", "Leer backlog sin modificarlo"))

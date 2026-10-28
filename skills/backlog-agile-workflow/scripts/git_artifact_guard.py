@@ -16,12 +16,13 @@ DOC = re.compile(r"^(?:roadmap|backlog|project[-_]plan|sprint[-_]plan|milestones
 NUMBERED = re.compile(r"^(?:adr|spec|roadmap|milestone)[-_][a-z0-9][a-z0-9_.-]*\.(?:md|mdx|rst|txt|pdf|docx)$", re.I)
 ARCHIVE = re.compile(r"(?:^|[-_.])(?:backlog|roadmap|adr|specs?|specifications?|milestones?|sprints?|project[-_]plans?)(?:[-_.]|$)", re.I)
 BUNDLE_EXT = (".zip", ".tar.gz", ".tgz", ".7z", ".rar")
-MANAGED_DIRS = {"backlog", ".backlog", "specs", "specifications", "roadmaps", "adrs", "adr", "milestones", "project-management", "planning"}
+MANAGED_DIRS = {"backlog", ".backlog", "groma", ".groma", "groma-export", "specs", "specifications", "roadmaps", "adrs", "adr", "milestones", "project-management", "planning"}
 IGNORE = [
     "/backlog/", "/.backlog/", "/backlog.config.yml",
+    "/groma/", "/.groma/", "/groma-export/",
     "/ROADMAP.md", "/BACKLOG.md", "/docs/adr/", "/docs/specs/",
     "/docs/specifications/", "/docs/roadmaps/", "/specs/", "/planning/",
-    "*roadmap*.zip", "*backlog*.zip", "*specs*.zip", "*adr*.zip",
+    "*roadmap*.zip", "*backlog*.zip", "*specs*.zip", "*adr*.zip", "*groma*.zip",
 ]
 
 
@@ -40,13 +41,15 @@ def classify(path: str) -> str | None:
     name = lowered[-1]
     if name == "backlog.config.yml":
         return "backlog-config"
+    if lowered[0] in {"groma", ".groma", "groma-export"}:
+        return "groma-architecture"
     if lowered[0] in {"backlog", ".backlog"}:
         return "backlog-managed"
     if lowered[0] in MANAGED_DIRS or (len(lowered) > 2 and lowered[0] == "docs" and lowered[1] in MANAGED_DIRS):
         return "planning-folder"
     if DOC.fullmatch(name) or NUMBERED.fullmatch(name):
         return "planning-document"
-    if name.endswith(BUNDLE_EXT) and ARCHIVE.search(name):
+    if name.endswith(BUNDLE_EXT) and (ARCHIVE.search(name) or "groma" in name):
         return "planning-archive"
     return None
 
@@ -65,7 +68,7 @@ def audit(tracked: list[str], staged: list[str] | None = None) -> dict:
             "These are proposals only. Preserve working files and make a verified private backup before any untracking.",
             "git rm --cached removes an index entry, not local content; historical commits still contain the files.",
             "Adding .gitignore alone does not untrack existing files; verify config and all tracked paths.",
-            "Backlog.md may rely on Git cross-branch history and auto-commit: inspect configuration and degraded features.",
+            "Backlog.md/Groma.md may rely on Git history, plugin config and shared OKF: inspect degraded features and ensure private backups.",
             "Never rewrite Git history or delete planning documents automatically.",
         ],
     }

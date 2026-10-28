@@ -70,3 +70,22 @@ Los JSON son efímeros, se mantienen fuera del índice y no son una nueva base d
 ## Especialistas recomendados cuando estén instalados
 
 `delivery-first-testing` selecciona pruebas; `pipelinek-local-ci` gobierna gates locales si PipelineK es la CI del proyecto; `pure-functional-design` diagnostica arquitectura y refactors; `agent-secretless` ejecuta operaciones protegidas sin exponer credenciales. `backlog-agile-workflow` es dueño de las tareas, no de esos dominios.
+
+## Integración opcional con Groma.md
+
+[Guía detallada](references/groma-integration.md) · [lente C4](references/lenses/groma-architecture.md) · [lente de enlaces](references/lenses/groma-task-linking.md).
+
+Groma lee tareas desde Backlog.md, y muestra sus referencias y archivos modificados sobre componentes del mapa C4. No necesita otra base de datos. Para activarla se verifica primero `groma plugin list` y las instrucciones oficiales `groma agent-instructions backlog`; `groma plugin add backlog` requiere permiso explícito.
+
+```bash
+groma plugin list
+groma agent-instructions backlog
+groma view --plain
+groma view src/mi-archivo.rs
+python3 skills/backlog-agile-workflow/scripts/groma_task_links.py \
+  skills/backlog-agile-workflow/examples/groma-task-links.json
+```
+
+El helper solo propone argumentos, sin ejecutar comandos. El mapa inicial es evidencia de scanner, no diseño certificado. `groma scan` escribe OKF y `groma web` puede iniciar un servidor. Groma es opcional y Backlog.md continúa funcionando sin él.
+
+**Privacidad:** OKF `groma/`/`.groma/` y exports fuera del índice Git del consumidor, con backup privado. Se pierden garantías de historia, action en PR y colaboración basada en OKF versionado. `groma export` puede incluir código fuente: nunca publicar por defecto. Rust dispone de scanner; Kotlin es experimental, sin fingerprints para detección de duplicaciones.

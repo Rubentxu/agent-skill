@@ -11,7 +11,7 @@ Entrada JSON para evaluación de **decisiones de la skill**, no un reflejo fiel 
 }
 ```
 
-- `intent`: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|git-hygiene|trace|catalog`.
+- `intent`: `discover|capture|triage|refine|plan|execute|verify|close|review|maintain|specify|decompose|sync-specs|git-hygiene|trace|architecture|curate-architecture|map-task|catalog`.
 - `basis`: `observed|unknown|stale`; `observed` describe evidencias **declaradas**, el router no las verifica.
 - `cli`: `available|missing|unknown`; `project`: `initialized|absent|unknown`.
 - `mode`: `read|propose|apply` (default `read`). `apply` representa autorización declarada por el llamante, **no ejecuta nada**.
@@ -30,3 +30,7 @@ Resultados: `DISCOVER`, `INSPECT_MORE`, `READY`, `PROPOSE_ONLY`, `AUTHORIZED_ACT
 ## Auditoría y trazabilidad sin CLI
 
 `git-hygiene` enlaza únicamente a la auditoría de índice y no requiere Backlog.md instalado. `trace` enlaza el índice de identidades documentales/commits, igualmente sin escribir ni necesitar Backlog.md. El `mode=apply` de estas consultas no autoriza sacar archivos del índice ni hacer commits; requieren consentimiento de operación específico. Handoffs solo hacia IDs presentes en `available_skills`.
+
+## Groma.md opcional
+
+`groma` acepta `available|missing|unknown` y no se deduce de `cli` de Backlog.md. `architecture` y `curate-architecture` pueden inspeccionar el mapa aun sin backlog; `map-task` exige ambos programas y un ID de tarea observado. Si Groma falta, solo propone descubrir la instalación, sin degradar las operaciones Backlog.md. Las operaciones `groma scan`, `web`, `plugin add` y edición OKF no son lecturas y requieren autorización específica. En el ciclo `plan|execute|verify` se ofrece una navegación Groma solo cuando `groma=available`, sin añadir más lentes obligatorias. Ver [integración](groma-integration.md).

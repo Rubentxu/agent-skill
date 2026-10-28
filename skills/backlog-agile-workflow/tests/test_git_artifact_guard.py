@@ -23,6 +23,13 @@ class ClassificationTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIsNotNone(guard.classify(path))
 
+    def test_groma_architecture_is_private_in_consumer_repos(self):
+        for path in ("groma/config.json", "groma/index.md", ".groma/systems/a.md",
+                     "groma-export/index.html", "groma-bundle.zip", "docs/groma/config.json"):
+            with self.subTest(path=path):
+                self.assertIsNotNone(guard.classify(path))
+        self.assertIsNone(guard.classify("skills/backlog-agile-workflow/references/groma-integration.md"))
+
     def test_archive_detection(self):
         for path in ("roadmap-backup.zip", "delivery-specs.zip", "ADR-bundle.tar.gz",
                      "project-plan-2026.7z", "docs/adr/snapshots.zip"):

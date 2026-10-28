@@ -29,3 +29,9 @@ El guard **no** debe ejecutarse sobre el repositorio fuente de las skills para t
 ## Consecuencia importante
 
 La trazabilidad **no** se obtiene publicando documentos de gestión en Git. Se obtiene conservando sus **IDs lógicos** en Backlog.md y en trailers de commits, y manteniendo los documentos originales en almacenamiento privado duradero. El commit no publica su contenido: refiere identidades y evidencia mínima no sensible.
+
+## Groma.md: arquitectura privada, no código versionado
+
+Ampliar el inventario a `groma/`, `.groma/`, `groma/config.json`, exportaciones estáticas y ZIP de arquitectura. El guard reconoce ubicaciones estándar; para ubicaciones personalizadas debe inspeccionarse la configuración real. Preservar backup privado y colaboración antes de retirar OKF del índice.
+
+La integración oficial de Groma presupone Markdown C4/OKF en Git. Si queda ignorado, la vista local puede seguir siendo útil, pero **no** asumir comparaciones históricas, action de PR, reconstrucción en clones o reviews colaborativas equivalentes. Los exports estáticos pueden incluir **código fuente** y no deben publicarse automáticamente. No confundir ZIP de producto con ZIP de documentos de gestión.
