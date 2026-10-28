@@ -1,0 +1,103 @@
+{
+  "description": "Lightweight, read-only Backlog and Groma contextual assistance",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=ExperimentalWarning",
+              "--experimental-strip-types",
+              "${CLAUDE_PLUGIN_ROOT}/src/hook.ts"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolBatch": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=ExperimentalWarning",
+              "--experimental-strip-types",
+              "${CLAUDE_PLUGIN_ROOT}/src/hook.ts"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=ExperimentalWarning",
+              "--experimental-strip-types",
+              "${CLAUDE_PLUGIN_ROOT}/src/hook.ts"
+            ],
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=ExperimentalWarning",
+              "--experimental-strip-types",
+              "${CLAUDE_PLUGIN_ROOT}/src/hook.ts"
+            ],
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=ExperimentalWarning",
+              "--experimental-strip-types",
+              "${CLAUDE_PLUGIN_ROOT}/src/hook.ts"
+            ],
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=ExperimentalWarning",
+              "--experimental-strip-types",
+              "${CLAUDE_PLUGIN_ROOT}/src/hook.ts"
+            ],
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "backlog-context",
+  "version": "0.1.0",
+  "description": "Context-aware, read-only Backlog.md and Groma.md recommendations for Claude Code; no task mutations or scans."
+}
