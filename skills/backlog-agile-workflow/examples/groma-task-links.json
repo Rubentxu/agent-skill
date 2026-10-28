@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "kind": "groma-task-link-input",
+  "task": {
+    "id": "TASK-12",
+    "modifiedFiles": [
+      "src/core.rs"
+    ],
+    "references": [
+      "docs/ROADMAP.md#R1.W2",
+      "component-old"
+    ]
+  },
+  "changedFiles": [
+    "src/api.rs"
+  ],
+  "confirmedElementIds": [
+    "http-adapter"
+  ],
+  "replacements": [
+    {
+      "old": "component-old",
+      "new": "domain-core"
+    }
+  ]
+}
