@@ -26,7 +26,8 @@ def task():
 
 def state(op="transition", **overrides):
     result = {"schemaVersion": 1, "kind": "board-operation", "operation": op,
-              "statuses": ["To Do", "In Progress", "Done"], "terminalStatus": "Done",
+              "statuses": ["To Do", "In Progress", "Done"], "defaultStatus": "To Do",
+              "terminalStatus": "Done",
               "task": task(), "targetStatus": "Done", "gateResult": "PASS",
               "config": {"autoCommit": False, "remoteOperations": False,
                          "bypassGitHooks": False, "onStatusChange": False},
@@ -66,7 +67,7 @@ class BoardCrudTests(unittest.TestCase):
 
     def test_transition_uses_configured_custom_statuses(self):
         s = state(statuses=["Pendiente", "En curso", "Comprobado"],
-                  terminalStatus="Comprobado", task={**task(), "status": "En curso"},
+                  terminalStatus="Comprobado", defaultStatus="Pendiente", task={**task(), "status": "En curso"},
                   targetStatus="Comprobado", authorized=True)
         self.assertEqual(board.plan(s)["decision"], "AUTHORIZED_ACTION")
 

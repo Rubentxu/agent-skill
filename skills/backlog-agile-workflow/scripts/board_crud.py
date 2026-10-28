@@ -70,6 +70,9 @@ def plan(data):
             or any(not isinstance(s, str) or not s.strip() or len(s) > 80 for s in statuses)
             or len(set(statuses)) != len(statuses)):
         raise ValueError("Configured statuses required")
+    default = data.get("defaultStatus")
+    if not isinstance(default, str) or default not in statuses:
+        raise ValueError("Observed default status required")
     terminal = data.get("terminalStatus")
     if not isinstance(terminal, str) or terminal not in statuses:
         raise ValueError("Observed terminal status required")
@@ -86,12 +89,12 @@ def plan(data):
         ac = strings(creation.get("acceptanceCriteria"), "acceptance criteria")
         if not ac:
             return outcome(op, "BLOCKED", "At least one verifiable acceptance criterion required")
-        selected = creation.get("status", statuses[0])
+        selected = creation.get("status", default)
         if selected not in statuses or selected == terminal:
             return outcome(op, "BLOCKED", "New task requires configured, nonterminal status")
         refs = strings(creation.get("references", []), "references")
         argv = ["backlog", "task", "create", title, "-d", description]
-        if selected != statuses[0]:
+        if selected != default:
             argv.extend(["-s", selected])
         for criterion in ac:
             argv.extend(["--ac", criterion])
@@ -114,7 +117,7 @@ def plan(data):
                 return outcome(op, "BLOCKED", "Final status requires verified AC/DoD, gate and recorded summary")
             if current == terminal and target != terminal and not data.get("reopenReason"):
                 return outcome(op, "INSPECT_MORE", "Reopening needs an explicit reason")
-            if current == statuses[0] and target != terminal and task.get("isReady") is not True:
+            if current == default and target != terminal and task.get("isReady") is not True:
                 return outcome(op, "INSPECT_MORE", "Check readiness and dependencies before starting")
             argv = ["backlog", "task", "edit", tid, "-s", target]
         elif op == "archive":

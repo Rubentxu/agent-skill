@@ -22,5 +22,6 @@
     "bypassGitHooks": false,
     "onStatusChange": false
   },
-  "authorized": false
+  "authorized": false,
+  "defaultStatus": "To Do"
 }
